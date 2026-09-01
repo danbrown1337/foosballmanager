@@ -18,6 +18,8 @@ import pytest
 
 from fantasy_manager.board import load_players
 from fantasy_manager.browser_sync import (
+    diff_drafted,
+    find_board_names,
     looks_like_a_player,
     normalize_position,
     parse_league_page,
@@ -143,6 +145,59 @@ class TestParseLeaguePage:
         assert sum(len(v) for v in teams.values()) == 1
 
 
+class TestFindBoardNames:
+    """Draft watching searches for the ~190 names already on the ADP board
+    rather than parsing the draft room's structure — no selectors, survives any
+    layout, and it cannot invent a player who doesn't exist."""
+
+    BOARD = {"Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.",
+             "A.J. Brown", "Amon-Ra St. Brown", "Puka Nacua"}
+
+    def test_finds_names_in_a_pick_feed(self):
+        page = "1.01 Jahmyr Gibbs Det - RB\n1.02 Puka Nacua LAR - WR"
+        assert find_board_names(page, self.BOARD) == {"Jahmyr Gibbs", "Puka Nacua"}
+
+    def test_names_with_punctuation_are_found(self):
+        page = "Marvin Harrison Jr. Ari - WR and A.J. Brown Phi - WR"
+        found = find_board_names(page, self.BOARD)
+        assert "Marvin Harrison Jr." in found
+        assert "A.J. Brown" in found
+
+    def test_does_not_match_inside_a_longer_name(self):
+        """"Josh Allenson" must not register as "Josh Allen" being drafted."""
+        assert find_board_names("Josh Allenson went undrafted", self.BOARD) == set()
+
+    def test_empty_page_finds_nothing(self):
+        assert find_board_names("", self.BOARD) == set()
+
+    def test_unknown_players_are_never_invented(self):
+        assert find_board_names("Some Guy Nobody Drafted", self.BOARD) == set()
+
+    def test_is_order_independent(self):
+        page = "Puka Nacua ... Jahmyr Gibbs"
+        assert find_board_names(page, self.BOARD) == {"Puka Nacua", "Jahmyr Gibbs"}
+
+
+class TestDiffDrafted:
+    def test_appear_mode_reports_new_names(self):
+        """A picks feed or results page: names show up as they're taken."""
+        assert diff_drafted({"A"}, {"A", "B"}, "appear") == {"B"}
+
+    def test_disappear_mode_reports_removed_names(self):
+        """An available-player pool: names leave it as they're taken."""
+        assert diff_drafted({"A", "B"}, {"A"}, "disappear") == {"B"}
+
+    def test_no_change_yields_nothing(self):
+        assert diff_drafted({"A"}, {"A"}, "appear") == set()
+        assert diff_drafted({"A"}, {"A"}, "disappear") == set()
+
+    def test_appear_ignores_names_that_left(self):
+        assert diff_drafted({"A", "B"}, {"A"}, "appear") == set()
+
+    def test_unknown_mode_defaults_to_appear(self):
+        assert diff_drafted({"A"}, {"A", "B"}, "whatever") == {"B"}
+
+
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 
@@ -193,6 +248,52 @@ class TestChromeAttach:
             rows = {r["name"]: r for r in parse_roster_text(text)}
             assert rows["Josh Allen"]["pos"] == "QB"
             assert rows["Jahmyr Gibbs"]["team"] == "DET"
+        finally:
+            proc.terminate()
+            proc.wait(timeout=10)
+
+    def test_session_reuse_picks_up_page_changes(self, tmp_path):
+        """What the watch loop depends on: one attached browser, re-read across
+        polls, seeing content that changed between them."""
+        pytest.importorskip("playwright")
+        from fantasy_manager.browser_sync import BrowserSession, find_board_names
+
+        fixture = tmp_path / "draft.html"
+        fixture.write_text("<html><body><div>Jahmyr Gibbs Det - RB</div></body></html>")
+        board = {"Jahmyr Gibbs", "Puka Nacua"}
+
+        port = _free_port()
+        proc = subprocess.Popen(
+            [CHROME, "--headless=new", f"--remote-debugging-port={port}",
+             "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "about:blank"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        try:
+            deadline = time.time() + 30
+            while time.time() < deadline:
+                try:
+                    with socket.create_connection(("localhost", port), timeout=1):
+                        break
+                except OSError:
+                    time.sleep(0.3)
+            else:
+                pytest.skip("Chromium did not open its debugging port")
+
+            with BrowserSession(port) as session:
+                text, _ = session.read(f"file://{fixture}")
+                first = find_board_names(text, board)
+                assert first == {"Jahmyr Gibbs"}
+
+                # A pick happens between polls.
+                fixture.write_text(
+                    "<html><body><div>Jahmyr Gibbs Det - RB</div>"
+                    "<div>Puka Nacua LAR - WR</div></body></html>"
+                )
+                text, _ = session.read(f"file://{fixture}")
+                second = find_board_names(text, board)
+
+            assert second == {"Jahmyr Gibbs", "Puka Nacua"}
+            assert diff_drafted(first, second, "appear") == {"Puka Nacua"}
         finally:
             proc.terminate()
             proc.wait(timeout=10)
