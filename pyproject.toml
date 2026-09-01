@@ -13,6 +13,9 @@ dependencies = ["PyYAML>=6.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+# Only needed for browser_sync.py, which drives a Chrome you already have.
+# No browser download is required — it attaches to your running one.
+browser = ["playwright>=1.40"]
 
 [project.scripts]
 # NOTE: these resolve config/ and data/ relative to the package's parent
@@ -22,6 +25,7 @@ draft-assistant = "fantasy_manager.draft_assistant:main"
 roster-manager = "fantasy_manager.roster_manager:main"
 trade-targeter = "fantasy_manager.trade_targeter:main"
 yahoo-client = "fantasy_manager.yahoo_client:main"
+browser-sync = "fantasy_manager.browser_sync:main"
 
 [tool.setuptools]
 packages = ["fantasy_manager"]
