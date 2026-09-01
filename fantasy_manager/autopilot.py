@@ -118,8 +118,11 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     # otherwise BPA can happily punt K/DEF into a bench spot that never
     # comes and you show up to Week 1 short a starter.
     roster_cfg = config["roster"]
-    total_roster_spots = sum(starters.values()) + roster_cfg.get("bench", 0) + roster_cfg.get("ir", 0)
-    my_picks_remaining = total_roster_spots - len(mine)
+    # IR is deliberately excluded: it's filled from waivers during the season,
+    # not drafted, so counting it would overstate how many picks are left and
+    # delay this override past the final pick — exactly the case it exists for.
+    draftable_spots = sum(starters.values()) + roster_cfg.get("bench", 0)
+    my_picks_remaining = draftable_spots - len(mine)
     all_positions = [pos for pos in starters if pos != "FLEX"]
     unfilled_starters = [pos for pos in all_positions if have.get(pos, 0) < starters[pos]]
 

@@ -155,6 +155,35 @@ class TestGuardrailRosterCompletion:
         assert decision.need_override is True
         assert "Roster-completion override" in decision.reason
 
+    def test_ir_slot_does_not_delay_the_override(self):
+        """IR is filled from waivers, not drafted. Counting it as a draftable
+        spot used to push this override one pick past the end of the draft,
+        so the final pick took a bench flier and left a starter slot empty."""
+        config = make_config(
+            starters={"QB": 1, "RB": 2, "WR": 2, "TE": 1, "FLEX": 1, "K": 1, "DEF": 1},
+            bench=6, ir=1,
+        )
+        # 14 of 15 picks made; every starter filled except DEF, one pick left.
+        mine = (
+            [make_player("My QB", "QB", 10.0, drafted_by="mine")]
+            + [make_player(f"My RB{i}", "RB", 10.0, drafted_by="mine") for i in range(4)]
+            + [make_player(f"My WR{i}", "WR", 10.0, drafted_by="mine") for i in range(5)]
+            + [make_player(f"My TE{i}", "TE", 10.0, drafted_by="mine") for i in range(2)]
+            + [make_player("My K", "K", 140.0, drafted_by="mine")]
+            + [make_player("My Bench", "WR", 150.0, drafted_by="mine")]
+        )
+        assert len(mine) == 14
+        players = mine + [
+            # A TE, not a WR: at 6 WRs the bench cap would already block a
+            # receiver, which would mask what this test is actually checking.
+            make_player("Shiny Bench TE", "TE", 60.0),   # better value, wrong answer
+            make_player("Needed Defense", "DEF", 130.0),
+        ]
+        decision = auto_pick(players, config)
+        assert decision.player.name == "Needed Defense"
+        assert decision.need_override is True
+        assert "Roster-completion override" in decision.reason
+
     def test_no_override_while_picks_remain(self):
         config = make_config(starters={"RB": 1, "K": 1}, bench=6, ir=0)
         players = [make_player("Stud Back", "RB", 1.0), make_player("Some Kicker", "K", 150.0)]
