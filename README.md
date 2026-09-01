@@ -1,5 +1,7 @@
 # Fantasy Manager
 
+[![tests](https://github.com/danbrown1337/practice_makes_perfect/actions/workflows/ci.yml/badge.svg)](https://github.com/danbrown1337/practice_makes_perfect/actions/workflows/ci.yml)
+
 Personal Yahoo Fantasy Football draft + weekly management tool.
 
 ## Status
@@ -25,6 +27,17 @@ Personal Yahoo Fantasy Football draft + weekly management tool.
 ```
 pip install -r requirements.txt --break-system-packages
 ```
+
+Run every command from the project root — `config/` and `data/` are
+resolved relative to it. To get the shorter console scripts
+(`draft-assistant board` instead of `python3 -m ...`), install editable:
+
+```
+pip install -e . --break-system-packages
+```
+
+Editable specifically: a regular install would move the package into
+site-packages, away from the CSVs it reads.
 
 ## Draft day
 
@@ -77,3 +90,41 @@ python3 -m fantasy_manager.yahoo_client authorize    # one-time OAuth login
 python3 -m fantasy_manager.yahoo_client leagues       # sanity check
 python3 -m fantasy_manager.yahoo_client sync-rosters --league-key <key>
 ```
+
+## Repository layout
+
+```
+fantasy_manager/       the package
+  board.py             ADP loading, tiering, replacement level, draft state
+  autopilot.py         the pick engine (scoring + four guardrails)
+  draft_assistant.py   draft-day CLI
+  roster_manager.py    post-draft weekly CLI
+  trade_targeter.py    lowball offer generator
+  yahoo_client.py      Yahoo OAuth2 + read endpoints
+  bye_weeks.py         2026 bye weeks by team
+config/league.yaml     league settings — everything downstream reads from here
+data/                  2026 ADP board + researched player notes
+tests/                 pytest suite
+```
+
+## Development
+
+```
+pip install -e ".[dev]" --break-system-packages
+python -m pytest
+```
+
+Use `python -m pytest` rather than bare `pytest` so the repo root is on
+`sys.path` and `import fantasy_manager` resolves without an install.
+
+The suite covers the tiering and replacement-level math, all four autopilot
+guardrails, the trade generator's valuation, and the documented CLI commands
+end-to-end (as subprocesses against a throwaway copy of the project, so draft
+state never touches your working tree).
+
+`tests/test_data.py` checks the shipped CSVs rather than the code — player
+names in `data/player_notes_2026.csv` matching the ADP board, every drafted
+team having a bye week, ADP ordering, valid tags. Those failures are the ones
+that would otherwise degrade the tool silently on draft night.
+
+CI runs the suite on Python 3.10 through 3.13.
