@@ -17,10 +17,19 @@ to work.
    cd fantasy_manager
    pip install -r requirements.txt --break-system-packages
    ```
-2. Open `config/league.yaml` and change `num_teams`, `scoring`, and
-   `roster.starters`/`bench`/`ir` to match your actual league. Add your
-   rival managers' names under `rivals:` if you want the trade generator
-   pointed at them.
+2. Make yourself a profile and edit it:
+   ```
+   python3 -m fantasy_manager.profiles new <your-name>
+   ```
+   That creates `profiles/<your-name>/league.yaml`. Change `num_teams`,
+   `scoring`, and `roster.starters`/`bench`/`ir` to match your actual
+   league, and add rival managers under `rivals:` if you want the trade
+   generator pointed at them. Then put `--profile <your-name>` on any
+   command. (`config/league.yaml` is only the template new profiles are
+   copied from — editing it changes nothing that's already set up.)
+
+   Profiles also mean you and the person who sent you this can share one
+   checkout without colliding, if you ever want to.
 3. `data/adp_2026_ppr.csv` and `data/player_notes_2026.csv` are
    league-agnostic (they're general 2026 NFL draft rankings and
    researched risk/breakout notes, not specific to any one league) — you
@@ -55,9 +64,10 @@ If you'd rather talk your way through the setup than edit YAML by hand:
    you through Yahoo's application process (same gated flow described
    above — it'll need your own Client ID/Secret once approved, not this
    league's).
-4. Everything credential-related (`config/yahoo_credentials.json`,
-   `yahoo_tokens.json`) is already gitignored, so nothing sensitive
-   carries over from this copy — you're starting clean.
+4. Everything under `profiles/` — league settings, rosters, Yahoo
+   credentials and tokens — is gitignored in full, so nothing sensitive
+   carries over from this copy and nothing of yours can be committed by
+   accident. You're starting clean.
 
 ## What's actually yours vs. reusable
 

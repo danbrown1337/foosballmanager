@@ -18,11 +18,15 @@ from dataclasses import dataclass, field
 
 import yaml
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_CONFIG = os.path.join(ROOT, "config", "league.yaml")
-DEFAULT_ADP = os.path.join(ROOT, "data", "adp_2026_ppr.csv")
-DEFAULT_NOTES = os.path.join(ROOT, "data", "player_notes_2026.csv")
-STATE_PATH = os.path.join(ROOT, "draft_state.json")
+from fantasy_manager import profiles
+
+ROOT = profiles.ROOT
+# The board and the research notes are general 2026 rankings, shared by every
+# profile. League settings and draft state are per-person, so they're resolved
+# at call time rather than baked in as import-time defaults.
+DEFAULT_ADP = profiles.DEFAULT_ADP
+DEFAULT_NOTES = profiles.DEFAULT_NOTES
+TEMPLATE_CONFIG = profiles.TEMPLATE_CONFIG
 
 
 @dataclass
@@ -46,7 +50,12 @@ class Player:
         return self.adp + self.adjustment
 
 
-def load_config(path: str = DEFAULT_CONFIG) -> dict:
+def load_config(path: str | None = None) -> dict:
+    """Loads the active profile's league settings, creating the profile from
+    the template on first use so a fresh clone just runs."""
+    if path is None:
+        profiles.ensure_profile()
+        path = profiles.config_path()
     with open(path) as f:
         return yaml.safe_load(f)
 
@@ -150,15 +159,21 @@ def replacement_ranks(config: dict) -> dict[str, int]:
     return {pos: max(1, round(teams * mult)) for pos, mult in effective.items()}
 
 
-def load_draft_state(path: str = STATE_PATH) -> dict:
+def load_draft_state(path: str | None = None) -> dict:
     """Shared draft-in-progress state: {"drafted": {name: "mine"|"rival"}}."""
+    if path is None:
+        profiles.ensure_profile()
+        path = profiles.draft_state_path()
     if os.path.exists(path):
         with open(path) as f:
             return json.load(f)
     return {"drafted": {}}
 
 
-def save_draft_state(state: dict, path: str = STATE_PATH) -> None:
+def save_draft_state(state: dict, path: str | None = None) -> None:
+    if path is None:
+        profiles.ensure_profile()
+        path = profiles.draft_state_path()
     with open(path, "w") as f:
         json.dump(state, f, indent=2)
 
@@ -176,7 +191,9 @@ def apply_draft_state(players: list[Player], state: dict | None = None) -> dict:
 
 
 def build_board(
-    config_path: str = DEFAULT_CONFIG, adp_path: str = DEFAULT_ADP, notes_path: str = DEFAULT_NOTES
+    config_path: str | None = None,
+    adp_path: str = DEFAULT_ADP,
+    notes_path: str = DEFAULT_NOTES,
 ) -> tuple[list[Player], dict]:
     config = load_config(config_path)
     players = load_players(adp_path)

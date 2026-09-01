@@ -27,13 +27,16 @@ import csv
 import os
 from collections import defaultdict
 
-from fantasy_manager.board import ROOT, POS_ALIASES, load_config, load_players
+from fantasy_manager import profiles
+from fantasy_manager.board import POS_ALIASES, load_config, load_players
 from fantasy_manager.roster_manager import load_my_roster
 
-LEAGUE_ROSTERS_PATH = os.path.join(ROOT, "league_rosters.csv")
 
 
-def load_league_rosters(path: str = LEAGUE_ROSTERS_PATH) -> dict[str, list[dict]]:
+def load_league_rosters(path: str | None = None) -> dict[str, list[dict]]:
+    if path is None:
+        profiles.ensure_profile()
+        path = profiles.league_rosters_path()
     teams = defaultdict(list)
     if not os.path.exists(path):
         return teams
@@ -70,7 +73,7 @@ def surplus_and_deficit(roster: list[dict], config: dict) -> tuple[list[str], li
 def cmd_list_teams(args):
     teams = load_league_rosters()
     if not teams:
-        print(f"No rival roster data yet — fill in {LEAGUE_ROSTERS_PATH} "
+        print(f"No rival roster data yet — fill in {profiles.league_rosters_path()} "
               f"(team_name,manager,name,pos,team) once the draft's done.")
         return
     for name, roster in teams.items():
@@ -142,7 +145,7 @@ def cmd_offers(args):
     adp = adp_lookup()
 
     if not teams:
-        print(f"No rival roster data yet — fill in {LEAGUE_ROSTERS_PATH} first.")
+        print(f"No rival roster data yet — fill in {profiles.league_rosters_path()} first.")
         return
     if not my_roster:
         print("Your own roster is empty — fill in my_roster.csv after the draft "
@@ -171,6 +174,8 @@ def cmd_offers(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Lowball trade offer generator")
+    parser.add_argument("--profile", default=None,
+                        help="Which person's setup to use (default: the FANTASY_PROFILE env var, else 'default'). Each profile has its own league settings, rosters and draft state.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_list = sub.add_parser("list-teams", help="List rival teams on file")
@@ -183,6 +188,7 @@ def main():
     p_off.set_defaults(func=cmd_offers)
 
     args = parser.parse_args()
+    profiles.set_active_profile(args.profile)
     args.func(args)
 
 

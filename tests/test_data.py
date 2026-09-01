@@ -9,7 +9,7 @@ import yaml
 
 from fantasy_manager.board import (
     DEFAULT_ADP,
-    DEFAULT_CONFIG,
+    TEMPLATE_CONFIG,
     DEFAULT_NOTES,
     load_config,
     load_player_notes,
@@ -110,28 +110,28 @@ class TestPlayerNotes:
 
 class TestLeagueConfig:
     def test_parses(self):
-        assert load_config(DEFAULT_CONFIG)
+        assert load_config(TEMPLATE_CONFIG)
 
     def test_has_the_sections_the_code_reads(self):
-        config = load_config(DEFAULT_CONFIG)
+        config = load_config(TEMPLATE_CONFIG)
         assert {"league", "roster", "autopilot"} <= set(config)
         assert "starters" in config["roster"]
 
     def test_starter_positions_are_recognized(self):
-        starters = load_config(DEFAULT_CONFIG)["roster"]["starters"]
+        starters = load_config(TEMPLATE_CONFIG)["roster"]["starters"]
         assert set(starters) <= VALID_POSITIONS | {"FLEX"}
 
     def test_autopilot_settings_are_valid_choices(self):
-        ap = load_config(DEFAULT_CONFIG)["autopilot"]
+        ap = load_config(TEMPLATE_CONFIG)["autopilot"]
         assert ap["strategy"] in {"best_player_available", "robust_rb", "zero_rb"}
         assert ap["risk_tolerance"] in {"safe_floor", "balanced", "chase_upside"}
 
     def test_roster_is_big_enough_for_the_starting_lineup(self):
-        config = load_config(DEFAULT_CONFIG)
+        config = load_config(TEMPLATE_CONFIG)
         roster = config["roster"]
         total = sum(roster["starters"].values()) + roster["bench"] + roster["ir"]
         assert total > sum(roster["starters"].values())
 
     def test_yaml_is_valid_utf8_and_loads_as_a_mapping(self):
-        with open(DEFAULT_CONFIG, encoding="utf-8") as f:
+        with open(TEMPLATE_CONFIG, encoding="utf-8") as f:
             assert isinstance(yaml.safe_load(f), dict)

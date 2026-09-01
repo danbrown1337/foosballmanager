@@ -1,9 +1,15 @@
-# Yahoo credentials and OAuth tokens — never commit these
+# Per-person data. Profiles hold Yahoo credentials, OAuth tokens and live
+# draft state — none of it belongs in the repo. The whole tree is ignored so
+# a new profile can never leak by being added before this list catches up.
+profiles/
+
+# Legacy single-user locations, kept ignored so an old checkout can't commit
+# secrets after upgrading.
 config/yahoo_credentials.json
 yahoo_tokens.json
-
-# Live draft state (regenerated per draft)
 draft_state.json
+my_roster.csv
+league_rosters.csv
 
 # Python
 __pycache__/

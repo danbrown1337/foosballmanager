@@ -27,6 +27,7 @@ trade-targeter = "fantasy_manager.trade_targeter:main"
 yahoo-client = "fantasy_manager.yahoo_client:main"
 browser-sync = "fantasy_manager.browser_sync:main"
 fantasy-manager = "fantasy_manager.web:main"
+fantasy-profiles = "fantasy_manager.profiles:main"
 
 [tool.setuptools]
 packages = ["fantasy_manager"]

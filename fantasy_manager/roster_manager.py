@@ -21,13 +21,16 @@ import csv
 import os
 from collections import defaultdict
 
-from fantasy_manager.board import ROOT, POS_ALIASES, apply_draft_state, build_board
+from fantasy_manager import profiles
+from fantasy_manager.board import POS_ALIASES, apply_draft_state, build_board
 from fantasy_manager.bye_weeks import BYE_WEEKS
 
-MY_ROSTER_PATH = os.path.join(ROOT, "my_roster.csv")
 
 
-def load_my_roster(path: str = MY_ROSTER_PATH) -> list[dict]:
+def load_my_roster(path: str | None = None) -> list[dict]:
+    if path is None:
+        profiles.ensure_profile()
+        path = profiles.my_roster_path()
     if not os.path.exists(path):
         return []
     with open(path) as f:
@@ -40,7 +43,7 @@ def load_my_roster(path: str = MY_ROSTER_PATH) -> list[dict]:
 def cmd_summary(args):
     roster = load_my_roster()
     if not roster:
-        print(f"No roster on file yet — fill in {MY_ROSTER_PATH} (name,pos,team) after your draft.")
+        print(f"No roster on file yet — fill in {profiles.my_roster_path()} (name,pos,team) after your draft.")
         return
     by_pos = defaultdict(list)
     for r in roster:
@@ -56,7 +59,7 @@ def cmd_summary(args):
 def cmd_byeweeks(args):
     roster = load_my_roster()
     if not roster:
-        print(f"No roster on file yet — fill in {MY_ROSTER_PATH} first.")
+        print(f"No roster on file yet — fill in {profiles.my_roster_path()} first.")
         return
 
     by_week = defaultdict(list)
@@ -131,6 +134,8 @@ def cmd_overachievers(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Weekly roster manager")
+    parser.add_argument("--profile", default=None,
+                        help="Which person's setup to use (default: the FANTASY_PROFILE env var, else 'default'). Each profile has its own league settings, rosters and draft state.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_sum = sub.add_parser("summary", help="Roster breakdown by position")
@@ -150,6 +155,7 @@ def main():
     p_over.set_defaults(func=cmd_overachievers)
 
     args = parser.parse_args()
+    profiles.set_active_profile(args.profile)
     args.func(args)
 
 

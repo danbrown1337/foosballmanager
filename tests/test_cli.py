@@ -20,8 +20,7 @@ def project(tmp_path_factory):
     root = tmp_path_factory.mktemp("project")
     for item in ("fantasy_manager", "config", "data"):
         shutil.copytree(REPO / item, root / item)
-    (root / "my_roster.csv").write_text("name,pos,team\n")
-    (root / "league_rosters.csv").write_text("team_name,manager,name,pos,team\n")
+    # Rosters live in profiles/<name>/ now and are created on first use.
     return root
 
 
@@ -147,7 +146,7 @@ class TestYahooClient:
     def test_init_writes_a_credentials_template(self, project):
         result = run(project, "fantasy_manager.yahoo_client", "init")
         assert result.returncode == 0
-        template = project / "config" / "yahoo_credentials.json"
+        template = project / "profiles" / "default" / "yahoo_credentials.json"
         assert template.exists()
         assert "PASTE_CLIENT_ID_HERE" in template.read_text()
         template.unlink()

@@ -2,274 +2,222 @@
 
 [![tests](https://github.com/danbrown1337/foosballmanager/actions/workflows/ci.yml/badge.svg)](https://github.com/danbrown1337/foosballmanager/actions/workflows/ci.yml)
 
-Personal Yahoo Fantasy Football draft + weekly management tool.
+A Yahoo Fantasy Football draft assistant and in-season roster manager.
 
-## Status
+It tiers the player pool, tracks who's gone as the draft happens, and tells you
+who to take next — with the reasoning, and with guardrails so "best player
+available" never leaves you short a starter. After the draft it handles roster
+checks, bye-week pileups and trade offers.
 
-- **League settings**: 10 teams, Full PPR, standard 1-QB confirmed. Roster
-  construction in `config/league.yaml` is a best-guess Yahoo default —
-  edit it once the real league exists.
-- **Yahoo API**: access application submitted; it's read-only even once
-  approved, so trades can never be auto-submitted — see `trade_targeter.py`.
-  The client is written and unit-tested against Yahoo's documented response
-  shapes, but has not been run against a live account — that needs an
-  approved Client ID. See the Yahoo API section below.
-- **Draft data**: `data/adp_2026_ppr.csv` holds live 2026 PPR mock-draft
-  ADP (top 190 players) pulled just before the season. Swap in real
-  point projections later by adding a `proj_pts` column — `board.py` is
-  built to prefer that once it exists.
-- **Autopilot**: `data/player_notes_2026.csv` layers researched bust/injury/
-  breakout calls (sourced from beat-writer and analyst coverage, see the
-  `note` column for the reasoning per player) on top of ADP. `config/league.yaml`'s
-  `autopilot:` block is set to Dan's chosen strategy (best player available,
-  balanced risk) — `fantasy_manager/autopilot.py` is the decision engine,
-  exposed via `draft_assistant.py autopick`.
+## Start here
 
-## Setup
-
-```
+```bash
+git clone https://github.com/danbrown1337/foosballmanager
+cd foosballmanager
 pip install -r requirements.txt --break-system-packages
-```
-
-Run every command from the project root — `config/` and `data/` are
-resolved relative to it. To get the shorter console scripts
-(`draft-assistant board` instead of `python3 -m ...`), install editable:
-
-```
-pip install -e . --break-system-packages
-```
-
-Editable specifically: a regular install would move the package into
-site-packages, away from the CSVs it reads.
-
-## The app (no terminal knowledge needed)
-
-```
 python3 -m fantasy_manager.web
 ```
 
-That's the whole thing. A browser opens on the draft board: click **Taken**
-when someone else drafts a player, **Mine** when you do, and the big panel at
-the top always shows what to take next and why. Search and position filters
-are there for finding a player fast mid-draft.
+That last command opens a browser on the draft board. Click **Taken** when
+someone else drafts a player, **Mine** when you do; the panel at the top always
+shows what to take next and why. No terminal knowledge needed beyond starting
+it, and it uses only what Python ships with, so there's nothing else to install.
 
-It uses only what Python ships with, so there is nothing extra to install, and
-it serves on 127.0.0.1 — reachable from your machine only, never the network.
-Leave the terminal window open while you use it; Ctrl-C when the draft is done.
+The app serves on `127.0.0.1` — your machine only, not the network.
 
-It reads and writes the same `draft_state.json` as everything else, re-reading
-on each action, so the app, a terminal, and a running `browser_sync watch` all
-stay in agreement rather than overwriting each other. You can mix them freely.
+Everything below is optional.
 
-## Draft day (command line)
+## Two people, one checkout
 
+Each person gets a **profile**: their own league settings, rosters and draft
+state, side by side and never colliding.
+
+```bash
+python3 -m fantasy_manager.profiles new alex
+python3 -m fantasy_manager.profiles list
 ```
-python3 -m fantasy_manager.draft_assistant board                       # best available
-python3 -m fantasy_manager.draft_assistant pick "Player Name" --by mine
+
+Then put `--profile alex` on any command:
+
+```bash
+python3 -m fantasy_manager.web --profile alex
+python3 -m fantasy_manager.draft_assistant --profile alex board
+```
+
+`FANTASY_PROFILE=alex` does the same thing if you'd rather not repeat the flag.
+With no profile given, everything uses `default`, so a single user never has to
+think about this.
+
+A new profile is seeded from `config/league.yaml`. **Edit your own copy** at
+`profiles/<name>/league.yaml` — team count, scoring and roster slots — before
+you draft; every tier, replacement-level and autopilot decision reads from it.
+The ADP board and research notes in `data/` are general 2026 rankings, so they
+stay shared.
+
+`profiles/` is gitignored in full. Nobody's league, roster or Yahoo credentials
+can be committed.
+
+### Sharing the board live
+
+```bash
+python3 -m fantasy_manager.web --share
+```
+
+Prints a link carrying an access key. Anyone you send it to, on the same
+network, opens the same live board — useful for drafting with someone looking
+over your shoulder from their own laptop.
+
+Two things to know. **`--share` binds to your whole local network**, not just
+your machine, so the key is what stops a passer-by editing your draft — send
+the whole link, and don't post it anywhere public. And anyone with the link can
+draft, undo and reset, so only share it with someone you'd hand the keyboard
+to. Restart without `--share` to stop.
+
+If the detected address is wrong, override it: `--share --share-host 192.168.1.42`.
+
+## Draft day
+
+The app covers all of this by clicking. The command line is here if you prefer it:
+
+```bash
+python3 -m fantasy_manager.draft_assistant board                    # best available
 python3 -m fantasy_manager.draft_assistant pick "Player Name" --by rival
-python3 -m fantasy_manager.draft_assistant recommend                   # what to take next + scarcity
-python3 -m fantasy_manager.draft_assistant autopick                    # full-autopilot: one decision + reasoning
-python3 -m fantasy_manager.draft_assistant autopick --commit           # ...and mark it drafted by you
+python3 -m fantasy_manager.draft_assistant autopick                 # one decision + reasoning
+python3 -m fantasy_manager.draft_assistant autopick --commit        # ...and take it
 python3 -m fantasy_manager.draft_assistant myteam
-python3 -m fantasy_manager.draft_assistant reset                       # clear state, start over
+python3 -m fantasy_manager.draft_assistant reset
 ```
 
-Run one command per pick as the live draft happens. State lives in
-`draft_state.json` so you can close and reopen the terminal mid-draft.
+Names match fuzzily, so `"Jahmyr Gibs"` still lands. State persists between
+commands — you can close the terminal mid-draft.
 
-## After the draft
+### Recording picks automatically
 
-```
-python3 -m fantasy_manager.roster_manager summary     # roster by position
-python3 -m fantasy_manager.roster_manager byeweeks     # bye-week pileups
-python3 -m fantasy_manager.roster_manager waivers --pos RB --top 10
-python3 -m fantasy_manager.roster_manager overachievers          # beating their draft price, by performance/opportunity
-```
+Typing in 144 rival picks on a 90-second clock is miserable, and a missed pick
+silently corrupts the scarcity math the guardrails depend on. `watch` reads the
+draft room in a Chrome you're already logged into and records picks as they
+land:
 
-Fill in `my_roster.csv` by hand until Yahoo API access is approved, then
-`yahoo_client.py sync-rosters` can populate it automatically.
+```bash
+pip install playwright --break-system-packages   # no browser download needed
 
-## Lowball trades
-
-```
-python3 -m fantasy_manager.trade_targeter list-teams
-python3 -m fantasy_manager.trade_targeter offers --team "Rival Team Name"
-python3 -m fantasy_manager.trade_targeter offers --all --count 2
-```
-
-Fill in `league_rosters.csv` (every team's roster) and add rival names
-under `rivals:` in `config/league.yaml`. Offers print to the terminal —
-you send them yourself in the Yahoo app. Sending is intentionally manual;
-Yahoo's API can't submit trades, and scripting the actual sends risks
-looking like bot activity against Yahoo's terms.
-
-## Yahoo API
-
-Yahoo gates Fantasy Sports API access behind an application review, and it is
-**read-only** even once granted — no trades, adds, or drops can be submitted
-through it. Two separate steps are needed before any of this works:
-
-1. Register an app at developer.yahoo.com to get a Client ID and Secret.
-   Set its **Redirect URI to `https://localhost:8000`** — Yahoo wants an
-   HTTPS redirect; the older `oob` (code-on-screen) flow is no longer
-   reliably accepted. Nothing needs to listen on that port.
-2. Apply for Fantasy Sports API access at sports.yahoo.com/developer/access/
-   and associate the approval with that Client ID. Registering the app alone
-   is not enough.
-
-Then:
-
-```
-python3 -m fantasy_manager.yahoo_client init         # write credentials template
-# fill in config/yahoo_credentials.json: Client ID, Secret, redirect_uri
-python3 -m fantasy_manager.yahoo_client authorize    # one-time OAuth login
-python3 -m fantasy_manager.yahoo_client leagues      # sanity check — find your league_key
-python3 -m fantasy_manager.yahoo_client sync-rosters --league-key 449.l.123456
-```
-
-`authorize` prints a Yahoo URL. Approving it redirects the browser to
-`https://localhost:8000`, which shows an error page — that is expected, since
-nothing is serving it. Copy the **whole URL** out of the address bar and paste
-it in; the authorization code is in the query string and gets extracted for
-you. Tokens are saved to `yahoo_tokens.json` (mode 0600) and refreshed
-automatically after that.
-
-If your own team isn't detected during a sync, pass it explicitly:
-
-```
-python3 -m fantasy_manager.yahoo_client sync-rosters \
-    --league-key 449.l.123456 --my-team-key 449.l.123456.t.4
-```
-
-`sync-rosters` writes `league_rosters.csv` and `my_roster.csv`, then reports
-any synced player whose name doesn't match the ADP board. Those players have
-no value attached, so they're invisible to the trade generator and the waiver
-view — deep bench players are expected, but a starter in that list means the
-spelling differs and is worth aliasing.
-
-## Importing rosters from the browser (while API access is pending)
-
-Yahoo's API needs an approved application. Until that lands, `browser_sync.py`
-reads the same rosters off the league pages you're already looking at, so they
-don't have to be typed in by hand.
-
-It never sees your password: it attaches over the DevTools protocol to a Chrome
-**you** started and logged into.
-
-```
-pip install playwright --break-system-packages     # no browser download needed
-
-# Quit Chrome completely, then relaunch with debugging enabled:
+# Quit Chrome fully, then relaunch it and log into Yahoo:
+google-chrome --remote-debugging-port=9222
 #   macOS:   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
-#   Linux:   google-chrome --remote-debugging-port=9222
 #   Windows: chrome.exe --remote-debugging-port=9222
-# Log into Yahoo Fantasy in that window, then:
 
-python3 -m fantasy_manager.browser_sync sync --url <your league rosters URL>
-python3 -m fantasy_manager.browser_sync sync --url <your team URL> --mine
-```
-
-An already-running Chrome can't be attached to — it has to be restarted with
-the flag.
-
-If parsing comes up empty, save the page and we can fix the parser against what
-Yahoo actually renders:
-
-```
-python3 -m fantasy_manager.browser_sync dump --url <url> --out page.html
-python3 -m fantasy_manager.browser_sync parse --from-file page.html
-```
-
-`parse` also takes plain text, so copying the roster out of the page by hand
-works with no automation at all:
-
-```
-python3 -m fantasy_manager.browser_sync parse --from-text roster.txt --mine
-```
-
-Parsing keys off Yahoo's rendered `Name TEAM - POS` text rather than CSS
-selectors, which are generated and change without notice. Names keep their
-punctuation (`Marvin Harrison Jr.`, `A.J. Brown`) because matching the ADP
-board exactly is what attaches a player's value — anything unmatched gets
-reported rather than silently counting for nothing.
-
-This is read-only by design. Nothing here submits trades, adds, or drops —
-the same call `trade_targeter.py` already makes.
-
-## Watching a live draft
-
-The autopilot's decision takes under a second — but in a 10-team, 16-round
-draft, 144 of the 160 picks are somebody else's, and typing each one in on a
-90-second clock is both miserable and risky. A missed pick silently corrupts
-the scarcity math the guardrails depend on.
-
-`watch` removes the typing. It polls the draft room in your own Chrome, records
-picks as they land, and reprints the recommendation each time the board moves:
-
-```
 python3 -m fantasy_manager.browser_sync watch --url <draft room URL>
 ```
 
+Picks are recorded as `rival`; mark your own in the app or with
+`autopick --commit`, and `watch` merges rather than clobbering. It never
+handles your password — it drives a session you opened.
+
+`--mode` has to match your page: `appear` (default) for a picks feed or results
+view, `disappear` for an available-player pool. The wrong one records nothing
+rather than nonsense. **Try this against a mock draft before draft day**; if it
+records nothing either way, `dump --url <url> --out page.html` saves the page so
+the parser can be corrected.
+
+## After the draft
+
+```bash
+python3 -m fantasy_manager.roster_manager summary        # roster by position
+python3 -m fantasy_manager.roster_manager byeweeks       # bye-week pileups
+python3 -m fantasy_manager.roster_manager waivers --pos RB --top 10
+python3 -m fantasy_manager.roster_manager overachievers  # beating their draft price
+
+python3 -m fantasy_manager.trade_targeter list-teams
+python3 -m fantasy_manager.trade_targeter offers --all --count 2
 ```
-  drafted: Bijan Robinson
-  -> if you're up: Ja'Marr Chase (WR, CIN), Tier 1
-     Best available by adjusted value (raw ADP 3.9, adjusted 3.9).
+
+These read your profile's `my_roster.csv` and `league_rosters.csv`. Fill them in
+by hand, or import them from the browser:
+
+```bash
+python3 -m fantasy_manager.browser_sync sync --url <your team URL> --mine
+python3 -m fantasy_manager.browser_sync sync --url <league rosters URL>
 ```
 
-Picks are recorded as `rival`. When it's your turn, mark your own in a second
-terminal — `draft_assistant autopick --commit`, or `pick "Name" --by mine` —
-and `watch` picks the change up on its next poll rather than clobbering it.
-That's ~16 commands over a draft instead of 160.
+Trade offers print for you to send yourself. Nothing here submits a trade, add
+or drop — Yahoo's API is read-only, and scripting real actions against a league
+risks looking like bot activity.
 
-Detection searches the page for the ~190 names already on the ADP board rather
-than parsing the draft room's structure. No selectors to break, it survives any
-layout, and it can't invent a player who doesn't exist.
+## Yahoo API
 
-Which direction signals a pick depends on what your page shows:
+Yahoo gates Fantasy Sports API access behind an application review, and it's
+**read-only** even once granted. Two separate steps:
 
-- `--mode appear` (default) — a picks feed or draft-results view: names show up
-  as they're taken.
-- `--mode disappear` — an available-player pool: names leave it as they're taken.
+1. Register an app at developer.yahoo.com for a Client ID and Secret. Set its
+   **Redirect URI to `https://localhost:8000`** — Yahoo wants an HTTPS
+   redirect; the older `oob` flow is no longer reliably accepted. Nothing needs
+   to listen on that port.
+2. Apply at sports.yahoo.com/developer/access/ and associate the approval with
+   that Client ID. Registering the app alone is not enough.
 
-If the wrong one is picked, nothing gets recorded. Run `dump --url <draft room>`
-once and the right mode is obvious from the saved page.
+```bash
+python3 -m fantasy_manager.yahoo_client init       # writes a credentials template
+python3 -m fantasy_manager.yahoo_client authorize  # one-time OAuth login
+python3 -m fantasy_manager.yahoo_client leagues    # find your league_key
+python3 -m fantasy_manager.yahoo_client sync-rosters --league-key 449.l.123456
+```
+
+`authorize` prints a Yahoo URL. Approving redirects to `https://localhost:8000`,
+which shows an error page — expected, nothing is serving it. Paste the **whole
+URL** back in; the code is extracted from its query string. Tokens are saved to
+your profile at mode 0600 and refreshed automatically.
+
+Add `--my-team-key 449.l.123456.t.4` if your own team isn't detected.
 
 ## Repository layout
 
 ```
-fantasy_manager/       the package
+fantasy_manager/
   board.py             ADP loading, tiering, replacement level, draft state
   autopilot.py         the pick engine (scoring + four guardrails)
   draft_assistant.py   draft-day CLI
-  roster_manager.py    post-draft weekly CLI
-  trade_targeter.py    lowball offer generator
-  yahoo_client.py      Yahoo OAuth2 + read endpoints
+  web.py               point-and-click app (stdlib only)
   browser_sync.py      roster import + live draft watching via your Chrome
-  web.py               point-and-click draft app (stdlib only)
+  roster_manager.py    post-draft weekly CLI
+  trade_targeter.py    trade offer generator
+  yahoo_client.py      Yahoo OAuth2 + read endpoints
+  profiles.py          per-person settings, rosters and draft state
   bye_weeks.py         2026 bye weeks by team
-config/league.yaml     league settings — everything downstream reads from here
-data/                  2026 ADP board + researched player notes
+config/league.yaml     template new profiles are seeded from
+data/                  2026 ADP board + researched player notes (shared)
+profiles/<name>/       your league settings, rosters, draft state (gitignored)
 tests/                 pytest suite
 ```
 
 ## Development
 
-```
+```bash
 pip install -e ".[dev]" --break-system-packages
 python -m pytest
 ```
 
 Use `python -m pytest` rather than bare `pytest` so the repo root is on
-`sys.path` and `import fantasy_manager` resolves without an install.
+`sys.path`. CI runs the suite on Python 3.10 through 3.13.
 
 The suite covers the tiering and replacement-level math, all four autopilot
-guardrails, the trade generator's valuation, and the documented CLI commands
-end-to-end (as subprocesses against a throwaway copy of the project, so draft
-state never touches your working tree).
+guardrails, profile isolation, the trade generator's valuation, the web app's
+HTTP surface and access-key gating, and the CLIs end to end. `tests/test_data.py`
+checks the shipped CSVs rather than the code — the failures that would otherwise
+only surface mid-draft.
 
-`tests/test_data.py` checks the shipped CSVs rather than the code — player
-names in `data/player_notes_2026.csv` matching the ADP board, every drafted
-team having a bye week, ADP ordering, valid tags. Those failures are the ones
-that would otherwise degrade the tool silently on draft night.
+## Current state
 
-CI runs the suite on Python 3.10 through 3.13.
+- **Draft data** is a snapshot: `data/adp_2026_ppr.csv` holds 2026 PPR
+  mock-draft ADP for the top 190 players, pulled just before the season, and
+  `data/player_notes_2026.csv` layers researched bust/injury/breakout calls on
+  top. Both go stale as the season moves. Add a `proj_pts` column to the ADP
+  file and `board.py` will prefer real projections over ADP automatically.
+- **Yahoo API** access is pending approval. The client is written and
+  unit-tested against Yahoo's documented response shapes but has not run
+  against a live account. Until it's approved, use the browser import above.
+- **`waivers` doesn't yet exclude players on rival rosters** — it filters only
+  against your own, so treat it as a best-available list rather than a true
+  waiver wire.
+- **`overachievers` runs on pre-season research.** Comparing actual points
+  against tier expectation needs a weekly stats file that doesn't exist yet;
+  the tiering plumbing is already in place for it.

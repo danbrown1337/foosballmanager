@@ -37,10 +37,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from fantasy_manager.board import ROOT
-
-CRED_PATH = os.path.join(ROOT, "config", "yahoo_credentials.json")
-TOKEN_PATH = os.path.join(ROOT, "yahoo_tokens.json")
+from fantasy_manager import profiles
 
 AUTH_URL = "https://api.login.yahoo.com/oauth2/request_auth"
 TOKEN_URL = "https://api.login.yahoo.com/oauth2/get_token"
@@ -92,7 +89,7 @@ def _post_for_token(req) -> dict:
         if err.code in (400, 401):
             hint = (
                 "\n\nUsual causes:\n"
-                f"  - redirect_uri in {CRED_PATH} doesn't exactly match the one\n"
+                f"  - redirect_uri in {profiles.credentials_path()} doesn't exactly match the one\n"
                 "    registered on your Yahoo app (this is the most common one)\n"
                 "  - the authorization code was already used, or has expired\n"
                 "    (they're single-use and short-lived — rerun `authorize`)\n"
@@ -103,25 +100,26 @@ def _post_for_token(req) -> dict:
 
 
 def cmd_init(args):
-    if os.path.exists(CRED_PATH):
-        print(f"{CRED_PATH} already exists — not overwriting.")
+    profiles.ensure_profile()
+    if os.path.exists(profiles.credentials_path()):
+        print(f"{profiles.credentials_path()} already exists — not overwriting.")
         return
-    _save_json(CRED_PATH, {
+    _save_json(profiles.credentials_path(), {
         "client_id": "PASTE_CLIENT_ID_HERE",
         "client_secret": "PASTE_CLIENT_SECRET_HERE",
         # Must match the Redirect URI registered on the Yahoo app exactly.
         "redirect_uri": DEFAULT_REDIRECT_URI,
     })
-    print(f"Wrote template to {CRED_PATH}. Fill in your Client ID/Secret once Yahoo approves access, "
+    print(f"Wrote template to {profiles.credentials_path()}. Fill in your Client ID/Secret once Yahoo approves access, "
           f"then run: python3 -m fantasy_manager.yahoo_client authorize")
     print(f"Set redirect_uri to whatever you registered on the Yahoo app "
           f"(default {DEFAULT_REDIRECT_URI}).")
 
 
 def _creds() -> tuple[str, str, str]:
-    creds = _load_json(CRED_PATH)
+    creds = _load_json(profiles.credentials_path())
     if not creds or "PASTE_" in creds.get("client_id", ""):
-        raise SystemExit(f"No Yahoo credentials yet. Run `init`, fill in {CRED_PATH}, then `authorize`.")
+        raise SystemExit(f"No Yahoo credentials yet. Run `init`, fill in {profiles.credentials_path()}, then `authorize`.")
     return (
         creds["client_id"],
         creds["client_secret"],
@@ -180,7 +178,7 @@ def cmd_authorize(args):
     token = _post_for_token(req)
 
     token["obtained_at"] = time.time()
-    _save_json(TOKEN_PATH, token)
+    _save_json(profiles.tokens_path(), token)
     print("Authorized. Tokens saved — you shouldn't need to run this again unless you revoke access.")
 
 
@@ -198,12 +196,12 @@ def _refresh(token: dict) -> dict:
     new_token = _post_for_token(req)
     new_token["obtained_at"] = time.time()
     new_token.setdefault("refresh_token", token["refresh_token"])
-    _save_json(TOKEN_PATH, new_token)
+    _save_json(profiles.tokens_path(), new_token)
     return new_token
 
 
 def _access_token() -> str:
-    token = _load_json(TOKEN_PATH)
+    token = _load_json(profiles.tokens_path())
     if not token:
         raise SystemExit("Not authorized yet. Run: python3 -m fantasy_manager.yahoo_client authorize")
     age = time.time() - token.get("obtained_at", 0)
@@ -348,13 +346,13 @@ def cmd_sync_rosters(args):
         print("No players parsed. Check the league key, or run `leagues` to list yours.")
         return
 
-    with open(os.path.join(ROOT, "league_rosters.csv"), "w", newline="") as f:
+    with open(profiles.league_rosters_path(), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["team_name", "manager", "name", "pos", "team"])
         w.writeheader()
         w.writerows(rows)
 
     if my_rows:
-        with open(os.path.join(ROOT, "my_roster.csv"), "w", newline="") as f:
+        with open(profiles.my_roster_path(), "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=["name", "pos", "team"])
             w.writeheader()
             w.writerows(my_rows)
@@ -389,6 +387,8 @@ def report_unmatched(rows) -> list[str]:
 
 def main():
     parser = argparse.ArgumentParser(description="Yahoo Fantasy Sports API client")
+    parser.add_argument("--profile", default=None,
+                        help="Which person's setup to use (default: the FANTASY_PROFILE env var, else 'default'). Each profile has its own league settings, rosters and draft state.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("init", help="Write a credentials template").set_defaults(func=cmd_init)
@@ -402,6 +402,7 @@ def main():
     p_sync.set_defaults(func=cmd_sync_rosters)
 
     args = parser.parse_args()
+    profiles.set_active_profile(args.profile)
     args.func(args)
 
 
