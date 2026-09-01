@@ -128,6 +128,55 @@ no value attached, so they're invisible to the trade generator and the waiver
 view — deep bench players are expected, but a starter in that list means the
 spelling differs and is worth aliasing.
 
+## Importing rosters from the browser (while API access is pending)
+
+Yahoo's API needs an approved application. Until that lands, `browser_sync.py`
+reads the same rosters off the league pages you're already looking at, so they
+don't have to be typed in by hand.
+
+It never sees your password: it attaches over the DevTools protocol to a Chrome
+**you** started and logged into.
+
+```
+pip install playwright --break-system-packages     # no browser download needed
+
+# Quit Chrome completely, then relaunch with debugging enabled:
+#   macOS:   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
+#   Linux:   google-chrome --remote-debugging-port=9222
+#   Windows: chrome.exe --remote-debugging-port=9222
+# Log into Yahoo Fantasy in that window, then:
+
+python3 -m fantasy_manager.browser_sync sync --url <your league rosters URL>
+python3 -m fantasy_manager.browser_sync sync --url <your team URL> --mine
+```
+
+An already-running Chrome can't be attached to — it has to be restarted with
+the flag.
+
+If parsing comes up empty, save the page and we can fix the parser against what
+Yahoo actually renders:
+
+```
+python3 -m fantasy_manager.browser_sync dump --url <url> --out page.html
+python3 -m fantasy_manager.browser_sync parse --from-file page.html
+```
+
+`parse` also takes plain text, so copying the roster out of the page by hand
+works with no automation at all:
+
+```
+python3 -m fantasy_manager.browser_sync parse --from-text roster.txt --mine
+```
+
+Parsing keys off Yahoo's rendered `Name TEAM - POS` text rather than CSS
+selectors, which are generated and change without notice. Names keep their
+punctuation (`Marvin Harrison Jr.`, `A.J. Brown`) because matching the ADP
+board exactly is what attaches a player's value — anything unmatched gets
+reported rather than silently counting for nothing.
+
+This is read-only by design. Nothing here submits trades, adds, or drops —
+the same call `trade_targeter.py` already makes.
+
 ## Repository layout
 
 ```
@@ -138,6 +187,7 @@ fantasy_manager/       the package
   roster_manager.py    post-draft weekly CLI
   trade_targeter.py    lowball offer generator
   yahoo_client.py      Yahoo OAuth2 + read endpoints
+  browser_sync.py      roster import via your own logged-in Chrome
   bye_weeks.py         2026 bye weeks by team
 config/league.yaml     league settings — everything downstream reads from here
 data/                  2026 ADP board + researched player notes
