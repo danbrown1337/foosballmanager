@@ -11,6 +11,9 @@ Personal Yahoo Fantasy Football draft + weekly management tool.
   edit it once the real league exists.
 - **Yahoo API**: access application submitted; it's read-only even once
   approved, so trades can never be auto-submitted — see `trade_targeter.py`.
+  The client is written and unit-tested against Yahoo's documented response
+  shapes, but has not been run against a live account — that needs an
+  approved Client ID. See the Yahoo API section below.
 - **Draft data**: `data/adp_2026_ppr.csv` holds live 2026 PPR mock-draft
   ADP (top 190 players) pulled just before the season. Swap in real
   point projections later by adding a `proj_pts` column — `board.py` is
@@ -81,15 +84,49 @@ you send them yourself in the Yahoo app. Sending is intentionally manual;
 Yahoo's API can't submit trades, and scripting the actual sends risks
 looking like bot activity against Yahoo's terms.
 
-## Yahoo API (once approved)
+## Yahoo API
+
+Yahoo gates Fantasy Sports API access behind an application review, and it is
+**read-only** even once granted — no trades, adds, or drops can be submitted
+through it. Two separate steps are needed before any of this works:
+
+1. Register an app at developer.yahoo.com to get a Client ID and Secret.
+   Set its **Redirect URI to `https://localhost:8000`** — Yahoo wants an
+   HTTPS redirect; the older `oob` (code-on-screen) flow is no longer
+   reliably accepted. Nothing needs to listen on that port.
+2. Apply for Fantasy Sports API access at sports.yahoo.com/developer/access/
+   and associate the approval with that Client ID. Registering the app alone
+   is not enough.
+
+Then:
 
 ```
 python3 -m fantasy_manager.yahoo_client init         # write credentials template
-# fill in config/yahoo_credentials.json with your Client ID/Secret
+# fill in config/yahoo_credentials.json: Client ID, Secret, redirect_uri
 python3 -m fantasy_manager.yahoo_client authorize    # one-time OAuth login
-python3 -m fantasy_manager.yahoo_client leagues       # sanity check
-python3 -m fantasy_manager.yahoo_client sync-rosters --league-key <key>
+python3 -m fantasy_manager.yahoo_client leagues      # sanity check — find your league_key
+python3 -m fantasy_manager.yahoo_client sync-rosters --league-key 449.l.123456
 ```
+
+`authorize` prints a Yahoo URL. Approving it redirects the browser to
+`https://localhost:8000`, which shows an error page — that is expected, since
+nothing is serving it. Copy the **whole URL** out of the address bar and paste
+it in; the authorization code is in the query string and gets extracted for
+you. Tokens are saved to `yahoo_tokens.json` (mode 0600) and refreshed
+automatically after that.
+
+If your own team isn't detected during a sync, pass it explicitly:
+
+```
+python3 -m fantasy_manager.yahoo_client sync-rosters \
+    --league-key 449.l.123456 --my-team-key 449.l.123456.t.4
+```
+
+`sync-rosters` writes `league_rosters.csv` and `my_roster.csv`, then reports
+any synced player whose name doesn't match the ADP board. Those players have
+no value attached, so they're invisible to the trade generator and the waiver
+view — deep bench players are expected, but a starter in that list means the
+spelling differs and is worth aliasing.
 
 ## Repository layout
 
