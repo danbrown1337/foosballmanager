@@ -1,6 +1,6 @@
 # Fantasy Manager
 
-[![tests](https://github.com/danbrown1337/practice_makes_perfect/actions/workflows/ci.yml/badge.svg)](https://github.com/danbrown1337/practice_makes_perfect/actions/workflows/ci.yml)
+[![tests](https://github.com/danbrown1337/foosballmanager/actions/workflows/ci.yml/badge.svg)](https://github.com/danbrown1337/foosballmanager/actions/workflows/ci.yml)
 
 Personal Yahoo Fantasy Football draft + weekly management tool.
 
