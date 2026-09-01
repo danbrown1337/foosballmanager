@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fantasy-manager"
+version = "0.1.0"
+description = "Yahoo Fantasy Football draft assistant, roster manager, and trade generator"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+# NOTE: these resolve config/ and data/ relative to the package's parent
+# directory, so install editable (`pip install -e .`) — a regular install
+# would place the package under site-packages, away from the CSVs.
+draft-assistant = "fantasy_manager.draft_assistant:main"
+roster-manager = "fantasy_manager.roster_manager:main"
+trade-targeter = "fantasy_manager.trade_targeter:main"
+yahoo-client = "fantasy_manager.yahoo_client:main"
+
+[tool.setuptools]
+packages = ["fantasy_manager"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

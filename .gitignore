@@ -1,5 +1,22 @@
+# Yahoo credentials and OAuth tokens — never commit these
 config/yahoo_credentials.json
 yahoo_tokens.json
+
+# Live draft state (regenerated per draft)
 draft_state.json
+
+# Python
 __pycache__/
 *.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.coverage
+
+# OS
+.DS_Store
