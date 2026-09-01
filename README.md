@@ -177,6 +177,44 @@ reported rather than silently counting for nothing.
 This is read-only by design. Nothing here submits trades, adds, or drops —
 the same call `trade_targeter.py` already makes.
 
+## Watching a live draft
+
+The autopilot's decision takes under a second — but in a 10-team, 16-round
+draft, 144 of the 160 picks are somebody else's, and typing each one in on a
+90-second clock is both miserable and risky. A missed pick silently corrupts
+the scarcity math the guardrails depend on.
+
+`watch` removes the typing. It polls the draft room in your own Chrome, records
+picks as they land, and reprints the recommendation each time the board moves:
+
+```
+python3 -m fantasy_manager.browser_sync watch --url <draft room URL>
+```
+
+```
+  drafted: Bijan Robinson
+  -> if you're up: Ja'Marr Chase (WR, CIN), Tier 1
+     Best available by adjusted value (raw ADP 3.9, adjusted 3.9).
+```
+
+Picks are recorded as `rival`. When it's your turn, mark your own in a second
+terminal — `draft_assistant autopick --commit`, or `pick "Name" --by mine` —
+and `watch` picks the change up on its next poll rather than clobbering it.
+That's ~16 commands over a draft instead of 160.
+
+Detection searches the page for the ~190 names already on the ADP board rather
+than parsing the draft room's structure. No selectors to break, it survives any
+layout, and it can't invent a player who doesn't exist.
+
+Which direction signals a pick depends on what your page shows:
+
+- `--mode appear` (default) — a picks feed or draft-results view: names show up
+  as they're taken.
+- `--mode disappear` — an available-player pool: names leave it as they're taken.
+
+If the wrong one is picked, nothing gets recorded. Run `dump --url <draft room>`
+once and the right mode is obvious from the saved page.
+
 ## Repository layout
 
 ```
@@ -187,7 +225,7 @@ fantasy_manager/       the package
   roster_manager.py    post-draft weekly CLI
   trade_targeter.py    lowball offer generator
   yahoo_client.py      Yahoo OAuth2 + read endpoints
-  browser_sync.py      roster import via your own logged-in Chrome
+  browser_sync.py      roster import + live draft watching via your Chrome
   bye_weeks.py         2026 bye weeks by team
 config/league.yaml     league settings — everything downstream reads from here
 data/                  2026 ADP board + researched player notes

@@ -40,6 +40,7 @@ import csv
 import os
 import re
 import sys
+import time
 from collections import defaultdict
 
 from fantasy_manager.board import POS_ALIASES, ROOT
@@ -144,47 +145,78 @@ def parse_league_page(text: str) -> dict[str, list[dict]]:
 
 # --- browser attachment -----------------------------------------------------
 
-def fetch_page_text(url: str, port: int = DEFAULT_CDP_PORT) -> tuple[str, str]:
-    """Attach to an already-running, already-logged-in Chrome and read a page.
+class BrowserSession:
+    """One attached Chrome, held open across many reads.
 
-    Returns (rendered_text, html). Playwright is imported here rather than at
-    module scope so the parsing above stays usable — and testable — without it.
+    A draft-watch loop polls every few seconds; reconnecting and opening a new
+    tab each time would be slow and would litter the browser with tabs. This
+    attaches once and reuses a single page.
     """
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        raise SystemExit(
-            "Playwright isn't installed. Install it with:\n"
-            "  pip install playwright --break-system-packages\n"
-            "The browser itself is the Chrome you're already running — no "
-            "extra download is needed."
-        )
 
-    with sync_playwright() as p:
+    def __init__(self, port: int = DEFAULT_CDP_PORT):
+        self.port = port
+        self._pw = None
+        self._browser = None
+        self._page = None
+        self._url = None
+
+    def __enter__(self):
         try:
-            browser = p.chromium.connect_over_cdp(f"http://localhost:{port}")
-        except Exception as err:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
             raise SystemExit(
-                f"Couldn't attach to Chrome on port {port}: {err}\n\n"
+                "Playwright isn't installed. Install it with:\n"
+                "  pip install playwright --break-system-packages\n"
+                "The browser itself is the Chrome you're already running — no "
+                "extra download is needed."
+            )
+        self._pw = sync_playwright().start()
+        try:
+            self._browser = self._pw.chromium.connect_over_cdp(
+                f"http://localhost:{self.port}")
+        except Exception as err:
+            self._pw.stop()
+            raise SystemExit(
+                f"Couldn't attach to Chrome on port {self.port}: {err}\n\n"
                 "Quit Chrome completely, then relaunch it with:\n"
-                f"  --remote-debugging-port={port}\n"
+                f"  --remote-debugging-port={self.port}\n"
                 "and log into Yahoo Fantasy in that window before rerunning.\n"
                 "(An already-running Chrome started without that flag can't be "
                 "attached to — it has to be restarted.)"
             )
+        context = (self._browser.contexts[0] if self._browser.contexts
+                   else self._browser.new_context())
+        self._page = context.new_page()
+        return self
 
-        context = browser.contexts[0] if browser.contexts else browser.new_context()
-        page = context.new_page()
-        try:
-            page.goto(url, wait_until="networkidle", timeout=60_000)
-            if "login" in page.url or "signin" in page.url.lower():
-                raise SystemExit(
-                    "Chrome landed on a Yahoo login page. Log in in that browser "
-                    "window, then rerun — this tool never handles credentials."
-                )
-            return page.inner_text("body"), page.content()
-        finally:
-            page.close()
+    def __exit__(self, *exc):
+        for closer in (lambda: self._page and self._page.close(),
+                       lambda: self._pw and self._pw.stop()):
+            try:
+                closer()
+            except Exception:
+                pass
+        return False
+
+    def read(self, url: str, reload_if_same: bool = True) -> tuple[str, str]:
+        """Return (rendered_text, html) for url, reusing the open page."""
+        if url == self._url and reload_if_same:
+            self._page.reload(wait_until="domcontentloaded", timeout=60_000)
+        else:
+            self._page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+            self._url = url
+        if "login" in self._page.url or "signin" in self._page.url.lower():
+            raise SystemExit(
+                "Chrome landed on a Yahoo login page. Log in in that browser "
+                "window, then rerun — this tool never handles credentials."
+            )
+        return self._page.inner_text("body"), self._page.content()
+
+
+def fetch_page_text(url: str, port: int = DEFAULT_CDP_PORT) -> tuple[str, str]:
+    """One-shot read: attach, read a page, detach."""
+    with BrowserSession(port) as session:
+        return session.read(url)
 
 
 # --- commands ---------------------------------------------------------------
@@ -224,6 +256,33 @@ def report(rows: list[dict]) -> None:
             print(f"  ... and {len(unmatched) - 20} more")
         print("Deep bench names are expected. A starter here means the spelling "
               "differs and is worth aliasing.")
+
+
+def find_board_names(text: str, board_names) -> set[str]:
+    """Which known players appear in this page's text.
+
+    Searching for the ~190 names already on the ADP board is far more robust
+    than parsing the draft room's structure: it needs no selectors, survives
+    any layout, and can't invent a player who doesn't exist. Word-boundary
+    guards keep "Josh Allen" from matching inside a longer name.
+    """
+    found = set()
+    for name in board_names:
+        if re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text):
+            found.add(name)
+    return found
+
+
+def diff_drafted(previous: set[str], current: set[str], mode: str) -> set[str]:
+    """Newly drafted players between two polls.
+
+    Which direction signals a pick depends on what the page shows:
+      appear    — a picks feed or draft-results page: names show up as taken.
+      disappear — an available-player pool: names leave it as they're taken.
+    """
+    if mode == "disappear":
+        return previous - current
+    return current - previous
 
 
 def _read(path: str) -> str:
@@ -304,6 +363,68 @@ def cmd_sync(args):
     report(all_rows)
 
 
+def cmd_watch(args):
+    """Follow a live draft room and keep draft_state.json current.
+
+    This is the piece that makes the autopilot practical: in a 10-team, 16-round
+    draft, 144 of the 160 picks are somebody else's, and typing each one in on a
+    90-second clock is both miserable and risky — a missed pick silently corrupts
+    the scarcity math the guardrails depend on. Watching removes the typing; the
+    tested engine still makes the decision.
+    """
+    from fantasy_manager.autopilot import auto_pick
+    from fantasy_manager.board import (
+        apply_draft_state, build_board, load_draft_state, save_draft_state,
+    )
+
+    players, config = build_board()
+    board_names = {p.name for p in players}
+
+    with BrowserSession(args.port) as session:
+        text, _ = session.read(args.url)
+        previous = find_board_names(text, board_names)
+        print(f"Watching {args.url}")
+        print(f"Found {len(previous)} known players on the page "
+              f"(mode: {args.mode}, polling every {args.interval}s). Ctrl-C to stop.\n")
+        if not previous:
+            print("None of the ADP board's players appear on this page yet — "
+                  "check the URL, or run `dump` to see what it renders.\n",
+                  file=sys.stderr)
+
+        while True:
+            try:
+                time.sleep(args.interval)
+                text, _ = session.read(args.url)
+                current = find_board_names(text, board_names)
+                newly = diff_drafted(previous, current, args.mode)
+                previous = current
+
+                if not newly:
+                    continue
+
+                # Re-read state each poll: you may be marking your own picks in
+                # another terminal, and those must not be clobbered.
+                state = load_draft_state()
+                for name in sorted(newly):
+                    if name not in state["drafted"]:
+                        state["drafted"][name] = "rival"
+                        print(f"  drafted: {name}")
+                save_draft_state(state)
+
+                fresh, _ = build_board()
+                apply_draft_state(fresh, load_draft_state())
+                decision = auto_pick(fresh, config)
+                if decision:
+                    p = decision.player
+                    flag = " [NEED OVERRIDE]" if decision.need_override else ""
+                    print(f"  -> if you're up: {p.name} ({p.pos}, {p.team}), "
+                          f"Tier {p.tier}{flag}")
+                    print(f"     {decision.reason}\n")
+            except KeyboardInterrupt:
+                print("\nStopped watching. Draft state is saved.")
+                return
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Import rosters from your own logged-in Chrome (read-only)")
@@ -329,6 +450,16 @@ def main():
                         help="Write my_roster.csv instead of league_rosters.csv")
     p_sync.add_argument("--port", type=int, default=DEFAULT_CDP_PORT)
     p_sync.set_defaults(func=cmd_sync)
+
+    p_watch = sub.add_parser(
+        "watch", help="Follow a live draft room and auto-record picks")
+    p_watch.add_argument("--url", required=True, help="Draft room or pick-history URL")
+    p_watch.add_argument("--interval", type=float, default=3.0, help="Seconds between polls")
+    p_watch.add_argument("--mode", choices=["appear", "disappear"], default="appear",
+                         help="appear: picks feed / results page (default). "
+                              "disappear: available-player pool.")
+    p_watch.add_argument("--port", type=int, default=DEFAULT_CDP_PORT)
+    p_watch.set_defaults(func=cmd_watch)
 
     args = parser.parse_args()
     args.func(args)
