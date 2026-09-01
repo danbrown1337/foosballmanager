@@ -43,7 +43,8 @@ import sys
 import time
 from collections import defaultdict
 
-from fantasy_manager.board import POS_ALIASES, ROOT
+from fantasy_manager import profiles
+from fantasy_manager.board import POS_ALIASES
 
 DEFAULT_CDP_PORT = 9222
 
@@ -222,7 +223,8 @@ def fetch_page_text(url: str, port: int = DEFAULT_CDP_PORT) -> tuple[str, str]:
 # --- commands ---------------------------------------------------------------
 
 def write_my_roster(rows: list[dict]) -> str:
-    path = os.path.join(ROOT, "my_roster.csv")
+    profiles.ensure_profile()
+    path = profiles.my_roster_path()
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["name", "pos", "team"])
         w.writeheader()
@@ -231,7 +233,8 @@ def write_my_roster(rows: list[dict]) -> str:
 
 
 def write_league_rosters(teams: dict[str, list[dict]]) -> str:
-    path = os.path.join(ROOT, "league_rosters.csv")
+    profiles.ensure_profile()
+    path = profiles.league_rosters_path()
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["team_name", "manager", "name", "pos", "team"])
         w.writeheader()
@@ -428,6 +431,11 @@ def cmd_watch(args):
 def main():
     parser = argparse.ArgumentParser(
         description="Import rosters from your own logged-in Chrome (read-only)")
+    parser.add_argument("--profile", default=None,
+                        help="Which person's setup to use (default: the "
+                             "FANTASY_PROFILE env var, else 'default'). Each "
+                             "profile has its own league settings, rosters and "
+                             "draft state.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_dump = sub.add_parser("dump", help="Save a page's HTML and text for inspection")
@@ -462,6 +470,7 @@ def main():
     p_watch.set_defaults(func=cmd_watch)
 
     args = parser.parse_args()
+    profiles.set_active_profile(args.profile)
     args.func(args)
 
 

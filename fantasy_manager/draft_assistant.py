@@ -30,8 +30,8 @@ import sys
 from difflib import get_close_matches
 
 from fantasy_manager.autopilot import auto_pick
+from fantasy_manager import profiles
 from fantasy_manager.board import (
-    STATE_PATH,
     apply_draft_state as apply_state,
     build_board,
     load_draft_state as load_state,
@@ -166,13 +166,16 @@ def cmd_myteam(args):
 
 
 def cmd_reset(args):
-    if os.path.exists(STATE_PATH):
-        os.remove(STATE_PATH)
+    state_path = profiles.draft_state_path()
+    if os.path.exists(state_path):
+        os.remove(state_path)
     print("Draft state cleared.")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Live fantasy draft assistant")
+    parser.add_argument("--profile", default=None,
+                        help="Which person's setup to use (default: the FANTASY_PROFILE env var, else 'default'). Each profile has its own league settings, rosters and draft state.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_pick = sub.add_parser("pick", help="Mark a player as drafted")
@@ -199,6 +202,7 @@ def main():
     p_reset.set_defaults(func=cmd_reset)
 
     args = parser.parse_args()
+    profiles.set_active_profile(args.profile)
     args.func(args)
 
 

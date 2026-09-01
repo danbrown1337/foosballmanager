@@ -192,3 +192,75 @@ class TestHttpSurface:
         with pytest.raises(urllib.error.HTTPError) as excinfo:
             urllib.request.urlopen(req, timeout=10)
         assert excinfo.value.code == 400
+
+
+class TestAccessKey:
+    """--share drops the localhost-only guarantee, so every request has to
+    carry a key. Without it, anyone on the same WiFi could reset the draft."""
+
+    @pytest.fixture
+    def shared(self, monkeypatch):
+        monkeypatch.setattr(web, "ACCESS_TOKEN", "s3cret-key")
+        return "s3cret-key"
+
+    def test_no_key_needed_when_bound_to_localhost(self, server):
+        status, _ = get(server + "/api/state")
+        assert status == 200
+
+    def test_correct_key_is_accepted(self, server, shared):
+        status, _ = get(f"{server}/api/state?k={shared}")
+        assert status == 200
+
+    def test_missing_key_is_refused(self, server, shared):
+        with pytest.raises(urllib.error.HTTPError) as excinfo:
+            get(server + "/api/state")
+        assert excinfo.value.code == 403
+
+    def test_wrong_key_is_refused(self, server, shared):
+        with pytest.raises(urllib.error.HTTPError) as excinfo:
+            get(server + "/api/state?k=guessed")
+        assert excinfo.value.code == 403
+
+    def test_destructive_endpoint_is_gated_too(self, server, shared):
+        """The one that matters: a stranger must not be able to wipe a draft."""
+        with pytest.raises(urllib.error.HTTPError) as excinfo:
+            post(server + "/api/reset", {})
+        assert excinfo.value.code == 403
+
+    def test_the_page_itself_is_gated(self, server, shared):
+        with pytest.raises(urllib.error.HTTPError) as excinfo:
+            get(server + "/")
+        assert excinfo.value.code == 403
+
+    def test_routing_ignores_the_query_string(self, server, shared):
+        """The key rides in the query, so paths must be matched without it."""
+        status, body = get(f"{server}/?k={shared}")
+        assert status == 200
+        assert "<title>Fantasy Manager</title>" in body
+
+
+class TestLanAddress:
+    def test_returns_something_ip_shaped(self):
+        parts = web.lan_address().split(".")
+        assert len(parts) == 4 and all(p.isdigit() for p in parts)
+
+    def test_falls_back_when_the_route_probe_fails(self, monkeypatch):
+        """No network at all shouldn't crash the app on startup."""
+        def no_socket(*a, **k):
+            raise OSError("no network")
+        monkeypatch.setattr(web.socket, "socket", no_socket)
+        monkeypatch.setattr(web.socket, "gethostbyname", no_socket)
+        assert web.lan_address() == "127.0.0.1"
+
+    def test_a_loopback_probe_result_is_not_used_as_the_join_address(self, monkeypatch):
+        """A link pointing at 127.0.0.1 is useless to the other person — it
+        resolves to their own machine — so loopback falls through to the
+        hostname lookup instead."""
+        class LoopbackSocket:
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def connect(self, *a): pass
+            def getsockname(self): return ("127.0.0.1", 0)
+        monkeypatch.setattr(web.socket, "socket", lambda *a, **k: LoopbackSocket())
+        monkeypatch.setattr(web.socket, "gethostbyname", lambda *a: "192.168.1.42")
+        assert web.lan_address() == "192.168.1.42"

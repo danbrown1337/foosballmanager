@@ -22,21 +22,30 @@ watch loop all stay in agreement rather than fighting each other.
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
+import secrets
 import socket
 import threading
+import urllib.parse
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from fantasy_manager.autopilot import auto_pick
+from fantasy_manager import profiles
 from fantasy_manager.board import (
-    STATE_PATH,
     apply_draft_state,
     build_board,
     load_draft_state,
     save_draft_state,
     scarcity_report,
 )
+
+# Set only when --share is used. While it's None the server is bound to
+# 127.0.0.1 and needs no key; once it's serving the network, every request
+# must carry it, so a passer-by on the same WiFi can't reset someone's draft.
+ACCESS_TOKEN: str | None = None
+
 
 PAGE = """<!doctype html>
 <html lang="en">
@@ -163,10 +172,18 @@ PAGE = """<!doctype html>
 <script>
 let STATE = null;
 
+// When the board is shared over the network the URL carries an access key;
+// every request has to hand it back.
+const KEY = new URLSearchParams(location.search).get('k') || '';
+function withKey(path) {
+  if (!KEY) return path;
+  return path + (path.includes('?') ? '&' : '?') + 'k=' + encodeURIComponent(KEY);
+}
+
 async function api(path, body) {
   const opts = body ? {method: 'POST', headers: {'Content-Type': 'application/json'},
                        body: JSON.stringify(body)} : {};
-  const res = await fetch(path, opts);
+  const res = await fetch(withKey(path), opts);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -354,14 +371,32 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def _route(self) -> str:
+        """Path without the query string, which may carry the access key."""
+        return urllib.parse.urlparse(self.path).path
+
+    def _authorized(self) -> bool:
+        if ACCESS_TOKEN is None:
+            return True  # bound to localhost; nothing else can reach us
+        supplied = urllib.parse.parse_qs(
+            urllib.parse.urlparse(self.path).query).get("k", [""])[0]
+        return hmac.compare_digest(supplied, ACCESS_TOKEN)
+
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        if not self._authorized():
+            return self._send(403, "Missing or wrong access key. Use the full "
+                                   "link, key included.", "text/plain; charset=utf-8")
+        route = self._route()
+        if route in ("/", "/index.html"):
             return self._send(200, PAGE, "text/html; charset=utf-8")
-        if self.path == "/api/state":
+        if route == "/api/state":
             return self._send(200, json.dumps(_snapshot()))
         self._send(404, json.dumps({"error": "not found"}))
 
     def do_POST(self):
+        if not self._authorized():
+            return self._send(403, "Missing or wrong access key.",
+                              "text/plain; charset=utf-8")
         length = int(self.headers.get("Content-Length") or 0)
         try:
             body = json.loads(self.rfile.read(length) or "{}")
@@ -374,13 +409,36 @@ class Handler(BaseHTTPRequestHandler):
             "/api/autopick": lambda: do_autopick(bool(body.get("commit"))),
             "/api/reset": do_reset,
         }
-        handler = routes.get(self.path)
+        handler = routes.get(self._route())
         if handler is None:
             return self._send(404, json.dumps({"error": "not found"}))
         try:
             self._send(200, json.dumps(handler()))
         except ValueError as err:
             self._send(400, str(err), "text/plain; charset=utf-8")
+
+
+def lan_address() -> str:
+    """This machine's address on the local network, for the join link.
+
+    connect() on a UDP socket sends no packets — it only asks the routing
+    table which local address would be used to reach the target. The target
+    is a public address precisely so it cannot collide with the local subnet:
+    probing a documentation range like 192.0.2.0/24 hands back an address
+    nobody can reach on any machine that happens to route it.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 1))
+            address = sock.getsockname()[0]
+        if not address.startswith("127."):
+            return address
+    except OSError:
+        pass
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except OSError:
+        return "127.0.0.1"
 
 
 def find_port(preferred: int) -> int:
@@ -397,17 +455,44 @@ def find_port(preferred: int) -> int:
 
 def main():
     parser = argparse.ArgumentParser(description="Point-and-click draft assistant")
+    parser.add_argument("--profile", default=None,
+                        help="Which person's setup to use (default: the FANTASY_PROFILE env var, else 'default'). Each profile has its own league settings, rosters and draft state.")
     parser.add_argument("--port", type=int, default=8777)
+    parser.add_argument("--share-host", default=None,
+                        help="Address to put in the shared link, if it is "
+                             "detected wrongly (e.g. 192.168.1.42)")
+    parser.add_argument("--share", action="store_true",
+                        help="Serve on your local network so someone else can "
+                             "open the same board. Prints a link with an access "
+                             "key; without --share the app is reachable only "
+                             "from this machine.")
     parser.add_argument("--no-browser", action="store_true",
                         help="Don't open a browser window automatically")
     args = parser.parse_args()
+    profiles.set_active_profile(args.profile)
 
+    global ACCESS_TOKEN
     port = find_port(args.port)
-    url = f"http://127.0.0.1:{port}/"
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    host = "0.0.0.0" if args.share else "127.0.0.1"
+
+    if args.share:
+        ACCESS_TOKEN = secrets.token_urlsafe(16)
+        url = f"http://{args.share_host or lan_address()}:{port}/?k={ACCESS_TOKEN}"
+    else:
+        url = f"http://127.0.0.1:{port}/"
+
+    server = ThreadingHTTPServer((host, port), Handler)
 
     print(f"\n  Fantasy Manager is running at  {url}\n")
-    print(f"  Draft state: {STATE_PATH}")
+    print(f"  Profile: {profiles.active_profile()}  ({profiles.profile_dir()})")
+    if args.share:
+        print("  Shared on your local network — send that whole link, key and")
+        print("  all, to whoever is joining. Anyone with it can edit this draft,")
+        print("  so don't post it anywhere public. Stop sharing by restarting")
+        print("  without --share.")
+    else:
+        print("  Reachable from this machine only. Add --share to let someone")
+        print("  else on your network open the same board.")
     print("  Leave this window open. Press Ctrl-C when the draft is done.\n")
     if not args.no_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
