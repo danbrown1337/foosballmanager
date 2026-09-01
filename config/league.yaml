@@ -1,0 +1,44 @@
+# League configuration
+# CONFIRMED with Dan: 10 teams, Full PPR, standard 1-QB (no superflex).
+# ASSUMED (Yahoo's common default roster) — confirm/edit once the league page exists:
+#   1 QB, 2 RB, 2 WR, 1 TE, 1 W/R/T flex, 1 K, 1 DEF, 6 bench, 1 IR.
+# Edit this file directly once real league settings are known — everything
+# downstream (tiers, replacement level, best-available) reads from here.
+
+league:
+  name: "Dan's League"          # placeholder — update once we have the real league name/ID
+  yahoo_league_id: null         # fill in once the league exists / API access is approved
+  num_teams: 10
+  scoring: ppr                  # ppr | half_ppr | standard
+  superflex: false
+  te_premium: false
+
+roster:
+  starters:
+    QB: 1
+    RB: 2
+    WR: 2
+    TE: 1
+    FLEX: 1        # W/R/T
+    K: 1
+    DEF: 1
+  bench: 6
+  ir: 1
+
+draft:
+  scheduled_at: null   # fill in once known — lets the assistant warn how much prep time is left
+
+autopilot:
+  # CONFIRMED with Dan (Sept 2026): best player available, balanced risk.
+  strategy: best_player_available   # best_player_available | robust_rb | zero_rb
+  risk_tolerance: balanced          # safe_floor | balanced | chase_upside
+  # Never let autopilot draft a position beyond this many total roster spots
+  # (starters + this many bench slots) — keeps it from hoarding, say, 6 RBs.
+  max_bench_per_pos: 3
+
+rivals:
+  # Add manager/team names here once known — powers the trade-flood targeting.
+  # - name: "Team Name"
+  #   manager: "Manager Name"
+  #   notes: ""
+  []
