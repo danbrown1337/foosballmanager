@@ -26,6 +26,7 @@ roster-manager = "fantasy_manager.roster_manager:main"
 trade-targeter = "fantasy_manager.trade_targeter:main"
 yahoo-client = "fantasy_manager.yahoo_client:main"
 browser-sync = "fantasy_manager.browser_sync:main"
+fantasy-manager = "fantasy_manager.web:main"
 
 [tool.setuptools]
 packages = ["fantasy_manager"]
