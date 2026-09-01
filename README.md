@@ -42,7 +42,26 @@ pip install -e . --break-system-packages
 Editable specifically: a regular install would move the package into
 site-packages, away from the CSVs it reads.
 
-## Draft day
+## The app (no terminal knowledge needed)
+
+```
+python3 -m fantasy_manager.web
+```
+
+That's the whole thing. A browser opens on the draft board: click **Taken**
+when someone else drafts a player, **Mine** when you do, and the big panel at
+the top always shows what to take next and why. Search and position filters
+are there for finding a player fast mid-draft.
+
+It uses only what Python ships with, so there is nothing extra to install, and
+it serves on 127.0.0.1 — reachable from your machine only, never the network.
+Leave the terminal window open while you use it; Ctrl-C when the draft is done.
+
+It reads and writes the same `draft_state.json` as everything else, re-reading
+on each action, so the app, a terminal, and a running `browser_sync watch` all
+stay in agreement rather than overwriting each other. You can mix them freely.
+
+## Draft day (command line)
 
 ```
 python3 -m fantasy_manager.draft_assistant board                       # best available
@@ -226,6 +245,7 @@ fantasy_manager/       the package
   trade_targeter.py    lowball offer generator
   yahoo_client.py      Yahoo OAuth2 + read endpoints
   browser_sync.py      roster import + live draft watching via your Chrome
+  web.py               point-and-click draft app (stdlib only)
   bye_weeks.py         2026 bye weeks by team
 config/league.yaml     league settings — everything downstream reads from here
 data/                  2026 ADP board + researched player notes
