@@ -96,13 +96,23 @@ work," load it into the real bundled Chromium and watch it run.
    Fantasy API access specifically — people miss the second one. Redirect
    URI must be `https://localhost:8000` (Yahoo's older `oob` flow isn't
    reliably accepted for new apps anymore).
-3. **A real dry run before draft day.** Both `browser_sync.py watch` (CLI)
-   and the extension's content script need `--mode`/mode-select set
-   correctly for the real draft room's layout (picks appearing vs. names
-   disappearing from a pool) — this can only be confirmed against the
-   actual Yahoo draft room, which no session has been able to reach. Try
-   it against a mock draft. If nothing gets detected either way, capture
-   the page (`browser_sync.py dump`, or the extension's panel log) and
+3. **A real dry run before draft day.** See `LIVE_DRAFT.md` for the plan
+   already written for this: a local Claude Code session (not this cloud
+   one — it has no network path to Yahoo at all, confirmed live) attaches
+   to the user's own logged-in Chrome over CDP via `browser_sync.py`
+   (already tested, credential-free) and drives picks with a visible
+   confirm step until proven out. If you're a session picking this up
+   after that dry run happened, check there for what was actually learned
+   about the real draft room (turn-detection wording, DOM patterns) and
+   feed it back into `extension/src/lib/turnDetect.js` /
+   `domActions.js`'s guesses.
+
+   Both `browser_sync.py watch` (CLI) and the extension's content script
+   also need `--mode`/mode-select set correctly for the real draft room's
+   layout (picks appearing vs. names disappearing from a pool) — this can
+   only be confirmed against the actual Yahoo draft room, which no cloud
+   session has been able to reach. If nothing gets detected either way,
+   capture the page (`browser_sync.py dump`, or the extension's panel log) and
    hand it to whoever's driving next — that one round trip fixes it. Same
    mock draft is also the place to test **auto-draft** (leave "fully
    automatic" off first) and, in Options, add whatever your room's real
