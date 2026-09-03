@@ -20,21 +20,53 @@ this is where drafting actually happens for most people.
 
 | | |
 |---|---|
-| **Draft** | Recommends a pick with reasoning (same engine as the CLI's `autopick`), tracks who's gone, and can auto-detect opponent picks by watching the page. |
+| **Draft** | Recommends a pick with reasoning (same engine as the CLI's `autopick`), tracks who's gone, can auto-detect opponent picks by watching the page, and — opt-in, off by default — can auto-fill your own pick when it's your turn. See **Auto-draft** below. |
 | **Manage** | View your roster and positional scarcity in the popup. |
 | **Trades** | Generates lowball offers as text for you to send yourself. |
 
-**It never clicks, fills in, or submits anything in Yahoo's own UI.** There
-is no code anywhere in this extension that automates an actual draft pick,
-roster move, or trade — you always take the real action in Yahoo's own
-interface yourself. That's the same call already made for trades throughout
-this project (Yahoo's API is read-only, and scripting the actual sends risks
-looking like bot activity against Yahoo's terms) — extended here to drafting
-and roster moves too, since a script clicking through a live draft against
-real opponents is a materially bigger step than a script reading a page for
-your own research. If you want it to go further than that, that's a
-deliberate line someone should decide to cross with eyes open, not something
-that ships by default.
+**By default it never clicks, fills in, or submits anything in Yahoo's own
+UI.** Roster moves and trades are never automated, full stop — you always
+take those actions yourself in Yahoo's own interface. That's the same call
+already made for trades throughout this project (Yahoo's API is read-only,
+and scripting real sends risks looking like bot activity against Yahoo's
+terms). Drafting is the one deliberate, opt-in exception — see below —
+because it's the one action here explicitly requested to be automated;
+everything else stays a line someone decides to cross with eyes open, not
+something that ships by default.
+
+## Auto-draft (experimental, opt-in, off by default)
+
+Turn it on from the floating panel on the draft room page itself. Two
+levels, both starting off:
+
+1. **Auto-draft when it's my turn** — watches the page's text for an
+   "it's your turn" phrase. When it finds one, it locates the recommended
+   player on the page (same text-search strategy as everything else here —
+   see `lib/domActions.js`) and clicks it, then **stops**. Selecting a
+   player is easy to undo — nothing has been submitted to Yahoo yet — so
+   that click is the safe part to automate by default. The actual "confirm
+   this pick" click is not undoable, and stays yours.
+2. **Fully automatic** (a sub-toggle, only shown once auto-draft is on) —
+   also finds and clicks Yahoo's own Confirm/Draft button, with a short
+   randomized pause before each click. Nothing stops you from turning this
+   on immediately, but it means an unattended click actually submits a
+   pick — **test it against a Yahoo mock draft first.**
+
+Both toggles and the recommended player always come from the same trusted
+engine already verified pick-for-pick against the CLI (see golden-master,
+below) — auto-draft only ever acts on the same recommendation the panel is
+already showing you, never a different one.
+
+**Honest limit, same as the rest of this project:** this environment has no
+access to `fantasysports.yahoo.com`, so neither the "your turn" phrases nor
+the click-target logic have been run against Yahoo's real draft room —
+`lib/turnDetect.js`'s default phrases are an educated guess, and
+`lib/domActions.js` was verified with a real browser clicking real DOM
+elements (`test/domActions.check.js`) on a synthetic page built to cover the
+patterns a draft room plausibly uses (a `<button>` row, a plain `<div>` row
+with its own click handler, a separate confirm dialog) — not Yahoo's actual
+one. If "your turn" never triggers, open **Options** and add whatever phrase
+your room actually shows to the turn-phrases list.
 
 **Honest scope note:** the CLI's `roster_manager.py` also has `byeweeks`,
 `overachievers`, and `waivers` commands. Those aren't ported here yet — the
@@ -93,8 +125,9 @@ bash extension/test/run_all.sh
 ```
 
 This runs:
-- `node --test` unit tests for the page-text parsing (`textMatch.js`) and
-  the trade offer generator (`tradeTargeter.js`).
+- `node --test` unit tests for the page-text parsing (`textMatch.js`), the
+  trade offer generator (`tradeTargeter.js`), and turn-phrase detection
+  (`turnDetect.js`).
 - A **golden-master comparison**: `scripts/simulate_draft.py` runs a full
   mock draft through the real Python `auto_pick()` engine (every team
   drafting, all four guardrails engaging), dumps the exact pick sequence,
@@ -106,17 +139,33 @@ This runs:
   `python3 scripts/simulate_draft.py <config.yaml> > <output>.json`
   whenever `autopilot.py` or `board.py` changes.
 
-Loading the actual unpacked extension in a real browser and checking for
-JS errors (popup, options, and the content script's declarative injection
-on a real page) needs Playwright, which is **not** a dependency of the
-extension — install it separately if you want to re-run that check:
+Two more checks load the actual unpacked extension into a real browser via
+Playwright, which is **not** a dependency of the extension — install it
+separately (in a scratch directory, or globally) if you want to re-run
+them, and point `NODE_PATH`/a local `node_modules` symlink at it since these
+files use `import`:
 
 ```bash
 npm install playwright   # in a scratch directory, not this one
+node extension/test/load_check.js       # popup/options load with no JS errors
+node extension/test/domActions.check.js # auto-draft click-targeting, on a synthetic page
 ```
+
+`load_check.js` opens the popup and options pages directly and exercises
+them (renders the board, clicks a Mine button, checks the saved defaults).
+`domActions.check.js` is the auto-draft click-targeting check described
+above — real declarative content-script injection, a real DOM, real
+`element.click()` dispatch, on a synthetic page since this environment
+can't reach Yahoo. Neither is wired into CI (no Chromium there); both are
+one-off checks for this build, not part of the shipped extension.
 
 ## Known limits
 
+- **Auto-draft has never run against a live Yahoo draft room.** Its turn
+  detection and click-targeting are verified against a real browser and a
+  synthetic page, not the real one — see the Auto-draft section above. Run
+  it in a Yahoo mock draft first, with "fully automatic" left off, before
+  trusting it live. It's off by default for exactly this reason.
 - The floating panel's mode dropdown (`names appear` / `names disappear`)
   controls which direction signals a pick, same as the CLI's
   `browser_sync.py watch --mode`. Pick the wrong one and nothing gets

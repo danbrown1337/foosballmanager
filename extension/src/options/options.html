@@ -98,6 +98,21 @@
   </div>
 
   <div class="card">
+    <h2>Auto-draft turn phrases</h2>
+    <p class="hint">
+      The floating panel can optionally click your recommended pick for you
+      when it's your turn (toggle it on the panel itself, on the draft room
+      page — off by default). It recognizes "your turn" by searching the
+      page for phrases like these, one per line. This list is a best guess,
+      not something read off Yahoo's real draft room — if auto-draft never
+      detects your turn, add whatever phrase your room actually shows here.
+    </p>
+    <textarea id="turnPhrases" placeholder="you're on the clock&#10;your turn to pick"></textarea>
+    <button id="saveTurnPhrases" class="primary">Save turn phrases</button>
+    <span id="turnPhrasesStatus" class="status" hidden>Saved</span>
+  </div>
+
+  <div class="card">
     <h2>Reset</h2>
     <p class="hint">Clears every pick recorded so far. League settings and rosters are kept.</p>
     <button id="resetDraft">Reset draft state</button>

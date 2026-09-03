@@ -27,6 +27,9 @@ async function loadForm() {
 
   const rosters = await Storage.getLeagueRosters();
   renderTeamList(rosters);
+
+  const phrases = await Storage.getTurnPhrases();
+  document.getElementById("turnPhrases").value = phrases.join("\n");
 }
 
 function renderTeamList(rosters) {
@@ -80,6 +83,15 @@ document.getElementById("importRosters").addEventListener("click", async () => {
     `Imported ${Object.keys(teams).length} team(s), ` +
     `${Object.values(teams).reduce((n, v) => n + v.length, 0)} player(s).`;
   flash("importStatus");
+});
+
+document.getElementById("saveTurnPhrases").addEventListener("click", async () => {
+  const phrases = document.getElementById("turnPhrases").value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  await Storage.setTurnPhrases(phrases);
+  flash("turnPhrasesStatus");
 });
 
 document.getElementById("resetDraft").addEventListener("click", async () => {

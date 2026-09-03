@@ -6,21 +6,30 @@
  * exact same "search for known ADP names" strategy already proven in
  * fantasy_manager/browser_sync.py's `watch` command.
  *
- * DELIBERATE LIMIT: this reads the page. It never writes to it. There is no
- * code anywhere in this file that clicks, fills in, or submits anything in
- * Yahoo's own UI — drafting, roster changes, and trades all still require
- * you to act in Yahoo's own interface. That mirrors the same call already
- * made for trades throughout this project (Yahoo's API is read-only, and
- * scripting real actions risks looking like bot activity against Yahoo's
- * terms) — extended here to drafting and roster moves too, since a script
- * clicking through a live draft against real opponents is a materially
- * bigger step than a script reading a page for your own research.
+ * DELIBERATE LIMIT: by default, this only reads the page — roster changes
+ * and trades are never touched here, full stop, and drafting itself only
+ * clicks anything if you explicitly opt into auto-draft below (off by
+ * default). That mirrors the call already made for trades throughout this
+ * project (Yahoo's API is read-only, and scripting real actions risks
+ * looking like bot activity against Yahoo's terms); auto-draft is the one
+ * deliberate, opt-in exception, scoped to drafting only.
  *
  * Your own pick is never inferred from what changed on the page — only
  * opponent picks are auto-detected (recorded as "rival"). You confirm your
  * own picks with one click on the recommended player, the same two-step
  * split browser_sync.py's `watch` mode already uses (it detects rivals
  * automatically; you commit your own pick yourself, deliberately).
+ *
+ * AUTO-DRAFT (opt-in, off by default): the one exception to "never clicks
+ * Yahoo's own UI" above. When enabled, this watches the page's text for a
+ * configurable "it's your turn" phrase and, if it finds one, locates the
+ * recommended player's row on the page (by visible text, same as
+ * everywhere else in this project — see lib/domActions.js) and clicks it.
+ * By default it stops there: selecting a player is easy to undo (nothing
+ * has been submitted yet), but the actual "confirm this pick" click is not,
+ * so that click is left to you unless "fully automatic" is separately
+ * turned on. Trades and roster moves are NOT part of this — they're
+ * untouched, still fully manual, per the rest of this file's comments.
  */
 
 // NOT a static top-level `import`: a content script declared in the
@@ -81,6 +90,11 @@ function buildPanel() {
       #fm-mode { font-size: 10px; background: #1e222a; color: #9aa1ab; border: 1px solid #2a2f38;
                  border-radius: 4px; padding: 1px 2px; }
       #fm-err { color: #fca5a5; font-size: 11px; margin-top: 6px; }
+      #fm-auto { border-top: 1px solid #2a2f38; margin-top: 8px; padding-top: 8px; font-size: 11px; }
+      #fm-auto label { display: flex; align-items: center; gap: 6px; color: #9aa1ab; margin-bottom: 4px; cursor: pointer; }
+      #fm-auto label.sub { padding-left: 16px; }
+      #fm-auto-status { color: #6b7280; font-size: 10px; margin-top: 2px; }
+      #fm-auto-warn { color: #fbbf24; font-size: 10px; margin-top: 2px; }
     </style>
     <div id="fm-head">
       <b>Fantasy Manager</b>
@@ -101,6 +115,14 @@ function buildPanel() {
           </select>
       </div>
       <div id="fm-err" hidden></div>
+      <div id="fm-auto">
+        <label><input type="checkbox" id="fm-auto-enable"> Auto-draft when it's my turn (experimental)</label>
+        <label class="sub" id="fm-auto-full-row" hidden>
+          <input type="checkbox" id="fm-auto-full"> Fully automatic — also click Yahoo's Confirm/Draft button
+        </label>
+        <div id="fm-auto-status"></div>
+        <div id="fm-auto-warn" hidden>Test this against a Yahoo mock draft before trusting it live. Edit turn phrases in Options if a turn goes undetected.</div>
+      </div>
     </div>
   `;
   document.documentElement.appendChild(root);
@@ -108,9 +130,13 @@ function buildPanel() {
 }
 
 async function main() {
-  let diffDrafted, Storage;
+  let diffDrafted, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
+    highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES;
   ({ findBoardNames, diffDrafted } = await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
+  ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
+  ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES } =
+    await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
   const body = root.querySelector("#fm-body");
@@ -123,11 +149,19 @@ async function main() {
   const errBox = root.querySelector("#fm-err");
   const pollToggle = root.querySelector("#fm-toggle-poll");
   const modeSelect = root.querySelector("#fm-mode");
+  const autoEnableBox = root.querySelector("#fm-auto-enable");
+  const autoFullRow = root.querySelector("#fm-auto-full-row");
+  const autoFullBox = root.querySelector("#fm-auto-full");
+  const autoStatus = root.querySelector("#fm-auto-status");
+  const autoWarn = root.querySelector("#fm-auto-warn");
 
   let polling = true;
   let previousBoardNames = null;
   let boardNameSet = null;
   let currentRecName = null;
+  let turnPhrases = [];
+  let turnActive = false;   // was the "your turn" phrase present last poll
+  let turnHandled = false;  // already acted on this turn (reset when the phrase clears)
 
   head.addEventListener("click", () => {
     body.classList.toggle("collapsed");
@@ -143,6 +177,37 @@ async function main() {
   pollToggle.addEventListener("click", () => {
     polling = !polling;
     pollToggle.textContent = polling ? "pause" : "resume";
+  });
+
+  function updateAutoStatus() {
+    if (!autoEnableBox.checked) {
+      autoStatus.textContent = "off — picks stay manual";
+      autoWarn.hidden = true;
+      return;
+    }
+    autoStatus.textContent = autoFullBox.checked
+      ? "on, fully automatic — watching for your turn"
+      : "on, auto-fill only — watching for your turn (you confirm)";
+    autoWarn.hidden = false;
+  }
+
+  Storage.getAutoDraftEnabled().then((enabled) => {
+    autoEnableBox.checked = enabled;
+    autoFullRow.hidden = !enabled;
+    updateAutoStatus();
+  });
+  Storage.getAutoDraftFullyAutomatic().then((full) => { autoFullBox.checked = full; });
+  Storage.getTurnPhrases().then((phrases) => { turnPhrases = phrases; });
+
+  autoEnableBox.addEventListener("change", () => {
+    Storage.setAutoDraftEnabled(autoEnableBox.checked);
+    autoFullRow.hidden = !autoEnableBox.checked;
+    turnHandled = false;
+    updateAutoStatus();
+  });
+  autoFullBox.addEventListener("change", () => {
+    Storage.setAutoDraftFullyAutomatic(autoFullBox.checked);
+    updateAutoStatus();
   });
 
   function showError(message) {
@@ -223,9 +288,72 @@ async function main() {
     }
   }
 
+  // Small random delay before any click so it doesn't fire the instant the
+  // turn phrase appears — reduces the odds of racing a page that's still
+  // rendering, not an attempt to disguise automated activity.
+  function jitterDelay() {
+    return 500 + Math.random() * 900;
+  }
+  function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function pollForTurn() {
+    if (!autoEnableBox.checked) return;
+    try {
+      const text = document.body.innerText;
+      const active = isMyTurn(text, turnPhrases);
+
+      if (!active) {
+        turnActive = false;
+        turnHandled = false;
+        return;
+      }
+      if (turnActive && turnHandled) return; // already acted this turn, waiting for it to end
+      turnActive = true;
+
+      if (!currentRecName) return; // nothing to draft yet (board empty / not loaded)
+
+      const playerEl = findPlayerClickTarget(document.body, currentRecName);
+      if (!playerEl) {
+        addLog(`Your turn detected but couldn't find "${currentRecName}" on the page — draft it manually.`);
+        turnHandled = true;
+        return;
+      }
+
+      turnHandled = true; // set before awaiting, so a second poll tick can't double-act
+      highlightElement(playerEl);
+      addLog(`Your turn — found ${currentRecName} on the page.`);
+
+      if (!autoFullBox.checked) {
+        // Default, safer mode: select the player and stop. Selecting is
+        // easy to undo; the actual submit click is not, so that stays yours.
+        await wait(jitterDelay());
+        clickElement(playerEl);
+        addLog(`Auto-filled ${currentRecName} — click Yahoo's own Confirm/Draft button to finish the pick.`);
+        return;
+      }
+
+      await wait(jitterDelay());
+      clickElement(playerEl);
+      await wait(jitterDelay());
+      const confirmEl = findConfirmClickTarget(document.body, DEFAULT_CONFIRM_PHRASES);
+      if (confirmEl) {
+        clickElement(confirmEl);
+        addLog(`Auto-drafted ${currentRecName}.`);
+      } else {
+        addLog(`Selected ${currentRecName} but couldn't find a Confirm/Draft button — finish the pick manually.`);
+      }
+    } catch (err) {
+      // Same policy as pollPage(): stay silent on poll errors rather than
+      // spamming the panel on a page you aren't actively drafting on.
+    }
+  }
+
   refresh();
   setInterval(refresh, POLL_INTERVAL_MS * 2);
   setInterval(pollPage, POLL_INTERVAL_MS);
+  setInterval(pollForTurn, POLL_INTERVAL_MS);
 }
 
 if (document.readyState === "loading") {
