@@ -139,6 +139,24 @@ class TestGuardrailBenchCap:
         players = mine + [make_player("Only Option", "RB", 1.0)]
         assert auto_pick(players, config).player.name == "Only Option"
 
+    def test_a_position_absent_from_starters_gets_no_bench_allowance(self):
+        """A league with no K slot at all (this project's real starters, which
+        drop K entirely) should never draft a kicker — not even at bench_cap 3,
+        and not even when the kicker is the single best ADP on the board."""
+        config = make_config(starters={"QB": 1, "RB": 2, "WR": 2, "TE": 1, "DEF": 1},
+                             max_bench_per_pos=3)
+        players = [
+            make_player("Cheap Kicker", "K", 1.0),      # best ADP on the whole board
+            make_player("Mediocre Receiver", "WR", 60.0),
+        ]
+        assert auto_pick(players, config).player.name == "Mediocre Receiver"
+
+    def test_an_explicit_zero_starter_count_behaves_the_same_as_absence(self):
+        config = make_config(starters={"QB": 1, "RB": 2, "WR": 2, "TE": 1, "DEF": 1, "K": 0},
+                             max_bench_per_pos=3)
+        players = [make_player("Cheap Kicker", "K", 1.0), make_player("Receiver", "WR", 60.0)]
+        assert auto_pick(players, config).player.name == "Receiver"
+
 
 class TestGuardrailRosterCompletion:
     def test_last_picks_must_fill_empty_starter_slots(self):

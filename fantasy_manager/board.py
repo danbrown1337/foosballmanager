@@ -148,15 +148,18 @@ def replacement_ranks(config: dict) -> dict[str, int]:
     starters = config["roster"]["starters"]
     flex = starters.get("FLEX", 0)
 
+    # A position absent from starters (e.g. a league with no kicker slot) is
+    # never guessed at 1 — that would mean "assume everyone starts one" for a
+    # position this league never starts at all. Its replacement level is 0.
     effective = {
-        "QB": starters.get("QB", 1),
-        "RB": starters.get("RB", 2) + 0.60 * flex,
-        "WR": starters.get("WR", 2) + 0.35 * flex,
-        "TE": starters.get("TE", 1) + 0.05 * flex,
-        "K": starters.get("K", 1),
-        "DEF": starters.get("DEF", 1),
+        "QB": starters.get("QB", 0),
+        "RB": starters.get("RB", 0) + 0.60 * flex,
+        "WR": starters.get("WR", 0) + 0.35 * flex,
+        "TE": starters.get("TE", 0) + 0.05 * flex,
+        "K": starters.get("K", 0),
+        "DEF": starters.get("DEF", 0),
     }
-    return {pos: max(1, round(teams * mult)) for pos, mult in effective.items()}
+    return {pos: (max(1, round(teams * mult)) if mult > 0 else 0) for pos, mult in effective.items()}
 
 
 def load_draft_state(path: str | None = None) -> dict:
@@ -208,6 +211,8 @@ def scarcity_report(players: list[Player], config: dict) -> list[str]:
     repl = replacement_ranks(config)
     lines = []
     for pos in ["QB", "RB", "WR", "TE", "K", "DEF"]:
+        if repl[pos] == 0:
+            continue  # this league never starts the position — nothing to report
         avail = [p for p in players if p.pos == pos and p.drafted_by is None]
         avail.sort(key=lambda p: p.adp)
         if not avail:

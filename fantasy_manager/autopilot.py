@@ -105,8 +105,17 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     def rostered_count(pos):
         return sum(1 for p in mine if p.pos == pos)
 
-    cap_per_pos = {pos: starters.get(pos, 0) + bench_cap for pos in ["QB", "RB", "WR", "TE", "K", "DEF"]}
-    pool = [p for p in pool if rostered_count(p.pos) < cap_per_pos.get(p.pos, 99)]
+    # Bench allowance only applies to positions this league actually starts.
+    # A position absent from starters (e.g. no K slot) gets cap 0 — there is
+    # no reason to roster a player who can never be started, and without this
+    # a league that doesn't use kickers would still let autopilot burn bench
+    # spots on them once skill-position value ran out.
+    cap_per_pos = {
+        pos: starters.get(pos, 0) + bench_cap
+        for pos in ["QB", "RB", "WR", "TE", "K", "DEF"]
+        if starters.get(pos, 0) > 0
+    }
+    pool = [p for p in pool if rostered_count(p.pos) < cap_per_pos.get(p.pos, 0)]
 
     if not pool:
         pool = avail  # guardrails ate the whole pool (shouldn't normally happen) — fail open
