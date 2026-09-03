@@ -110,9 +110,26 @@ class TestReplacementRanks:
         repl = replacement_ranks(make_config(num_teams=10))
         assert repl["RB"] > repl["WR"] > repl["TE"]
 
-    def test_never_returns_zero(self):
+    def test_a_started_position_never_rounds_to_zero(self):
+        """Even a 1-team league needs at least one of each position it starts —
+        rounding a tiny league's math down to 0 would make the position look
+        infinitely deep when it's actually the whole replacement pool."""
         repl = replacement_ranks(make_config(starters={"QB": 1, "K": 1}, num_teams=1))
-        assert all(v >= 1 for v in repl.values())
+        assert repl["QB"] >= 1 and repl["K"] >= 1
+
+    def test_a_position_absent_from_starters_is_zero(self):
+        """The other half of the same rule: a position this league never
+        starts at all (no K key, not "K: 0") isn't guessed at 1 — it's 0,
+        so nothing downstream treats a kicker as worth drafting."""
+        repl = replacement_ranks(make_config(starters={"QB": 1, "RB": 2}))
+        assert repl["K"] == 0
+        assert repl["DEF"] == 0
+
+    def test_flex_still_creates_replacement_need_without_a_dedicated_slot(self):
+        """A position with no dedicated starter slot but a live FLEX is still
+        draftable through the flex, so it must not be zeroed out too."""
+        repl = replacement_ranks(make_config(starters={"QB": 1, "FLEX": 2}))
+        assert repl["RB"] > 0 and repl["WR"] > 0
 
 
 class TestDraftState:
@@ -162,6 +179,16 @@ class TestScarcityReport:
         players[0].drafted_by = "rival"
         after = scarcity_report(players, config)[1]
         assert before != after
+
+    def test_a_position_the_league_never_starts_gets_no_line(self):
+        """A K line reading "10 startable-caliber players left" would be
+        actively misleading for a league with no kicker slot at all."""
+        no_kicker = make_config(starters={"QB": 1, "RB": 2, "WR": 2, "TE": 1, "DEF": 1})
+        players = [make_player("A", "RB", 1.0), make_player("K1", "K", 50.0)]
+        assign_tiers(players)
+        lines = scarcity_report(players, no_kicker)
+        assert not any(line.startswith("K:") for line in lines)
+        assert len(lines) == 5
 
 
 class TestBuildBoard:

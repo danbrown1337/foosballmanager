@@ -5,9 +5,10 @@
 # downstream (tiers, replacement level, best-available, autopilot) reads from
 # there.
 #
-# Defaults below are Yahoo's common setup: 10 teams, Full PPR, standard 1-QB,
-# with 1 QB, 2 RB, 2 WR, 1 TE, 1 W/R/T flex, 1 K, 1 DEF, 6 bench, 1 IR.
-# Change them to match your actual league before you draft.
+# Defaults below match the confirmed starter construction: 1 QB, 2 RB, 2 WR,
+# 1 TE, 2 W/R/T flex, 1 DEF — no kicker. Team count and scoring are still
+# guesses; update them (and bench/IR, not visible in what confirmed this)
+# to match your actual league before you draft.
 
 league:
   name: "My League"             # update to your league's name
@@ -23,9 +24,11 @@ roster:
     RB: 2
     WR: 2
     TE: 1
-    FLEX: 1        # W/R/T
-    K: 1
+    FLEX: 2        # W/R/T — this league starts two, not the usual one
     DEF: 1
+    # No K: this league has no kicker slot at all. The engine treats an
+    # absent position as "never draft this," not "assume the usual 1" — a
+    # kicker is now unrostable regardless of how good its ADP looks.
   bench: 6
   ir: 1
 
