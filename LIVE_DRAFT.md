@@ -53,7 +53,33 @@ claude
 Drop `--break-system-packages` if pip doesn't recognize it — it's only
 needed on some Linux setups with an externally-managed Python.
 
-## 4. Brief Claude
+## 4. Optional: refresh the research data first
+
+The recommendation engine never asks Yahoo for rankings — every pick
+suggestion comes from two files in `data/`:
+
+- `adp_2026_ppr.csv` — 190 players, market ADP (70 WR, 58 RB, 21 QB,
+  17 TE, 13 DEF, 11 K)
+- `player_notes_2026.csv` — 32 players tagged `bust` (10), `breakout`
+  (12), `injury_watch` (9), or `value_note` (1), each nudging that
+  player's effective ADP up or down with a one-line reason
+
+Both came bundled in the original project zip — no Claude session has
+independently pulled or verified them against a live source, since the
+cloud session that builds this repo can't reach the internet at all.
+**Local Claude on Rivendell has your machine's normal internet access**,
+so if there's time before the draft, it's worth having it check current
+rankings and injury news and merge updates into those two CSVs — keep the
+same columns, don't invent players who aren't real, and have it tell you
+what changed. Do this *before* starting the `watch` loop in the next
+step (it re-reads the CSVs fresh on every detected pick, but the initial
+player-name set it watches for is fixed at startup — editing the files
+after `watch` is already running can miss newly-added names).
+
+If the draft clock is close, skip this — the existing list is a
+reasonable starting point, not something that needs refreshing to work.
+
+## 5. Brief Claude
 
 Paste this once `claude` starts (fill in the draft room URL first):
 

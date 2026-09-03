@@ -96,7 +96,18 @@ work," load it into the real bundled Chromium and watch it run.
    Fantasy API access specifically — people miss the second one. Redirect
    URI must be `https://localhost:8000` (Yahoo's older `oob` flow isn't
    reliably accepted for new apps anymore).
-3. **A real dry run before draft day.** See `LIVE_DRAFT.md` for the plan
+3. **Research data provenance.** `data/adp_2026_ppr.csv` (190 players) and
+   `data/player_notes_2026.csv` (32 players tagged bust/breakout/
+   injury_watch/value_note) came bundled in the original project zip the
+   user uploaded — no Claude session has independently pulled or verified
+   either against a live source, since the cloud session that builds this
+   repo can't reach the internet at all (confirmed live, not assumed).
+   The engine never asks Yahoo for rankings, so this is genuinely the
+   entire "who's good" signal — worth the user confirming they trust it,
+   or refreshing it via local Claude (real internet access, unlike this
+   session) before a real draft. See `LIVE_DRAFT.md`'s optional refresh
+   step.
+4. **A real dry run before draft day.** See `LIVE_DRAFT.md` for the plan
    already written for this: a local Claude Code session (not this cloud
    one — it has no network path to Yahoo at all, confirmed live) attaches
    to the user's own logged-in Chrome over CDP via `browser_sync.py`
@@ -117,12 +128,12 @@ work," load it into the real bundled Chromium and watch it run.
    mock draft is also the place to test **auto-draft** (leave "fully
    automatic" off first) and, in Options, add whatever your room's real
    "your turn" wording is if `turnDetect.js`'s guessed phrases don't fire.
-4. **Repo visibility.** Was flagged as worth making private earlier in
+5. **Repo visibility.** Was flagged as worth making private earlier in
    this project's life (it's public; contains the user's actual research
    notes and trade strategy, harmless to have written but not necessarily
    meant for leaguemates to read before draft day) — never confirmed
    either way. Check `https://github.com/danbrown1337/foosballmanager/settings`.
-5. **The two stale `practice_makes_perfect` branches** mentioned above.
+6. **The two stale `practice_makes_perfect` branches** mentioned above.
 
 ## What's genuinely solid
 
