@@ -1,0 +1,19 @@
+league:
+  name: "Test League RB"
+  num_teams: 8
+  scoring: half_ppr
+roster:
+  starters:
+    QB: 1
+    RB: 3
+    WR: 2
+    TE: 1
+    FLEX: 1
+    DEF: 1
+  bench: 6
+  ir: 1
+autopilot:
+  strategy: robust_rb
+  risk_tolerance: chase_upside
+  max_bench_per_pos: 4
+rivals: []

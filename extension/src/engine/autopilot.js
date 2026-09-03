@@ -1,0 +1,169 @@
+/*
+ * Full-autopilot pick engine — a faithful port of fantasy_manager/autopilot.py.
+ * Same scoring, same four guardrails, same priority order. This is the piece
+ * that actually decides what to draft, so it is verified against the Python
+ * original by extension/test/compare_with_python.js rather than trusted by
+ * inspection alone.
+ */
+import { replacementRanks } from "./board.js";
+
+export const RISK_MULTIPLIERS = {
+  safe_floor: [1.5, 0.5],
+  balanced: [1.0, 1.0],
+  chase_upside: [0.5, 1.5],
+};
+
+// Early-round position bias for robust_rb / zero_rb, tapering off as the
+// draft progresses.
+export const STRATEGY_TAPER_PICKS = 60;
+
+function strategyBias(pos, strategy, picksMade) {
+  if (strategy === "best_player_available" || picksMade >= STRATEGY_TAPER_PICKS) return 0.0;
+  const taper = 1 - picksMade / STRATEGY_TAPER_PICKS;
+  if (strategy === "robust_rb" && pos === "RB") return -8.0 * taper;
+  if (strategy === "zero_rb" && pos === "RB") return 10.0 * taper;
+  if (strategy === "zero_rb" && (pos === "WR" || pos === "TE")) return -4.0 * taper;
+  return 0.0;
+}
+
+/** Effective adjustedAdp per player name, after risk-tolerance scaling and
+ * strategy bias — lower is better, same units as ADP (picks). */
+export function scorePlayers(players, config, picksMade) {
+  const ap = config.autopilot || {};
+  const strategy = ap.strategy || "best_player_available";
+  const risk = ap.risk_tolerance || "balanced";
+  const [bustMult, breakoutMult] = RISK_MULTIPLIERS[risk] || [1.0, 1.0];
+
+  const scores = {};
+  for (const p of players) {
+    let adj;
+    if (p.adjustment > 0) adj = p.adjustment * bustMult; // bust / injury_watch / value_note
+    else if (p.adjustment < 0) adj = p.adjustment * breakoutMult; // breakout
+    else adj = 0.0;
+    scores[p.name] = p.adp + adj + strategyBias(p.pos, strategy, picksMade);
+  }
+  return scores;
+}
+
+function minBy(list, keyFn) {
+  let best = list[0];
+  let bestKey = keyFn(best);
+  for (let i = 1; i < list.length; i++) {
+    const k = keyFn(list[i]);
+    if (k < bestKey) {
+      best = list[i];
+      bestKey = k;
+    }
+  }
+  return best;
+}
+
+/**
+ * @returns {{player, score, reason, needOverride}|null}
+ */
+export function autoPick(players, config) {
+  const mine = players.filter((p) => p.draftedBy === "mine");
+  const avail = players.filter((p) => !p.draftedBy);
+  if (avail.length === 0) return null;
+
+  const picksMade = players.filter((p) => p.draftedBy).length;
+  const scores = scorePlayers(players, config, picksMade);
+
+  const starters = config.roster.starters;
+  const benchCap = (config.autopilot || {}).max_bench_per_pos ?? 3;
+  const have = {};
+  for (const pos of Object.keys(starters)) {
+    have[pos] = mine.filter((p) => p.pos === pos).length;
+  }
+  const totalStarters = Object.entries(starters)
+    .filter(([pos]) => pos !== "FLEX")
+    .reduce((sum, [, n]) => sum + n, 0);
+
+  // --- Guardrail 1: don't draft K/DEF until every other starter slot has
+  // at least one player, unless we're deep enough that it's actually time.
+  const corePositions = Object.keys(starters).filter((pos) => !["K", "DEF", "FLEX"].includes(pos));
+  const coreFilled = corePositions.every((pos) => (have[pos] || 0) >= starters[pos]);
+  const lateEnough = Math.floor(picksMade / config.league.num_teams) >= totalStarters - 1;
+
+  let pool = avail;
+  if (!(coreFilled || lateEnough)) {
+    pool = pool.filter((p) => p.pos !== "K" && p.pos !== "DEF");
+  }
+
+  // --- Guardrail 2: don't overdraft bench depth at one position.
+  const rosteredCount = (pos) => mine.filter((p) => p.pos === pos).length;
+
+  // Bench allowance only applies to positions this league actually starts.
+  // A position absent from starters (no K slot) gets cap 0 — no reason to
+  // roster a player who can never be started.
+  const capPerPos = {};
+  for (const pos of ["QB", "RB", "WR", "TE", "K", "DEF"]) {
+    if ((starters[pos] || 0) > 0) capPerPos[pos] = starters[pos] + benchCap;
+  }
+  pool = pool.filter((p) => rosteredCount(p.pos) < (capPerPos[p.pos] ?? 0));
+
+  if (pool.length === 0) pool = avail; // guardrails ate the whole pool — fail open
+
+  // --- Guardrail 3 (highest priority): don't let the draft end with an
+  // empty starter slot. IR is deliberately excluded from draftable spots —
+  // it's filled from waivers, not drafted, so counting it would delay this
+  // override past the final pick.
+  const rosterCfg = config.roster;
+  const draftableSpots =
+    Object.values(starters).reduce((a, b) => a + b, 0) + (rosterCfg.bench || 0);
+  const myPicksRemaining = draftableSpots - mine.length;
+  const allPositions = Object.keys(starters).filter((pos) => pos !== "FLEX");
+  const unfilledStarters = allPositions.filter((pos) => (have[pos] || 0) < starters[pos]);
+
+  if (unfilledStarters.length > 0 && myPicksRemaining <= unfilledStarters.length) {
+    const candidates = avail.filter((p) => unfilledStarters.includes(p.pos));
+    if (candidates.length > 0) {
+      const replNow = replacementRanks(config);
+      const draftedNow = {};
+      for (const pos of Object.keys(replNow)) {
+        draftedNow[pos] = players.filter((p) => p.pos === pos && p.draftedBy).length;
+      }
+      const mostUrgentPos = minBy(
+        unfilledStarters,
+        (pos) => (replNow[pos] ?? 999) - (draftedNow[pos] ?? 0)
+      );
+      const posCandidates = candidates.filter((p) => p.pos === mostUrgentPos);
+      const finalCandidates = posCandidates.length > 0 ? posCandidates : candidates;
+      const best = minBy(finalCandidates, (p) => scores[p.name]);
+      const reason =
+        `Roster-completion override: only ${myPicksRemaining} pick(s) left and ` +
+        `${unfilledStarters.join(", ")} still unfilled — can't afford to punt this any further.`;
+      return { player: best, score: scores[best.name], reason, needOverride: true };
+    }
+  }
+
+  // --- Guardrail 4: force a need pick if a starting slot is empty AND the
+  // position is about to run dry league-wide (replacement cliff).
+  const repl = replacementRanks(config);
+  const draftedAtPos = {};
+  for (const pos of Object.keys(repl)) {
+    draftedAtPos[pos] = players.filter((p) => p.pos === pos && p.draftedBy).length;
+  }
+  const urgentNeeds = corePositions.filter(
+    (pos) => (have[pos] || 0) < starters[pos] && repl[pos] - (draftedAtPos[pos] || 0) <= 3
+  );
+
+  if (urgentNeeds.length > 0) {
+    const candidates = pool.filter((p) => urgentNeeds.includes(p.pos));
+    if (candidates.length > 0) {
+      const best = minBy(candidates, (p) => scores[p.name]);
+      const reason =
+        `Need override: ${best.pos} is ${repl[best.pos] - (draftedAtPos[best.pos] || 0)} ` +
+        `picks from the replacement cliff league-wide and you have none rostered.`;
+      return { player: best, score: scores[best.name], reason, needOverride: true };
+    }
+  }
+
+  // --- Otherwise: best player available by adjusted score.
+  const best = minBy(pool, (p) => scores[p.name]);
+  const bits = [
+    `Best available by adjusted value (raw ADP ${best.adp}, adjusted ${scores[best.name].toFixed(1)}).`,
+  ];
+  if (best.note) bits.push(`${best.noteTag}: ${best.note}`);
+  return { player: best, score: scores[best.name], reason: bits.join(" "), needOverride: false };
+}

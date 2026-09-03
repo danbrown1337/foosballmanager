@@ -75,6 +75,21 @@ to. Restart without `--share` to stop.
 
 If the detected address is wrong, override it: `--share --share-host 192.168.1.42`.
 
+## Chrome extension
+
+For someone who'd rather not touch a terminal at all: `extension/` is a
+point-and-click draft assistant, roster viewer, and trade-offer generator
+that runs as a Chrome extension — no Python, no server, no pending Yahoo API
+approval. It's the same tested engine as the CLI (verified pick-for-pick
+against it — see `extension/README.md`), reading the Yahoo Fantasy
+**website** the same way `browser_sync.py` does.
+
+It never clicks, drafts, or submits anything on Yahoo's behalf — same
+read-only principle as everywhere else in this project, just extended from
+trades to drafting and roster moves too. See `extension/README.md` for
+install (load-unpacked, no build step) and what it does and doesn't cover
+yet.
+
 ## Draft day
 
 The app covers all of this by clicking. The command line is here if you prefer it:
@@ -187,6 +202,8 @@ config/league.yaml     template new profiles are seeded from
 data/                  2026 ADP board + researched player notes (shared)
 profiles/<name>/       your league settings, rosters, draft state (gitignored)
 tests/                 pytest suite
+extension/             Chrome extension — same engine, no terminal needed
+scripts/               data-conversion + golden-master test tooling for extension/
 ```
 
 ## Development
@@ -221,3 +238,6 @@ only surface mid-draft.
 - **`overachievers` runs on pre-season research.** Comparing actual points
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.
+- **The Chrome extension covers drafting and trade offers fully, roster
+  viewing partially.** `byeweeks`, `overachievers`, and `waivers` aren't
+  ported there yet — those stay CLI/web-app-only for now.
