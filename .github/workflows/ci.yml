@@ -29,3 +29,36 @@ jobs:
       # sys.path and `import fantasy_manager` resolves without an install.
       - name: Run tests
         run: python -m pytest
+
+  extension-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      # Regenerated fresh every run rather than trusting the committed
+      # fixtures — otherwise a change to autopilot.py/board.py that the
+      # committed golden_draft.json wasn't regenerated for would keep
+      # passing CI against stale data instead of catching real drift
+      # between the Python engine and its JS port.
+      - name: Regenerate extension data + golden-master fixtures from current Python
+        run: |
+          python3 scripts/build_extension_data.py
+          python3 scripts/simulate_draft.py config/league.yaml > extension/test/golden_draft.json
+          python3 scripts/simulate_draft.py extension/test/fixtures/with_kicker.yaml > extension/test/fixtures/with_kicker_golden.json
+          python3 scripts/simulate_draft.py extension/test/fixtures/robust_rb.yaml > extension/test/fixtures/robust_rb_golden.json
+          python3 scripts/simulate_draft.py extension/test/fixtures/zero_rb.yaml > extension/test/fixtures/zero_rb_golden.json
+
+      - name: Run extension tests
+        run: bash extension/test/run_all.sh
