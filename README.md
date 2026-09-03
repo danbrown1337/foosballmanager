@@ -91,6 +91,14 @@ everywhere else in this project. Drafting is the one opt-in exception: an
 `extension/README.md` for install (load-unpacked, no build step), the
 auto-draft safety model, and what else it does and doesn't cover yet.
 
+## Having Claude run a live draft
+
+For a live Yahoo draft room where you want Claude actually clicking your
+picks (not just recommending, and not the extension's own unattended
+auto-draft) — see **`LIVE_DRAFT.md`**. It walks through attaching a local
+Claude Code session to your own logged-in Chrome over the DevTools
+protocol (no credentials involved) and has the exact briefing to hand it.
+
 ## Draft day
 
 The app covers all of this by clicking. The command line is here if you prefer it:
