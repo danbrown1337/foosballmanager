@@ -1,0 +1,20 @@
+league:
+  name: "Test League"
+  num_teams: 12
+  scoring: ppr
+roster:
+  starters:
+    QB: 1
+    RB: 2
+    WR: 3
+    TE: 1
+    FLEX: 1
+    K: 1
+    DEF: 1
+  bench: 5
+  ir: 1
+autopilot:
+  strategy: best_player_available
+  risk_tolerance: safe_floor
+  max_bench_per_pos: 2
+rivals: []

@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Fantasy Manager — Settings</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --ink: #14161a; --muted: #6b7280;
+    --line: #e3e6ea; --accent: #1d4ed8; --accent-ink: #fff; --good: #047857;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --card: #171a20; --ink: #e8eaed; --muted: #9aa1ab;
+      --line: #262b33; --accent: #7aa2ff; --accent-ink: #0f1115; --good: #34d399;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.5 system-ui, -apple-system, sans-serif; max-width: 720px; padding: 20px; }
+  h1 { font-size: 18px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; margin-top: 10px; }
+  input, select, textarea { font: inherit; padding: 6px 9px; border: 1px solid var(--line);
+                             border-radius: 6px; background: var(--bg); color: var(--ink); width: 100%; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .grid label { margin-top: 0; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+           border-radius: 6px; padding: 7px 14px; cursor: pointer; margin-top: 12px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .status { font-size: 12px; color: var(--good); margin-left: 10px; }
+  p.hint { color: var(--muted); font-size: 12px; }
+  textarea { min-height: 100px; font-family: monospace; }
+</style>
+</head>
+<body>
+  <h1>Fantasy Manager — Settings</h1>
+
+  <div class="card">
+    <h2>League</h2>
+    <label>League name <input id="leagueName"></label>
+    <div class="grid">
+      <label>Teams <input id="numTeams" type="number" min="2" max="20"></label>
+      <label>Scoring
+        <select id="scoring"><option value="ppr">PPR</option><option value="half_ppr">Half PPR</option><option value="standard">Standard</option></select>
+      </label>
+    </div>
+
+    <h2 style="margin-top:16px">Starters</h2>
+    <p class="hint">Leave a position blank/0 if your league doesn't start it at all (e.g. no kicker) — the engine will then never draft one for you, regardless of ADP.</p>
+    <div class="grid">
+      <label>QB <input id="s_QB" type="number" min="0"></label>
+      <label>RB <input id="s_RB" type="number" min="0"></label>
+      <label>WR <input id="s_WR" type="number" min="0"></label>
+      <label>TE <input id="s_TE" type="number" min="0"></label>
+      <label>FLEX (W/R/T) <input id="s_FLEX" type="number" min="0"></label>
+      <label>K <input id="s_K" type="number" min="0"></label>
+      <label>DEF <input id="s_DEF" type="number" min="0"></label>
+      <label>Bench <input id="s_bench" type="number" min="0"></label>
+      <label>IR <input id="s_ir" type="number" min="0"></label>
+    </div>
+
+    <h2 style="margin-top:16px">Autopilot</h2>
+    <div class="grid">
+      <label>Strategy
+        <select id="strategy">
+          <option value="best_player_available">Best player available</option>
+          <option value="robust_rb">Robust RB</option>
+          <option value="zero_rb">Zero RB</option>
+        </select>
+      </label>
+      <label>Risk tolerance
+        <select id="risk">
+          <option value="safe_floor">Safe floor</option>
+          <option value="balanced">Balanced</option>
+          <option value="chase_upside">Chase upside</option>
+        </select>
+      </label>
+      <label>Max bench per position <input id="benchCap" type="number" min="0"></label>
+    </div>
+
+    <button id="save" class="primary">Save league settings</button>
+    <span id="saveStatus" class="status" hidden>Saved</span>
+  </div>
+
+  <div class="card">
+    <h2>League rosters (for trade offers)</h2>
+    <p class="hint">
+      Paste a page showing every team's roster — copy the whole page's text
+      out of Yahoo (select all, copy) and paste below. Team names are
+      detected as the lines between rosters.
+    </p>
+    <textarea id="leagueRostersText" placeholder="Team Alpha&#10;Josh Allen Buf - QB&#10;Jahmyr Gibbs Det - RB&#10;Team Bravo&#10;Puka Nacua LAR - WR&#10;..."></textarea>
+    <button id="importRosters" class="primary">Import rosters</button>
+    <span id="importStatus" class="status" hidden></span>
+    <div id="teamList" class="hint" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Reset</h2>
+    <p class="hint">Clears every pick recorded so far. League settings and rosters are kept.</p>
+    <button id="resetDraft">Reset draft state</button>
+    <span id="resetStatus" class="status" hidden>Reset</span>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+league:
+  name: "Test League Zero RB"
+  num_teams: 14
+  scoring: standard
+roster:
+  starters:
+    QB: 1
+    RB: 2
+    WR: 2
+    TE: 1
+    FLEX: 2
+    K: 1
+    DEF: 1
+  bench: 4
+  ir: 0
+autopilot:
+  strategy: zero_rb
+  risk_tolerance: balanced
+  max_bench_per_pos: 1
+rivals: []

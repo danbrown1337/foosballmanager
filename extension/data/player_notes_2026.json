@@ -1,0 +1,162 @@
+{
+  "Josh Jacobs": {
+    "tag": "bust",
+    "adjustment": 20.0,
+    "note": "Potential suspension exposure; groin injury in camp; real committee threat from MarShawn Lloyd"
+  },
+  "Christian McCaffrey": {
+    "tag": "bust",
+    "adjustment": 10.0,
+    "note": "Age 30; 450-touch 2025 workload; missed 13 games combined in each prior 400+ touch season"
+  },
+  "De'Von Achane": {
+    "tag": "bust",
+    "adjustment": 14.0,
+    "note": "QB downgrade to Malik Willis lowers RB target rate; Tua/McDaniel departures hurt scheme fit"
+  },
+  "Cam Skattebo": {
+    "tag": "bust",
+    "adjustment": 14.0,
+    "note": "Real committee with Tracy Jr., Singletary, Harris \u2014 ADP prices him as a clear lead back"
+  },
+  "TreVeyon Henderson": {
+    "tag": "bust",
+    "adjustment": 10.0,
+    "note": "NE role only clicks when Rhamondre Stevenson is hurt; 6.4 PPG average otherwise"
+  },
+  "Mike Evans": {
+    "tag": "bust",
+    "adjustment": 12.0,
+    "note": "Age 33; three preseason injuries; crowded new SF receiving corps behind Kittle/CMC"
+  },
+  "Courtland Sutton": {
+    "tag": "bust",
+    "adjustment": 12.0,
+    "note": "Target share drops after Waddle trade; Pat Bryant also pushing for looks"
+  },
+  "Alec Pierce": {
+    "tag": "bust",
+    "adjustment": 15.0,
+    "note": "Ankle surgery recovery, gradual workload plan, Keenan Allen added as direct competition"
+  },
+  "DK Metcalf": {
+    "tag": "bust",
+    "adjustment": 10.0,
+    "note": "Career-low target share in 2025; Rodgers' deep-ball rate is a poor scheme match"
+  },
+  "Harold Fannin Jr.": {
+    "tag": "bust",
+    "adjustment": 10.0,
+    "note": "New OC less TE-friendly; Watson has a thin TE target history; rookie competition at the position"
+  },
+  "Josh Allen": {
+    "tag": "value_note",
+    "adjustment": 5.0,
+    "note": "Priced as an overall top-20 pick well ahead of the next QB off the board (Lamar ~pick 41)"
+  },
+  "Ashton Jeanty": {
+    "tag": "injury_watch",
+    "adjustment": 10.0,
+    "note": "Ankle sprain, no firm return timeline as of late Aug \u2014 talent is real, term is the risk"
+  },
+  "Jordyn Tyson": {
+    "tag": "injury_watch",
+    "adjustment": 22.0,
+    "note": "Chronic hamstring \u2014 expected out into October, meaningful missed-game risk"
+  },
+  "Puka Nacua": {
+    "tag": "injury_watch",
+    "adjustment": 3.0,
+    "note": "Groin soreness but tracking to be ready Week 1"
+  },
+  "Breece Hall": {
+    "tag": "injury_watch",
+    "adjustment": 3.0,
+    "note": "Groin strain, trainers expect Week 1 despite early 2-3 week projection"
+  },
+  "Malik Nabers": {
+    "tag": "injury_watch",
+    "adjustment": 5.0,
+    "note": "Coming off ACL/meniscus \u2014 coach says playing Week 1 is reasonable, still worth monitoring"
+  },
+  "Tucker Kraft": {
+    "tag": "injury_watch",
+    "adjustment": 4.0,
+    "note": "ACL tear recovery has progressed to full participation, on track for Week 1"
+  },
+  "George Kittle": {
+    "tag": "injury_watch",
+    "adjustment": 4.0,
+    "note": "Torn Achilles, cleared PUP, on track for Week 1"
+  },
+  "Tyler Warren": {
+    "tag": "injury_watch",
+    "adjustment": 3.0,
+    "note": "Groin injury, not considered serious"
+  },
+  "Luther Burden III": {
+    "tag": "injury_watch",
+    "adjustment": 3.0,
+    "note": "Groin injury, trending in a positive direction"
+  },
+  "Kyler Murray": {
+    "tag": "breakout",
+    "adjustment": 8.0,
+    "note": "New O'Connell offense; rushing floor alone (36.7 YPG career) supports the price"
+  },
+  "Tyler Shough": {
+    "tag": "breakout",
+    "adjustment": 5.0,
+    "note": "Efficient early-career numbers; Kellen Moore's system designs him rushing work"
+  },
+  "Jordan Mason": {
+    "tag": "breakout",
+    "adjustment": 8.0,
+    "note": "Outproduces Jones on efficiency; new zone scheme fits his profile; clear path to touches"
+  },
+  "De'Zhaun Stribling": {
+    "tag": "breakout",
+    "adjustment": 6.0,
+    "note": "Elite athletic profile; praised in camp; injury-thinned SF WR corps ahead of him"
+  },
+  "Rashid Shaheed": {
+    "tag": "breakout",
+    "adjustment": 6.0,
+    "note": "Seahawks gave him a $51M extension \u2014 this is the long-term plan, not a trade throw-in"
+  },
+  "Jalen McMillan": {
+    "tag": "breakout",
+    "adjustment": 8.0,
+    "note": "Direct beneficiary of Mike Evans leaving Tampa; strong college production profile"
+  },
+  "Dalton Kincaid": {
+    "tag": "breakout",
+    "adjustment": 6.0,
+    "note": "Best yards-per-route among high-target TEs since 2020; Bills committed to more routes"
+  },
+  "Isaiah Likely": {
+    "tag": "breakout",
+    "adjustment": 8.0,
+    "note": "Clear starting TE role in NYG's thin pass-catching corps"
+  },
+  "MarShawn Lloyd": {
+    "tag": "breakout",
+    "adjustment": 5.0,
+    "note": "Addressed lingering ACL issues; real touches path if Jacobs' camp issues persist"
+  },
+  "Adonai Mitchell": {
+    "tag": "breakout",
+    "adjustment": 4.0,
+    "note": "Earning a real target share on a Jets offense that should improve"
+  },
+  "Ryan Flournoy": {
+    "tag": "breakout",
+    "adjustment": 3.0,
+    "note": "Produced directly when Lamb has been out; camp buzz in a high-volume offense"
+  },
+  "Terrance Ferguson": {
+    "tag": "breakout",
+    "adjustment": 5.0,
+    "note": "Highly drafted rookie TE, elite athletic testing, praised camp performance"
+  }
+}

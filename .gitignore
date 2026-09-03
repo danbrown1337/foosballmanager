@@ -24,5 +24,11 @@ venv/
 .pytest_cache/
 .coverage
 
+# The extension itself needs zero npm dependencies — but node_modules
+# appears here if anyone runs the optional load_check.js verification
+# by installing Playwright directly in extension/ instead of a scratch dir.
+extension/node_modules/
+extension/package-lock.json
+
 # OS
 .DS_Store

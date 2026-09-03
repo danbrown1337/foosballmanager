@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Fantasy Manager</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <b>Fantasy Manager</b>
+    <nav>
+      <button data-tab="draft" class="tab active">Draft</button>
+      <button data-tab="team" class="tab">Team</button>
+      <button data-tab="trades" class="tab">Trades</button>
+    </nav>
+    <a href="../options/options.html" target="_blank" id="settingsLink" title="League settings">⚙</a>
+  </header>
+
+  <section id="tab-draft" class="tab-panel">
+    <div class="card" id="rec">
+      <div class="label">Take this</div>
+      <div id="recName">—</div>
+      <div id="recWhy" class="muted"></div>
+      <div id="recFlag" class="flag" hidden></div>
+      <button id="take" class="primary">Draft this player for me</button>
+    </div>
+
+    <input type="search" id="q" placeholder="Search players…">
+    <select id="pos">
+      <option value="">All positions</option>
+      <option>QB</option><option>RB</option><option>WR</option>
+      <option>TE</option><option>K</option><option>DEF</option>
+    </select>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Player</th><th>Pos</th><th>ADP</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="footer-row">
+      <span id="count" class="muted"></span>
+      <button id="reset" class="danger">Reset draft</button>
+    </div>
+  </section>
+
+  <section id="tab-team" class="tab-panel" hidden>
+    <div class="label">My team (<span id="myCount">0</span>)</div>
+    <ul class="plain" id="mine"></ul>
+    <div class="label" style="margin-top:10px">Scarcity</div>
+    <ul class="plain" id="scarcity"></ul>
+  </section>
+
+  <section id="tab-trades" class="tab-panel" hidden>
+    <p class="muted small">
+      Offers are text only — nothing here submits a trade. Copy an offer and
+      send it yourself in Yahoo.
+    </p>
+    <div class="label">My roster</div>
+    <textarea id="myRosterText" rows="3" placeholder="Paste your roster (Name TEAM - POS, one per line) or import it in Settings"></textarea>
+    <button id="saveMyRoster">Save my roster</button>
+
+    <div class="label" style="margin-top:10px">Target team</div>
+    <select id="targetTeam"></select>
+    <button id="genOffers" class="primary">Generate offers</button>
+    <div id="offers"></div>
+  </section>
+
+  <div id="err" hidden></div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
