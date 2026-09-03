@@ -21,7 +21,10 @@ disagree with each other:
 3. **Chrome extension** (`extension/`) — the same engine ported to JS,
    installable via `chrome://extensions` → Load unpacked, no Python needed
    at all. Covers drafting and trade offers fully; roster viewing partially
-   (see its own README for the honest gap list).
+   (see its own README for the honest gap list). Includes an opt-in,
+   off-by-default **auto-draft** that can click your recommended pick (and,
+   if separately enabled, Yahoo's own Confirm button) when it's your turn —
+   see "The automation boundary" below, it's no longer absolute.
 
 **Repo:** https://github.com/danbrown1337/foosballmanager, branch `main`.
 CI: 9 pushes, 9 green, never once red. `README.md` is the user-facing entry
@@ -100,7 +103,10 @@ work," load it into the real bundled Chromium and watch it run.
    actual Yahoo draft room, which no session has been able to reach. Try
    it against a mock draft. If nothing gets detected either way, capture
    the page (`browser_sync.py dump`, or the extension's panel log) and
-   hand it to whoever's driving next — that one round trip fixes it.
+   hand it to whoever's driving next — that one round trip fixes it. Same
+   mock draft is also the place to test **auto-draft** (leave "fully
+   automatic" off first) and, in Options, add whatever your room's real
+   "your turn" wording is if `turnDetect.js`'s guessed phrases don't fire.
 4. **Repo visibility.** Was flagged as worth making private earlier in
    this project's life (it's public; contains the user's actual research
    notes and trade strategy, harmless to have written but not necessarily
@@ -110,8 +116,10 @@ work," load it into the real bundled Chromium and watch it run.
 
 ## What's genuinely solid
 
-- **234 Python tests, 43 JS unit tests, a 640-pick golden-master
-  comparison** — all green, every push, 9 for 9. `tests/test_data.py`
+- **246 Python tests, 49 JS unit tests, a 640-pick golden-master
+  comparison** — all green, every push (counts re-verified directly via
+  `python3 -m pytest` / `node --test`, not carried forward from an older
+  commit message). `tests/test_data.py`
   checks the shipped CSVs, not just the code, so a bad player-name typo in
   `data/player_notes_2026.csv` fails CI instead of silently miscounting a
   trade offer.
@@ -123,14 +131,23 @@ work," load it into the real bundled Chromium and watch it run.
   positions defaulted to "assume 1 starter" instead of "never draft this."
   Both reproduced directly before fixing, both have regression tests that
   fail against the old code.
-- **The automation boundary is consistent everywhere.** Nothing in this
-  project — CLI, web app, browser sync, or the extension — ever clicks,
-  fills in, or submits anything in Yahoo's own UI. Every real action
-  (draft pick, roster move, trade send) is the user's, always. This was a
-  deliberate, repeated decision, not an oversight to "fix" later by adding
-  automation — if that's ever revisited, it should be the user asking for
-  it explicitly, eyes open about the account-risk tradeoff, not a
-  refactor's side effect.
+- **The automation boundary, updated.** Roster moves and trades are still
+  never automated anywhere in this project — that line hasn't moved.
+  Drafting is now the one deliberate exception: the extension has an
+  opt-in, off-by-default auto-draft (`src/lib/turnDetect.js` +
+  `src/lib/domActions.js`, wired into `src/content/overlay.js`) that finds
+  and clicks the recommended player when a configurable "your turn" phrase
+  appears in the page text, then stops short of Yahoo's own confirm click
+  unless a second "fully automatic" toggle is also on. This was added
+  because the user explicitly asked for it ("But it needs too that's what
+  we want"), not a refactor's side effect — CLI, web app, and browser sync
+  are untouched, and trades/roster moves in the extension are untouched
+  too. **Never verified against live Yahoo** (same limit as everything
+  else — see "Verification posture"); `test/domActions.check.js` verifies
+  the click-targeting logic against a real browser on a synthetic page, and
+  the default "your turn" phrases in `turnDetect.js` are an educated guess.
+  Test it in a Yahoo mock draft, "fully automatic" off, before trusting it
+  live.
 - **Two-person support** (`--profile`, or a separate Chrome profile for
   the extension) is real and tested — verified end-to-end that two
   people drafting side by side never see each other's picks and each gets

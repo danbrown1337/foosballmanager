@@ -1,0 +1,223 @@
+/*
+ * Real-browser verification of lib/domActions.js (click-target finding),
+ * against a synthetic page modeled on common draft-room patterns — this
+ * environment has no access to fantasysports.yahoo.com to test against the
+ * real thing, so this is the strongest available check: real DOM, real
+ * TreeWalker, real element.click() dispatch, via the bundled Chromium
+ * (same technique as load_check.js), not a hand-simulated assertion.
+ *
+ * Not part of the extension itself; a one-off check for this build. Not
+ * wired into CI (no Playwright/Chromium there) — run manually:
+ *   NODE_PATH=$(npm root -g) node extension/test/domActions.check.js
+ */
+import { chromium } from "playwright";
+import http from "node:http";
+import { readFileSync, writeFileSync, unlinkSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const EXT_ROOT = join(HERE, "..");
+const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+
+// A synthetic page mixing the three interactive patterns a draft room might
+// plausibly use for a player row: a real <button>, a plain <div> with an
+// onclick handler (framework rows often skip semantic buttons), and a
+// non-interactive one — plus a confirm dialog and a decoy that must NOT be
+// matched (our own overlay repeats the player's name and has a button whose
+// label contains "draft").
+const PAGE_HTML = `<!doctype html><html><body>
+  <div id="fantasy-manager-overlay">
+    <div>Jahmyr Gibbs — RB, Det</div>
+    <button>I drafted this player</button>
+  </div>
+
+  <ul id="board">
+    <li><button class="player-row">Jahmyr Gibbs Det - RB</button></li>
+    <li><div class="player-row" onclick="window.__clicked='div-row'">Josh Allen Buf - QB</div></li>
+    <li><span>Puka Nacua LAR - WR</span></li>
+  </ul>
+
+  <div id="confirmDialog" style="display:none">
+    <button id="cancelBtn">Cancel</button>
+    <button id="confirmBtn">Draft</button>
+  </div>
+
+  <nav><a href="#">Mock Draft Lobby</a></nav>
+
+  <script>
+    // DOM attributes, not window globals: window is per-JS-world (main page
+    // vs. the extension's isolated content-script world), but this same
+    // document is shared, so this is the one channel both sides can see.
+    document.querySelectorAll('.player-row').forEach((el) => {
+      el.addEventListener('click', () => {
+        document.body.dataset.clicked = el.tagName.toLowerCase() === 'div' ? 'div-row' : 'button-row';
+        document.getElementById('confirmDialog').style.display = 'block';
+      });
+    });
+    document.getElementById('confirmBtn').addEventListener('click', () => {
+      document.body.dataset.confirmed = 'true';
+    });
+  </script>
+</body></html>`;
+
+// Content scripts run in an isolated JS world with their own \`window\` —
+// distinct from the page's own \`window\` even though they share the same
+// \`document\`. Setting window.__probeResult here would be invisible to
+// page.evaluate() on the Playwright side, so the result crosses back via a
+// DOM attribute instead, which genuinely is shared.
+const PROBE_CONTENT_SRC = `
+(async () => {
+  const mod = await import(chrome.runtime.getURL("test/_probe_module.js"));
+  const result = await mod.run(document);
+  document.documentElement.setAttribute("data-fm-probe-result", JSON.stringify(result));
+})();
+`;
+
+const PROBE_MODULE_SRC = `
+import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES }
+  from "../src/lib/domActions.js";
+
+export async function run(document) {
+  const results = {};
+
+  const gibbs = findPlayerClickTarget(document.body, "Jahmyr Gibbs");
+  results.gibbsTag = gibbs ? gibbs.tagName : null;
+
+  const allen = findPlayerClickTarget(document.body, "Josh Allen");
+  results.allenClass = allen ? allen.className : null;
+
+  // Must not match our own overlay's repeated player name / "draft" button.
+  const overlayMatch = findPlayerClickTarget(document, "Jahmyr Gibbs");
+  results.overlayLeak = document.getElementById("fantasy-manager-overlay").contains(overlayMatch);
+
+  clickElement(allen);
+  await new Promise((r) => setTimeout(r, 50));
+  results.divClickFired = document.body.dataset.clicked === "div-row";
+
+  document.getElementById("confirmDialog").style.display = "block";
+  const confirmBtn = findConfirmClickTarget(document.body, DEFAULT_CONFIRM_PHRASES);
+  results.confirmFound = confirmBtn ? confirmBtn.id : null;
+  clickElement(confirmBtn);
+  await new Promise((r) => setTimeout(r, 50));
+  results.confirmClicked = document.body.dataset.confirmed === "true";
+
+  // "Draft" must not match the unrelated nav link "Mock Draft Lobby".
+  const navEl = document.querySelector("nav a");
+  results.navNotMatched = confirmBtn !== navEl;
+
+  const missing = findPlayerClickTarget(document.body, "Nobody Real");
+  results.missingIsNull = missing === null;
+
+  return results;
+}
+`;
+
+function startServer() {
+  return new Promise((resolve) => {
+    const server = http.createServer((req, res) => {
+      res.writeHead(200, { "content-type": "text/html" });
+      res.end(PAGE_HTML);
+    });
+    server.listen(0, "127.0.0.1", () => resolve(server));
+  });
+}
+
+async function main() {
+  const server = await startServer();
+  const port = server.address().port;
+  const origin = `http://127.0.0.1:${port}`;
+
+  const manifestPath = join(EXT_ROOT, "manifest.json");
+  const originalManifest = readFileSync(manifestPath, "utf8");
+  const probeContentPath = join(EXT_ROOT, "test", "_probe_content.js");
+  const probeModulePath = join(EXT_ROOT, "test", "_probe_module.js");
+
+  // A modified manifest matching this test server's origin, with a tiny
+  // probe content script in place of overlay.js (which builds a whole panel
+  // and talks to background.js — this check only needs domActions.js
+  // itself) — loaded via Chrome's real declarative content-script
+  // mechanism, not an artificial addScriptTag path.
+  const manifest = JSON.parse(originalManifest);
+  manifest.content_scripts[0].matches = [`${origin}/*`];
+  manifest.content_scripts[0].js = ["test/_probe_content.js"];
+  manifest.host_permissions = [`${origin}/*`];
+  manifest.web_accessible_resources[0].matches = [`${origin}/*`];
+  manifest.web_accessible_resources[0].resources.push("test/_probe_content.js", "test/_probe_module.js");
+
+  writeFileSync(probeContentPath, PROBE_CONTENT_SRC);
+  writeFileSync(probeModulePath, PROBE_MODULE_SRC);
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+  const userDataDir = mkdtempSync(join(tmpdir(), "fm-domactions-"));
+  let failed = false;
+
+  try {
+    const context = await chromium.launchPersistentContext(userDataDir, {
+      executablePath: CHROME,
+      headless: false,
+      args: [
+        `--disable-extensions-except=${EXT_ROOT}`,
+        `--load-extension=${EXT_ROOT}`,
+        "--no-sandbox",
+        "--headless=new",
+      ],
+    });
+
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on("pageerror", (err) => pageErrors.push(String(err)));
+    page.on("console", (msg) => {
+      if (msg.type() === "error") pageErrors.push(`console.error: ${msg.text()}`);
+    });
+    await page.goto(origin);
+    await page.waitForFunction(
+      () => document.documentElement.hasAttribute("data-fm-probe-result"),
+      null,
+      { timeout: 8000 }
+    );
+    const result = await page.evaluate(() =>
+      JSON.parse(document.documentElement.getAttribute("data-fm-probe-result"))
+    );
+
+    console.log("Probe result:", JSON.stringify(result, null, 2));
+    if (pageErrors.length) {
+      console.error("Page errors:", pageErrors);
+      failed = true;
+    }
+
+    const checks = [
+      ["finds the real <button> player row", result.gibbsTag === "BUTTON"],
+      ["finds the onclick <div> player row (not a nested span)", result.allenClass === "player-row"],
+      ["never matches inside the extension's own overlay", result.overlayLeak === false],
+      ["clicking the div row fires its real onclick handler", result.divClickFired === true],
+      ["finds the Confirm/Draft button by text", result.confirmFound === "confirmBtn"],
+      ["clicking it fires the real confirm handler", result.confirmClicked === true],
+      ['does not match an unrelated nav link containing "Draft"', result.navNotMatched === true],
+      ["returns null for a player who isn't on the page", result.missingIsNull === true],
+    ];
+    for (const [label, ok] of checks) {
+      console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);
+      if (!ok) failed = true;
+    }
+
+    await context.close();
+  } finally {
+    writeFileSync(manifestPath, originalManifest);
+    unlinkSync(probeContentPath);
+    unlinkSync(probeModulePath);
+    server.close();
+  }
+
+  if (failed) {
+    console.error("\n=== domActions CHECK FAILED ===");
+    process.exit(1);
+  }
+  console.log("\n=== domActions CHECK PASSED (synthetic page, real Chromium — not verified against live Yahoo) ===");
+}
+
+main().catch((err) => {
+  console.error("Uncaught error during domActions check:", err);
+  process.exit(1);
+});

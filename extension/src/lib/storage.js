@@ -7,12 +7,17 @@
  * own — install it in your own Chrome profile, and it's already yours.
  */
 
+import { DEFAULT_TURN_PHRASES } from "./turnDetect.js";
+
 const KEYS = {
   config: "fm_config",
   draftState: "fm_draft_state",
   myRoster: "fm_my_roster",
   leagueRosters: "fm_league_rosters",
   pollMode: "fm_poll_mode",
+  autoDraftEnabled: "fm_auto_draft_enabled",
+  autoDraftFullyAutomatic: "fm_auto_draft_fully_automatic",
+  turnPhrases: "fm_turn_phrases",
 };
 
 // Matches the confirmed real starter construction: 1 QB, 2 RB, 2 WR, 1 TE,
@@ -86,5 +91,27 @@ export const Storage = {
   },
   async setPollMode(mode) {
     return set(KEYS.pollMode, mode);
+  },
+
+  // Auto-draft is off by default and, even when on, defaults to "auto-fill
+  // only" (select the recommended player, leave Yahoo's own confirm click
+  // to you) rather than fully unattended — see content/overlay.js.
+  async getAutoDraftEnabled() {
+    return get(KEYS.autoDraftEnabled, false);
+  },
+  async setAutoDraftEnabled(enabled) {
+    return set(KEYS.autoDraftEnabled, enabled);
+  },
+  async getAutoDraftFullyAutomatic() {
+    return get(KEYS.autoDraftFullyAutomatic, false);
+  },
+  async setAutoDraftFullyAutomatic(enabled) {
+    return set(KEYS.autoDraftFullyAutomatic, enabled);
+  },
+  async getTurnPhrases() {
+    return get(KEYS.turnPhrases, DEFAULT_TURN_PHRASES);
+  },
+  async setTurnPhrases(phrases) {
+    return set(KEYS.turnPhrases, phrases);
   },
 };

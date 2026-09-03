@@ -84,11 +84,12 @@ approval. It's the same tested engine as the CLI (verified pick-for-pick
 against it — see `extension/README.md`), reading the Yahoo Fantasy
 **website** the same way `browser_sync.py` does.
 
-It never clicks, drafts, or submits anything on Yahoo's behalf — same
-read-only principle as everywhere else in this project, just extended from
-trades to drafting and roster moves too. See `extension/README.md` for
-install (load-unpacked, no build step) and what it does and doesn't cover
-yet.
+Roster moves and trades stay fully manual — same read-only principle as
+everywhere else in this project. Drafting is the one opt-in exception: an
+**auto-draft** toggle (off by default) can select and, if you also turn on
+"fully automatic," submit your recommended pick when it's your turn. See
+`extension/README.md` for install (load-unpacked, no build step), the
+auto-draft safety model, and what else it does and doesn't cover yet.
 
 ## Draft day
 
