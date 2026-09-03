@@ -107,7 +107,7 @@ function buildPanel() {
       <button id="fm-take" disabled>I drafted this player</button>
       <div id="fm-log"></div>
       <div id="fm-status">
-        watching page for opponent picks —
+        watching page (opponent picks + auto-draft) —
         <span id="fm-toggle-poll">pause</span>
         · <select id="fm-mode" title="Which direction signals a pick on this page">
             <option value="appear">names appear (picks feed)</option>
@@ -177,11 +177,17 @@ async function main() {
   pollToggle.addEventListener("click", () => {
     polling = !polling;
     pollToggle.textContent = polling ? "pause" : "resume";
+    updateAutoStatus();
   });
 
   function updateAutoStatus() {
     if (!autoEnableBox.checked) {
       autoStatus.textContent = "off — picks stay manual";
+      autoWarn.hidden = true;
+      return;
+    }
+    if (!polling) {
+      autoStatus.textContent = "PAUSED — will not click anything until you hit resume";
       autoWarn.hidden = true;
       return;
     }
@@ -299,7 +305,10 @@ async function main() {
   }
 
   async function pollForTurn() {
-    if (!autoEnableBox.checked) return;
+    // The same pause toggle that stops opponent-pick detection also stops
+    // auto-draft — one pause button for everything this panel does
+    // unattended, not two controls that could be confused for each other.
+    if (!autoEnableBox.checked || !polling) return;
     try {
       const text = document.body.innerText;
       const active = isMyTurn(text, turnPhrases);
