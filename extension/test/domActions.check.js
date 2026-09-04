@@ -219,6 +219,11 @@ export async function run(document) {
    * Both awkward names are here on purpose: a regex over the whole cell read
    * "Amon-Ra St. Brown" as team "Amon", and put A.J. Brown on the wrong team.
    * Built by concatenation because this whole probe is itself a template. */
+  const poolRowStatus = (name, tag, team, pos, bye) =>
+    '<tr><td></td><td></td><td><div class="ysf-player-name">' +
+    '<a href="/nfl/players/2">' + name + '</a><span>' + tag + '</span>' +
+    '<span class="Fz-xxs">' + team + ' - ' + pos + '</span></div></td>' +
+    '<td>FA</td><td>17</td><td>' + bye + '</td><td>0</td><td>1</td></tr>';
   const poolRow = (name, team, pos, bye, proj, rank) =>
     '<tr><td></td><td></td><td><div class="ysf-player-name">' +
     '<a href="/nfl/players/1">' + name + '</a>' +
@@ -239,6 +244,13 @@ export async function run(document) {
   const statRow = '<tr><td></td><td></td><td><div class="ysf-player-name">' +
     '<a href="/nfl/players/9">Jalen Hurts</a><span class="Fz-xxs">Phi - QB</span></div></td>' +
     '<td>FA</td><td>16</td><td>9</td><td>307.04</td><td>2055</td><td>3425</td></tr>';
+  const statusPool = parsePoolPage('<table>' + poolHead + '<tbody>' +
+    poolRowStatus("MarShawn Lloyd", "PUP-R", "GB", "RB", 11) +
+    poolRowStatus("Puka Nacua", "Q", "LAR", "WR", 11) + '</tbody></table>');
+  results.pupStatus = statusPool.find((p) => p.name === "MarShawn Lloyd")?.status;
+  results.qStatus = statusPool.find((p) => p.name === "Puka Nacua")?.status;
+  results.statusTeamStillRead = statusPool.find((p) => p.name === "Puka Nacua")?.team;
+
   const statPool = parsePoolPage('<table>' + poolHead + '<tbody>' + statRow + '</tbody></table>');
   results.statBye = statPool[0]?.bye;
   results.poolInitials = pool.find((p) => p.name === "A.J. Brown") || null;
@@ -389,6 +401,9 @@ async function main() {
         JSON.stringify(result.poolRobinsons) === JSON.stringify(["Bijan Robinson/ATL", "Brian Robinson/SF"])],
       ["carries the bye week", result.poolHyphenated?.bye === 6],
       ["never reads a stat column as a bye week", result.statBye === 9],
+      ["reads a season-ending designation", result.pupStatus === "PUP-R"],
+      ["reads a week-to-week one too", result.qStatus === "Q"],
+      ["still reads team and position alongside a tag", result.statusTeamStillRead === "LAR"],
       ["finds the room's Draft button on the right row",
         result.draftBtnClass === "draft-btn" && result.draftBtnRow === "row-draftable"],
       ["returns nothing when that row has no Draft button", result.noDraftBtn === true],

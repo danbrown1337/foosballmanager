@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { makePlayer, applyByes } from "../src/engine/board.js";
-import { byePenalty, surplusPenalty, DEFAULT_BYE_PENALTY } from "../src/engine/autopilot.js";
+import { autoPick, byePenalty, surplusPenalty, DEFAULT_BYE_PENALTY } from "../src/engine/autopilot.js";
 
 const CONFIG = {
   league: { name: "T", num_teams: 12, scoring: "ppr" },
@@ -80,5 +80,26 @@ describe("surplusPenalty", () => {
     const first = surplusPenalty(te("B", 5), [te("A", 6)], CONFIG);
     const second = surplusPenalty(te("C", 5), [te("A", 6), te("B", 5)], CONFIG);
     assert.ok(second > first);
+  });
+});
+
+describe("unavailable players", () => {
+  test("a player out for the season is not draftable at all", () => {
+    // Drafting one spends a roster spot on nobody. MarShawn Lloyd was queued
+    // on PUP-R in a live mock, because nothing here knew what that meant.
+    const players = [
+      { ...makePlayer({ rank: 1, name: "Out Guy", team: "GB", pos: "RB", adp: 1 }), status: "PUP-R" },
+      { ...makePlayer({ rank: 2, name: "Fit Guy", team: "DET", pos: "RB", adp: 40 }), status: null },
+    ];
+    assert.equal(autoPick(players, CONFIG).player.name, "Fit Guy");
+  });
+
+  test("week-to-week designations are left alone", () => {
+    // Questionable is a lineup decision, not a lost season.
+    const players = [
+      { ...makePlayer({ rank: 1, name: "Iffy Guy", team: "GB", pos: "RB", adp: 1 }), status: "Q" },
+      { ...makePlayer({ rank: 2, name: "Fit Guy", team: "DET", pos: "RB", adp: 40 }), status: null },
+    ];
+    assert.equal(autoPick(players, CONFIG).player.name, "Iffy Guy");
   });
 });
