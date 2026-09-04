@@ -63,6 +63,12 @@ UNAVAILABLE = {"IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O", "NA"}
 SURPLUS_PENALTY = {"QB": 14, "K": 20, "DEF": 20, "TE": 8, "RB": 3, "WR": 3}
 
 
+# Positions a W/R/T flex can start. The flex absorbs exactly one spare across
+# all of them — not one each, which is how a roster reached three tight ends:
+# each looked like it was filling the same empty flex.
+FLEX_ELIGIBLE = {"RB", "WR", "TE"}
+
+
 def surplus_penalty(player, mine, config):
     """Cost of stacking a position whose starters are already filled."""
     starters = config["roster"]["starters"]
@@ -70,9 +76,24 @@ def surplus_penalty(player, mine, config):
     have = sum(1 for p in mine if p.pos == player.pos)
     if have < need:
         return 0.0
+
     surplus = have - need + 1
+    flex_slots = starters.get("FLEX", 0)
+    if player.pos in FLEX_ELIGIBLE and flex_slots > 0:
+        spares = sum(
+            max(0, sum(1 for p in mine if p.pos == pos) - starters.get(pos, 0))
+            for pos in starters
+            if pos in FLEX_ELIGIBLE
+        )
+        if spares < flex_slots:
+            surplus -= 1  # this one starts in the flex
+    if surplus <= 0:
+        return 0.0
+
     weights = config.get("autopilot", {}).get("surplus_penalty", SURPLUS_PENALTY)
-    return surplus * weights.get(player.pos, 5)
+    # Squared: a second spare is a nudge, a third is a wall. A flat charge was
+    # cleared by any player ranked a little higher, twice over.
+    return surplus * surplus * weights.get(player.pos, 5)
 
 
 def bye_penalty(player, mine, config):
@@ -122,7 +143,9 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     mine = [p for p in players if p.drafted_by == "mine"]
     avail = [
         p for p in players
-        if p.drafted_by is None and getattr(p, "status", None) not in UNAVAILABLE
+        if p.drafted_by is None
+        and getattr(p, "status", None) not in UNAVAILABLE
+        and not getattr(p, "undrafted", False)
     ]
     if not avail:
         return None

@@ -63,10 +63,23 @@ describe("surplusPenalty", () => {
     assert.equal(surplusPenalty(te("A", 5), [], CONFIG), 0);
   });
 
-  test("charges for a second tight end when the league starts one", () => {
-    // The case that prompted this: three tight ends offered to a roster
-    // already holding one.
-    assert.ok(surplusPenalty(te("B", 5), [te("A", 6)], CONFIG) > 0);
+  test("a second tight end is free while the flex is open", () => {
+    // He starts at W/R/T. Charging for him would have the engine avoid a
+    // player it can actually field.
+    assert.equal(surplusPenalty(te("B", 5), [te("A", 6)], CONFIG), 0);
+  });
+
+  test("but a third is charged, because the flex only holds one", () => {
+    // The case that prompted this: a roster that reached three tight ends,
+    // each apparently filling the same empty flex slot.
+    assert.ok(surplusPenalty(te("C", 5), [te("A", 6), te("B", 5)], CONFIG) > 0);
+  });
+
+  test("the flex is shared across positions, not one each", () => {
+    // A spare running back has taken the flex, so a second tight end is now
+    // a bench player and charged as one.
+    const withSpareRb = [rb("A"), rb("B"), rb("C"), te("D", 6)];
+    assert.ok(surplusPenalty(te("E", 5), withSpareRb, CONFIG) > 0);
   });
 
   test("charges more for a backup QB than a third running back", () => {
@@ -76,10 +89,12 @@ describe("surplusPenalty", () => {
     assert.ok(spareQb > thirdRb, `${spareQb} should exceed ${thirdRb}`);
   });
 
-  test("grows with each additional spare", () => {
-    const first = surplusPenalty(te("B", 5), [te("A", 6)], CONFIG);
-    const second = surplusPenalty(te("C", 5), [te("A", 6), te("B", 5)], CONFIG);
-    assert.ok(second > first);
+  test("grows steeply with each additional spare", () => {
+    // Squared, so the fourth is far worse than the third rather than
+    // marginally worse — a flat charge was simply out-ranked twice over.
+    const third = surplusPenalty(te("C", 5), [te("A", 6), te("B", 5)], CONFIG);
+    const fourth = surplusPenalty(te("D", 5), [te("A", 6), te("B", 5), te("C", 5)], CONFIG);
+    assert.ok(fourth > third * 2, `${fourth} should be well over ${third}`);
   });
 });
 
