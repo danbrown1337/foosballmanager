@@ -39,6 +39,8 @@ for (const btn of document.querySelectorAll(".tab")) {
 
 // --- draft tab -------------------------------------------------------------
 
+document.getElementById("version").textContent = `v${chrome.runtime.getManifest().version}`;
+
 function renderDraft() {
   document.getElementById("practiceBanner").hidden = !STATE.practice;
   const rec = STATE.recommendation;

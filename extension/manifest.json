@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Fantasy Manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Draft board, roster tracking, and trade suggestions for Yahoo Fantasy Football. Can optionally auto-fill your draft pick when it's your turn (off by default). Never touches trades or roster moves.",
   "icons": {
     "16": "icons/icon16.png",

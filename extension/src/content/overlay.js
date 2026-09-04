@@ -72,7 +72,8 @@ function buildPanel() {
       }
       #fm-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
                  background: #1d4ed8; color: #fff; cursor: pointer; user-select: none; }
-      #fm-head b { flex: 1; font-size: 12px; letter-spacing: .02em; }
+      #fm-head b { font-size: 12px; letter-spacing: .02em; }
+      #fm-ver { flex: 1; font-size: 10px; opacity: .75; }
       #fm-body { padding: 10px; display: block; }
       #fm-body.collapsed { display: none; }
       #fm-rec-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
@@ -111,6 +112,7 @@ function buildPanel() {
     </style>
     <div id="fm-head">
       <b>Fantasy Manager</b>
+      <span id="fm-ver"></span>
       <span id="fm-collapse-icon">–</span>
     </div>
     <div id="fm-practice" hidden>PRACTICE SETTINGS — not your league</div>
@@ -181,6 +183,15 @@ async function main() {
   const deadBox = root.querySelector("#fm-dead");
   const practiceBox = root.querySelector("#fm-practice");
   const syncBtn = root.querySelector("#fm-sync");
+  /* Which build is actually running. Reloading the extension without
+   * reloading the page leaves an old content script in place, and a stale
+   * panel is indistinguishable from a current one until something it should
+   * do doesn't happen. */
+  try {
+    root.querySelector("#fm-ver").textContent = `v${chrome.runtime.getManifest().version}`;
+  } catch {
+    // Context already gone; handleDeadContext will say so.
+  }
   const shapeBox = root.querySelector("#fm-shape");
   const statusBox = root.querySelector("#fm-status");
 
