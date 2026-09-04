@@ -175,11 +175,13 @@ function buildPanel() {
 
 async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
-    findQueueNames, withoutQueuePanel, Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
+    findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
+    Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
-     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel } =
+     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
+     parseDraftSlot, parseDraftPosition, picksUntilMyTurn } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -1057,6 +1059,24 @@ async function main() {
     }
   });
 
+  /* Report where the user picks and when their next turn lands. Queue depth
+   * should follow from that — five is arbitrary, while "you pick again in
+   * nineteen" is a real number — but for now it is reported rather than
+   * acted on. */
+  let lastPicksAway = null;
+  function reportDraftPosition(text, config) {
+    if (!parseDraftSlot) return;
+    const slot = parseDraftSlot(location.href, document.title);
+    const teams = config?.league?.num_teams;
+    const position = parseDraftPosition(text);
+    if (!slot || !teams || !position) return;
+    const away = picksUntilMyTurn(position, slot, teams);
+    if (away === null || away === lastPicksAway) return;
+    lastPicksAway = away;
+    if (away === 0) return; // the turn banner already covers this
+    addLog(`Pick ${slot} of ${teams} — your next turn is ${away} pick${away === 1 ? "" : "s"} away.`);
+  }
+
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;
     const mine = [...findMyTeamNames(text, boardNameSet, boardPlayers)];
@@ -1156,6 +1176,7 @@ async function main() {
       const text = document.body.innerText;
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
+      reportDraftPosition(text, lastConfig);
       await maybeRefreshBoard();
       await maintainQueue(text);
       // Not the queue panel: a name we queued is not a name that was drafted.

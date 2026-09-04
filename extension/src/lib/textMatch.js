@@ -137,6 +137,37 @@ export function withoutQueuePanel(text) {
   return end === -1 ? text.slice(0, start) : text.slice(0, start) + rest.slice(end);
 }
 
+/* Where you pick, and where the draft has got to.
+ *
+ * The room states both: the URL ends in your slot, the title says "You pick
+ * 11th", and the status bar carries "Round 4, Pick 50". Between them the
+ * panel can say when your next pick actually lands, rather than counting
+ * roster spots and hoping. */
+export function parseDraftSlot(url, title) {
+  const fromUrl = /\/draftclient\/f1\/\d+\/(\d+)/.exec(url || "");
+  if (fromUrl) return Number(fromUrl[1]);
+  const fromTitle = /you pick (\d+)(?:st|nd|rd|th)/i.exec(title || "");
+  return fromTitle ? Number(fromTitle[1]) : null;
+}
+
+export function parseDraftPosition(text) {
+  const m = /round\s+(\d+),\s*pick\s+(\d+)/i.exec(text || "");
+  return m ? { round: Number(m[1]), pick: Number(m[2]) } : null;
+}
+
+/* Snake order: odd rounds run 1..N, even rounds run N..1. */
+export function picksUntilMyTurn(position, slot, teams) {
+  if (!position || !slot || !teams) return null;
+  const overall = position.pick;
+  for (let round = position.round; round <= position.round + 2; round++) {
+    const mineThisRound = round % 2 === 1
+      ? (round - 1) * teams + slot
+      : (round - 1) * teams + (teams - slot + 1);
+    if (mineThisRound >= overall) return mineThisRound - overall;
+  }
+  return null;
+}
+
 /* Which roster slots the room itself shows, read off the YOUR TEAM panel:
  * the labels are the league's actual starter construction. Used to catch the
  * case that silently cost a kicker in testing — a room that starts a K while

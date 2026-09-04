@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findQueueNames, withoutQueuePanel, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
+import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
 
 const BOARD = new Set([
   "Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.", "A.J. Brown",
@@ -369,5 +369,32 @@ P. Nacua WR \u00b7 LAR`;
 
   test("leaves a page without a queue panel alone", () => {
     assert.equal(withoutQueuePanel("Players\nP. Nacua"), "Players\nP. Nacua");
+  });
+});
+
+describe("draft position", () => {
+  test("reads the slot from the draft room URL", () => {
+    assert.equal(
+      parseDraftSlot("https://football.fantasysports.yahoo.com/draftclient/f1/10702388/11?auth=x", ""),
+      11
+    );
+  });
+
+  test("falls back to the page title", () => {
+    assert.equal(parseDraftSlot("https://sports.yahoo.com/", "You pick 7th | Live NFL Draft"), 7);
+  });
+
+  test("reads how far the draft has got", () => {
+    assert.deepEqual(parseDraftPosition("Sam's Pick • Round 4, Pick 50"), { round: 4, pick: 50 });
+  });
+
+  test("counts picks to your turn in an odd round", () => {
+    // 12 teams, slot 11, currently at pick 5: your pick is 11th overall.
+    assert.equal(picksUntilMyTurn({ round: 1, pick: 5 }, 11, 12), 6);
+  });
+
+  test("counts picks to your turn in an even round, where the order reverses", () => {
+    // Round 2 runs 12..1, so slot 11 picks 2nd in that round: overall 14.
+    assert.equal(picksUntilMyTurn({ round: 2, pick: 13 }, 11, 12), 1);
   });
 });
