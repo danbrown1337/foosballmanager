@@ -78,6 +78,12 @@ auto-draft on, and try it in a Yahoo mock draft first.
 
 If you'd rather talk your way through the setup than edit YAML by hand:
 
+**There's a written brief for exactly this: `FOR_YOUR_CLAUDE.md`.** Hand it
+to your Claude session and it'll run the setup with you — it assumes you
+don't want a terminal, aims at the extension in Path 0, and flags the two
+league settings that are easy to get wrong. The steps below are the manual
+version of the same thing.
+
 1. Download this repo (as a zip, or `git clone` it) onto whatever machine
    or Claude session you're using.
 2. Open a new Claude conversation (Claude Code, Cowork, or claude.ai with
