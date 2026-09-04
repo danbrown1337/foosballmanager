@@ -72,9 +72,17 @@ async function buildPlayers(adp, notes, byes) {
     // Injury designations come only from the imported pool; the bundled file
     // has none, and a player who cannot play must not look draftable.
     const statusByName = new Map(pool.players.map((p) => [p.name, p.status ?? null]));
-    // Strict null: a pool with no ADP column at all leaves this undefined,
-    // and unknown is not the same as "nobody drafts him".
-    const noAdp = new Set(pool.players.filter((p) => p.adp === null).map((p) => p.name));
+    /* Strict null: a pool with no ADP column leaves this undefined, and
+     * unknown is not the same as "nobody drafts him".
+     *
+     * And if not one player in the pool has a number, the column wasn't there
+     * — so ignore the field entirely rather than filtering out the whole
+     * board. A pool imported before this distinction existed stores null for
+     * everyone, and would otherwise stay broken until re-imported. */
+    const anyAdp = pool.players.some((p) => typeof p.adp === "number");
+    const noAdp = new Set(
+      anyAdp ? pool.players.filter((p) => p.adp === null).map((p) => p.name) : []
+    );
     for (const p of players) {
       p.status = statusByName.get(p.name) ?? null;
       p.undrafted = noAdp.has(p.name);
