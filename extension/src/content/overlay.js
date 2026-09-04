@@ -161,7 +161,8 @@ function buildPanel() {
 
 async function main() {
   let diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
-    highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES;
+    highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
+    setInputValue, surnameOf;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
@@ -210,6 +211,10 @@ async function main() {
   let boardNameSet = null;
   let boardPlayers = null;
   let lastConfig = null;
+  /* Set while the room's search box is filtered: the filter removes most of
+   * the board from the page text, and the pick detector would read that as
+   * every one of those players being drafted at once. */
+  let detectionSuspended = false;
   const reportedAmbiguous = new Set();
   let currentRecName = null;
   let turnPhrases = [];
@@ -487,7 +492,7 @@ async function main() {
   });
 
   async function pollPage() {
-    if (!polling) return;
+    if (!polling || detectionSuspended) return;
 
     /* Chrome throttles timers in a hidden tab to about once a minute, and
      * discards tabs outright under Memory Saver. Either way the poll simply
@@ -590,9 +595,34 @@ async function main() {
       }
 
       const recRowMeta = (boardPlayers || []).find((p) => p.name === currentRecName) || null;
-      const playerEl = findPlayerClickTarget(document.body, currentRecName, { player: recRowMeta });
+      let playerEl = findPlayerClickTarget(document.body, currentRecName, { player: recRowMeta });
+      let searchBox = null;
+
+      /* Not on the page is the normal case, not the exceptional one: Yahoo
+       * renders a window of the list, and the recommended player is rarely
+       * inside it. Search for them the way a person would. */
       if (!playerEl) {
-        addLog(`Your turn detected but couldn't find "${currentRecName}" on the page — draft it manually.`);
+        searchBox = findPlayerSearchBox(document.body);
+        if (searchBox) {
+          detectionSuspended = true;
+          setInputValue(searchBox, surnameOf(currentRecName));
+          await wait(900);
+          playerEl = findPlayerClickTarget(document.body, currentRecName, { player: recRowMeta });
+        }
+      }
+
+      const clearSearch = async () => {
+        if (!searchBox) return;
+        setInputValue(searchBox, "");
+        await wait(500);
+        // The filtered page was never a real board state; start clean.
+        previousBoardNames = null;
+        detectionSuspended = false;
+      };
+
+      if (!playerEl) {
+        addLog(`Your turn detected but couldn't find "${currentRecName}"${searchBox ? " even after searching" : ""} — draft it manually.`);
+        await clearSearch();
         turnHandled = true;
         return;
       }
@@ -607,6 +637,7 @@ async function main() {
         await wait(jitterDelay());
         clickElement(playerEl);
         addLog(`Auto-filled ${currentRecName} — click Yahoo's own Confirm/Draft button to finish the pick.`);
+        await clearSearch();
         return;
       }
 
@@ -624,7 +655,14 @@ async function main() {
           .slice(0, 6);
         addLog(`Selected ${currentRecName} but no Confirm/Draft button matched — finish manually. Buttons here: ${offered.join(" | ") || "none"}`);
       }
+      await clearSearch();
     } catch (err) {
+      // A throw mid-search would otherwise leave detection suspended for the
+      // rest of the draft, silently.
+      if (detectionSuspended) {
+        detectionSuspended = false;
+        previousBoardNames = null;
+      }
       if (isContextGone(err)) return handleDeadContext();
       // Same policy as pollPage(): stay silent on other poll errors rather
       // than spamming the panel on a page you aren't actively drafting on.

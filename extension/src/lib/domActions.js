@@ -116,6 +116,40 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
   return fallback;
 }
 
+/** The surname a draft room shows, suffixes dropped: "Marvin Harrison Jr."
+ * searches as "Harrison". */
+export function surnameOf(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length < 2) return name.trim();
+  const tail = parts[parts.length - 1].replace(/[.,]/g, "");
+  return /^(jr|sr|ii|iii|iv|v)$/i.test(tail) && parts.length > 2 ? parts[parts.length - 2] : tail;
+}
+
+/* Yahoo renders only a window of the player list — the recommended player is
+ * usually not in the DOM at all, so there is nothing to click and no name
+ * matching can produce one. The room's own search box is how a person deals
+ * with this, and it's how auto-draft has to as well. */
+export function findPlayerSearchBox(root) {
+  const inputs = root.querySelectorAll("input[type=text], input:not([type])");
+  for (const el of inputs) {
+    if (isInsideOwnOverlay(el)) continue;
+    const hint = `${el.placeholder || ""} ${el.getAttribute("aria-label") || ""}`;
+    if (/search/i.test(hint) && /player/i.test(hint)) return el;
+  }
+  return null;
+}
+
+/* Frameworks track input state internally and ignore a plain `.value =`,
+ * so set through the native descriptor and fire the event React and friends
+ * actually listen for. */
+export function setInputValue(input, value) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+  if (setter) setter.call(input, value);
+  else input.value = value;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 /** Find a "confirm/submit" style button near the top of the page — used
  * after selecting a player, when a draft room shows a confirmation step.
  * Matches short, exact-ish button text against configured phrases rather
