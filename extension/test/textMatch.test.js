@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findQueueNames, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
+import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findQueueNames, withoutQueuePanel, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
 
 const BOARD = new Set([
   "Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.", "A.J. Brown",
@@ -346,5 +346,28 @@ Click the star next to a player to add them.`;
     // Only an empty queue is evidence a queued player was drafted; not being
     // able to see the panel is evidence of nothing.
     assert.equal(findQueueNames("Players Board Results", board, players), null);
+  });
+});
+
+describe("withoutQueuePanel", () => {
+  const page = `Queue
+Picks
+Autodraft will pick from queue
+Autodraft
+J. Tyson WR \u00b7 NO
+Players
+Board
+P. Nacua WR \u00b7 LAR`;
+
+  test("drops the queued names so they aren't read as picks", () => {
+    // Queueing a player writes him into that panel; detecting him there
+    // marked him drafted the instant we queued him.
+    const stripped = withoutQueuePanel(page);
+    assert.equal(/Tyson/.test(stripped), false);
+    assert.equal(/Nacua/.test(stripped), true);
+  });
+
+  test("leaves a page without a queue panel alone", () => {
+    assert.equal(withoutQueuePanel("Players\nP. Nacua"), "Players\nP. Nacua");
   });
 });
