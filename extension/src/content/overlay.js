@@ -987,11 +987,21 @@ async function main() {
     }
     const scroller = findListScroller(document.body);
     if (!scroller) return { ok: false, reason: "no player list on this page" };
-    if (!boardNameSet) {
-      const snap = await sendMessage({ type: "GET_SNAPSHOT" });
-      boardNameSet = new Set(snap.board.map((p) => p.name));
-      boardPlayers = snap.board;
-    }
+
+    // Always fresh here: the count of still-available players is what decides
+    // whether this sweep is complete enough to rewrite the board with, and a
+    // stale copy would answer that question about an older draft.
+    const snap = await sendMessage({ type: "GET_SNAPSHOT" });
+    boardNameSet = new Set(snap.board.map((p) => p.name));
+    boardPlayers = snap.board;
+
+    /* How many the board expects to still be available. A sweep that sees far
+     * fewer than that did not cover the list, and repairing from it marks
+     * everyone it missed as drafted. Watched a refresh put 208 players back
+     * that an earlier partial sweep had wrongly buried — and while the board
+     * was in that state the queue had nothing good left to offer, which is
+     * where a D-grade receiver came from. */
+    const expected = snap.board.filter((p) => !p.draftedBy).length;
 
     const seen = new Set();
     detectionSuspended = true;
@@ -1006,8 +1016,12 @@ async function main() {
       previousBoardNames = null;
     }
 
-    if (seen.size < MIN_ROWS_TO_TRUST) {
-      return { ok: false, reason: `only ${seen.size} players read — too few to trust` };
+    const floor = Math.max(MIN_ROWS_TO_TRUST, Math.round(expected * 0.5));
+    if (seen.size < floor) {
+      return {
+        ok: false,
+        reason: `only ${seen.size} of about ${expected} available players read — too few to rewrite the board`,
+      };
     }
     const result = await sendMessage({ type: "REPAIR_BOARD", names: [...seen] });
     lastBoardUpdateAt = Date.now();
