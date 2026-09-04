@@ -71,6 +71,26 @@ export function findBoardNames(text, boardNames) {
   return found;
 }
 
+/* The draft room states your roster outright, in a panel headed "YOUR TEAM
+ * (5/15)". Reading that is not the same as inferring your picks from what
+ * changed on the page — the thing this project refuses to do, because a diff
+ * can credit your own pick to a rival. This is the room telling us, in its
+ * own words, which players are yours.
+ *
+ * The window is bounded and known overlay text is stripped: our own panel
+ * prints the recommended player's FULL name, and matching that inside this
+ * slice would mark a player you don't own as yours. */
+export function findMyTeamNames(text, boardNames) {
+  const start = text.search(/YOUR TEAM/i);
+  if (start === -1) return new Set();
+  let section = text.slice(start, start + 1500);
+  for (const marker of ["Fantasy Manager", "PRACTICE SETTINGS", "DRAFT SCOUT"]) {
+    const i = section.indexOf(marker);
+    if (i > -1) section = section.slice(0, i);
+  }
+  return findBoardNames(section, boardNames);
+}
+
 /** Newly drafted players between two polls.
  *   appear    — a picks feed or draft-results page: names show up as taken.
  *   disappear — an available-player pool: names leave it as they're taken.

@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { findBoardNames, diffDrafted, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
+import { findBoardNames, diffDrafted, findMyTeamNames, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
 
 const BOARD = new Set([
   "Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.", "A.J. Brown",
@@ -191,5 +191,39 @@ describe("findBoardNames — abbreviated names (Yahoo draft room)", () => {
 
   test("still matches full names where a page renders them", () => {
     assert.equal(findBoardNames("Jahmyr Gibbs", board).has("Jahmyr Gibbs"), true);
+  });
+});
+
+describe("findMyTeamNames", () => {
+  const board = new Set(["Jahmyr Gibbs", "Tee Higgins", "Puka Nacua", "Bijan Robinson"]);
+
+  // Shaped like the real room: the roster panel, then our own overlay's text,
+  // which prints the recommended player's full name.
+  const page = `Players Board Results
+YOUR TEAM (2/15)
+QB
+WR
+T. Higgins Q WR Cin Bye 6 B-
+RB
+J. Gibbs RB Det Bye 6 A+
+TE W R T K DEF BN BN
+Fantasy Manager
+Puka Nacua — WR, LAR
+Best available by adjusted value.`;
+
+  test("reads the roster the room states outright", () => {
+    const mine = findMyTeamNames(page, board);
+    assert.equal(mine.has("Tee Higgins"), true);
+    assert.equal(mine.has("Jahmyr Gibbs"), true);
+  });
+
+  test("stops before our own panel, so a recommendation is never read as yours", () => {
+    // Puka Nacua appears only in the overlay's recommendation line. Counting
+    // him would put a player on your roster that you do not own.
+    assert.equal(findMyTeamNames(page, board).has("Puka Nacua"), false);
+  });
+
+  test("no roster panel on the page means nothing is claimed", () => {
+    assert.equal(findMyTeamNames("Just a league homepage. Bijan Robinson", board).size, 0);
   });
 });

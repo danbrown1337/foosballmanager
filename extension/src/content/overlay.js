@@ -82,6 +82,9 @@ function buildPanel() {
                  background: #1d4ed8; color: #fff; font-weight: 600; cursor: pointer;
                  font: inherit; margin-bottom: 8px; }
       #fm-take:disabled { opacity: .5; cursor: default; }
+      #fm-sync { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
+                 background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
+                 cursor: pointer; margin-bottom: 8px; }
       #fm-log { font-size: 11px; color: #9aa1ab; max-height: 70px; overflow-y: auto;
                 border-top: 1px solid #2a2f38; padding-top: 6px; }
       #fm-log div { padding: 1px 0; }
@@ -113,6 +116,7 @@ function buildPanel() {
       <div id="fm-rec-name">Loading…</div>
       <div id="fm-rec-why"></div>
       <button id="fm-take" disabled>I drafted this player</button>
+      <button id="fm-sync">Sync picks already made</button>
       <div id="fm-log"></div>
       <div id="fm-status">
         watching page (opponent picks + auto-draft) —
@@ -145,9 +149,10 @@ function buildPanel() {
 }
 
 async function main() {
-  let diffDrafted, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
+  let diffDrafted, findMyTeamNames, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES;
-  ({ findBoardNames, diffDrafted } = await import(chrome.runtime.getURL("src/lib/textMatch.js")));
+  ({ findBoardNames, diffDrafted, findMyTeamNames } =
+    await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES } =
@@ -171,6 +176,7 @@ async function main() {
   const autoWarn = root.querySelector("#fm-auto-warn");
   const deadBox = root.querySelector("#fm-dead");
   const practiceBox = root.querySelector("#fm-practice");
+  const syncBtn = root.querySelector("#fm-sync");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -347,6 +353,47 @@ async function main() {
     while (log.children.length > 6) log.removeChild(log.lastChild);
   }
 
+  /* The room states your roster outright ("YOUR TEAM (5/15)"), so read it
+   * rather than making you click Mine five times. Additive only: this can
+   * add a player to your team or correct one previously recorded as a
+   * rival's, never take one away. */
+  async function importMyTeam(text) {
+    if (!boardNameSet || !findMyTeamNames) return false;
+    const mine = [...findMyTeamNames(text, boardNameSet)];
+    if (mine.length === 0) return false;
+    const { changed } = await sendMessage({ type: "IMPORT_PICKS", names: mine, by: "mine" });
+    if (changed) addLog(`Read your team off the page: ${mine.join(", ")}`);
+    return changed;
+  }
+
+  /* Cold start. Detection only ever sees changes from the moment it starts
+   * watching, so a panel loaded — or reloaded — mid-draft believes every
+   * player taken before then is still available, and will happily recommend
+   * someone drafted in round one. This sweeps up whatever the page shows
+   * right now, which is why the room's own Results/Picks view is worth
+   * opening first. */
+  syncBtn.addEventListener("click", async () => {
+    try {
+      const text = document.body.innerText;
+      if (!boardNameSet) {
+        const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
+        boardNameSet = new Set(snapshot.board.map((p) => p.name));
+      }
+      const mineNames = findMyTeamNames(text, boardNameSet);
+      const rivals = [...findBoardNames(text, boardNameSet)].filter((n) => !mineNames.has(n));
+      await importMyTeam(text);
+      if (rivals.length > 0) {
+        await sendMessage({ type: "IMPORT_PICKS", names: rivals, by: "rival" });
+      }
+      addLog(`Synced ${rivals.length} pick(s) from this page.`);
+      previousBoardNames = null; // this page is the new baseline
+      await refresh();
+    } catch (err) {
+      if (isContextGone(err)) return handleDeadContext();
+      showError(String(err.message || err));
+    }
+  });
+
   async function pollPage() {
     if (!polling) return;
     try {
@@ -355,6 +402,7 @@ async function main() {
         boardNameSet = new Set(snapshot.board.map((p) => p.name));
       }
       const text = document.body.innerText;
+      await importMyTeam(text);
       const found = findBoardNames(text, boardNameSet);
 
       if (previousBoardNames) {
