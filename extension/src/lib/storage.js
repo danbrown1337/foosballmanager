@@ -21,6 +21,7 @@ const KEYS = {
   turnPhrases: "fm_turn_phrases",
   confirmPhrases: "fm_confirm_phrases",
   practice: "fm_practice",
+  queueEnabled: "fm_queue_enabled",
 };
 
 /* Yahoo's standard mock draft room starts one W/R/T flex and a kicker; the
@@ -131,6 +132,13 @@ export const Storage = {
   /* Practice mode keeps the real league config alongside the mock one rather
    * than trying to reconstruct it later — restoring has to be exact, and the
    * whole point is that forgetting is not survivable on draft day. */
+  async getQueueEnabled() {
+    return get(KEYS.queueEnabled, false);
+  },
+  async setQueueEnabled(on) {
+    return set(KEYS.queueEnabled, on);
+  },
+
   async getPractice() {
     return get(KEYS.practice, { active: false, savedConfig: null });
   },
