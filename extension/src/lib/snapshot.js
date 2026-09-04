@@ -47,7 +47,25 @@ async function loadStaticData() {
  * snapshot, shortlist, repair — sees the same players. */
 async function buildPlayers(adp, notes, byes) {
   const pool = await Storage.getPool();
-  const rows = pool?.players?.length ? playersFromPool(pool) : adp;
+  let rows = adp;
+  if (pool?.players?.length) {
+    rows = playersFromPool(pool);
+
+    /* Fill in positions the pool doesn't cover at all, from the bundled file.
+     *
+     * The pool comes from the user's own league, and Yahoo only lists
+     * positions that league uses — this one starts no kicker, so its player
+     * list contains none. Mock rooms do start one, and have no players page
+     * of their own to import from, so without this a mock can never draft a
+     * kicker: two finished with the slot empty for exactly that reason.
+     *
+     * Only whole missing positions are taken, so the pool stays authoritative
+     * for everything it does cover and the stale bundled ranks don't creep
+     * back in alongside it. */
+    const covered = new Set(rows.map((r) => r.pos));
+    const gaps = adp.filter((r) => !covered.has(r.pos));
+    if (gaps.length > 0) rows = [...rows, ...gaps];
+  }
   const players = loadPlayers(rows);
   applyNotes(players, notes);
   if (pool?.players?.length) {
