@@ -22,6 +22,13 @@ export const STRATEGY_TAPER_PICKS = 60;
  * a worse player costs you the season. */
 export const DEFAULT_BYE_PENALTY = 6.0;
 
+/* Cost of a player at a position whose starting slots are already filled.
+ * Heavier where the position has nowhere else to play: a second QB, kicker or
+ * defence sits on the bench all season, while a third RB or receiver still
+ * starts in the flex or covers a bye. Without this the shortlist happily
+ * offered three tight ends to a roster that starts one. */
+export const SURPLUS_PENALTY = { QB: 14, K: 20, DEF: 20, TE: 8, RB: 3, WR: 3 };
+
 function strategyBias(pos, strategy, picksMade) {
   if (strategy === "best_player_available" || picksMade >= STRATEGY_TAPER_PICKS) return 0.0;
   const taper = 1 - picksMade / STRATEGY_TAPER_PICKS;
@@ -70,6 +77,16 @@ function minBy(list, keyFn) {
  *
  * Only when byes are actually known: fixtures without team bye data get no
  * penalty, so this cannot silently change the engine where it can't see. */
+export function surplusPenalty(player, mine, config) {
+  const starters = config.roster?.starters || {};
+  const need = starters[player.pos] || 0;
+  const have = mine.filter((p) => p.pos === player.pos).length;
+  if (have < need) return 0; // still filling the position
+  const surplus = have - need + 1; // this player would be the nth spare
+  const weight = config.autopilot?.surplus_penalty?.[player.pos] ?? SURPLUS_PENALTY[player.pos] ?? 5;
+  return surplus * weight;
+}
+
 export function byePenalty(player, mine, config) {
   const weight = config.autopilot?.bye_penalty ?? DEFAULT_BYE_PENALTY;
   if (!weight || !player.bye) return 0;
@@ -89,7 +106,9 @@ export function autoPick(players, config) {
   const scores = scorePlayers(players, config, picksMade);
   // Applied to every path below — a forced need pick should still prefer the
   // candidate who doesn't leave that position empty on the same week.
-  for (const p of avail) scores[p.name] += byePenalty(p, mine, config);
+  for (const p of avail) {
+    scores[p.name] += byePenalty(p, mine, config) + surplusPenalty(p, mine, config);
+  }
 
   const starters = config.roster.starters;
   const benchCap = (config.autopilot || {}).max_bench_per_pos ?? 3;
