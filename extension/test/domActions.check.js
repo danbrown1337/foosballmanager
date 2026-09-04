@@ -55,9 +55,32 @@ const PAGE_HTML = `<!doctype html><html><body>
     <button id="confirmBtn">Draft</button>
   </div>
 
+  <!-- Yahoo renders only a window of the player list, so most players are
+       absent from the DOM until searched for. This models that: the row does
+       not exist until the search box filters to it. -->
+  <input id="playerSearch" type="text" placeholder="Search for a player">
+  <ul id="virtual"></ul>
+
   <nav><a href="#">Mock Draft Lobby</a></nav>
 
   <script>
+    const OFFSCREEN = [{ name: "B. BOWERS", meta: "TE \u00b7 LV \u00b7 Bye 13" }];
+    document.getElementById('playerSearch').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      const ul = document.getElementById('virtual');
+      ul.innerHTML = '';
+      if (!q) return;
+      for (const row of OFFSCREEN) {
+        if (!row.name.toLowerCase().includes(q)) continue;
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.className = 'virtual-row';
+        btn.textContent = row.name + ' ' + row.meta;
+        li.appendChild(btn);
+        ul.appendChild(li);
+      }
+    });
+
     // DOM attributes, not window globals: window is per-JS-world (main page
     // vs. the extension's isolated content-script world), but this same
     // document is shared, so this is the one channel both sides can see.
@@ -87,8 +110,8 @@ const PROBE_CONTENT_SRC = `
 `;
 
 const PROBE_MODULE_SRC = `
-import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES }
-  from "../src/lib/domActions.js";
+import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
+  findPlayerSearchBox, setInputValue, surnameOf } from "../src/lib/domActions.js";
 
 export async function run(document) {
   const results = {};
@@ -139,6 +162,28 @@ export async function run(document) {
   const wrongTeam = findPlayerClickTarget(document.body, "Bijan Robinson",
     { player: { pos: "RB", team: "Sea" } });
   results.wrongTeamRefused = wrongTeam === null;
+
+  // A recommended player who isn't rendered: nothing to click until searched.
+  const bowersMeta = { pos: "TE", team: "LV" };
+  results.bowersAbsent =
+    findPlayerClickTarget(document.body, "Brock Bowers", { player: bowersMeta }) === null;
+
+  const searchBox = findPlayerSearchBox(document.body);
+  results.searchBoxFound = !!searchBox;
+  results.surname = surnameOf("Brock Bowers");
+  setInputValue(searchBox, surnameOf("Brock Bowers"));
+  await new Promise((r) => setTimeout(r, 100));
+  const afterSearch = findPlayerClickTarget(document.body, "Brock Bowers", { player: bowersMeta });
+  results.foundAfterSearch = afterSearch ? afterSearch.className : null;
+
+  // And clearing it puts the page back, so detection can resume on a real board.
+  setInputValue(searchBox, "");
+  await new Promise((r) => setTimeout(r, 100));
+  results.clearedAfterwards =
+    findPlayerClickTarget(document.body, "Brock Bowers", { player: bowersMeta }) === null;
+
+  // The overlay's own search box must never be mistaken for the room's.
+  results.searchNotOurs = !document.getElementById("fantasy-manager-overlay").contains(searchBox);
 
   return results;
 }
@@ -230,6 +275,12 @@ async function main() {
       ["picks the right Robinson by team", result.bijanClass === "row-bijan"],
       ["picks the other Robinson by team", result.brianClass === "row-brian"],
       ["clicks nothing when no row matches the player's team", result.wrongTeamRefused === true],
+      ["an unrendered player has no click target", result.bowersAbsent === true],
+      ["finds the room's player search box", result.searchBoxFound === true],
+      ["searches by surname", result.surname === "Bowers"],
+      ["finds the row once the search filters to it", result.foundAfterSearch === "virtual-row"],
+      ["clearing the search puts the page back", result.clearedAfterwards === true],
+      ["never picks up our own overlay's inputs", result.searchNotOurs === true],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);
