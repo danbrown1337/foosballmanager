@@ -9,6 +9,7 @@ import {
   buildSnapshot,
   importPicks,
   setPracticeMode,
+  shortlist,
   markPick,
   undoPick,
   autopickCommit,
@@ -42,6 +43,9 @@ async function handle(message, sender) {
 
     case "SET_PRACTICE":
       return setPracticeMode(!!message.active);
+
+    case "GET_SHORTLIST":
+      return shortlist(message.n || 5);
 
     case "MARK_PICK":
       return markPick(message.name, message.by);
