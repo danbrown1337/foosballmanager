@@ -233,6 +233,11 @@ async function main() {
   const QUEUE_DEPTH = 5;
   let queueEnabled = false;
   let lastQueueRunAt = 0;
+  /* Queue maintenance and a board update both drive the room's search box.
+   * Whichever starts second must wait, or it reads a list the other one is
+   * filtering — which is how pressing Update mid-cycle got told to clear a
+   * search the user never typed. */
+  let roomBusy = false;
   /* What we put in the room's queue. Yahoo removes a player from the queue
    * when someone drafts him, so anything that leaves this set without us
    * drafting him is a pick we never saw — the cheapest, most reliable pick
@@ -600,6 +605,7 @@ async function main() {
     if (!queueEnabled || detectionSuspended) return;
     if (Date.now() - lastQueueRunAt < 15000) return;
     if (isMyTurn(text, turnPhrases)) return; // never fight the clock
+    if (roomBusy) return; // a board update is driving the search box
     lastQueueRunAt = Date.now();
 
     const inRoom = findQueueNames(text, boardNameSet, boardPlayers);
@@ -625,6 +631,7 @@ async function main() {
     let searchBox = null;
     let added = 0;
     let attempts = 0;
+    roomBusy = true;
     try {
       while (added < 2 && attempts < 8) {
         attempts++;
@@ -665,6 +672,7 @@ async function main() {
       }
     } finally {
       await closeSearch(searchBox);
+      roomBusy = false;
     }
   }
 
@@ -687,11 +695,21 @@ async function main() {
     if (updateBtn.disabled) return;
     updateBtn.disabled = true;
     const label = updateBtn.textContent;
+    const wasBusy = roomBusy;
+    roomBusy = true;
     try {
+      if (wasBusy) {
+        // Queue maintenance is mid-search; its filter isn't the whole board.
+        addLog("Queue maintenance is using the search — try again in a few seconds.");
+        return;
+      }
       const searchBox = findPlayerSearchBox(document.body);
       if (searchBox && searchBox.value) {
-        addLog("Clear the player search first — a filtered list isn't the whole board.");
-        return;
+        // Clear it rather than refusing: a leftover filter is usually our own,
+        // and telling someone to fix our mess is not a guard, it's a bug.
+        setInputValue(searchBox, "");
+        await wait(700);
+        addLog("Cleared the player search so the whole list could be read.");
       }
       const scroller = findListScroller(document.body);
       if (!scroller) {
@@ -744,6 +762,7 @@ async function main() {
       if (isContextGone(err)) return handleDeadContext();
       showError(String(err.message || err));
     } finally {
+      roomBusy = false;
       updateBtn.disabled = false;
       updateBtn.textContent = label;
     }
