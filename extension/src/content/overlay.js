@@ -541,12 +541,32 @@ async function main() {
    * entire draft, which blocked queue maintenance on every cycle and produced
    * turn actions between other managers' picks. The real banner lives outside
    * the list. */
-  function textForTurn() {
-    let text = document.body.innerText;
+  /* Is a turn banner actually on the page — as opposed to the player list's
+   * own divider, "YOUR TURN - 22ND PICK", which marks where your next pick
+   * lands in the rankings and sits there permanently?
+   *
+   * Asked per text node rather than by cutting the list's text out of the
+   * page's: innerText normalises differently on a container than on body, so
+   * subtracting one from the other silently removed nothing, and the panel
+   * went on believing it was your turn for a whole draft. Here the node's own
+   * position decides — inside the list it doesn't count, outside it does. */
+  function turnBannerPresent() {
     const scroller = findListScroller(document.body);
-    const listText = scroller?.innerText || "";
-    if (listText.length > 40) text = text.split(listText).join(" ");
-    return withoutQueuePanel(text);
+    const overlay = document.getElementById("fantasy-manager-overlay");
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) =>
+        node.nodeValue && isMyTurn(node.nodeValue, turnPhrases)
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_SKIP,
+    });
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const el = node.parentElement;
+      if (!el) continue;
+      if (scroller?.contains(el)) continue; // the ranking divider
+      if (overlay?.contains(el)) continue; // our own panel's log
+      return true;
+    }
+    return false;
   }
 
   const countNames = () =>
@@ -699,9 +719,7 @@ async function main() {
      * so each one says its own name, once a minute. */
     if (detectionSuspended) return noteQueueIdle("queue: waiting — the page is being swept");
     if (Date.now() - lastQueueRunAt < 15000) return;
-    if (isMyTurn(textForTurn(), turnPhrases)) {
-      return noteQueueIdle("queue: waiting — it's your turn");
-    }
+    if (turnBannerPresent()) return noteQueueIdle("queue: waiting — it's your turn");
     if (roomBusy) return noteQueueIdle("queue: waiting — a board update is using the search");
     lastQueueRunAt = Date.now();
 
@@ -1059,7 +1077,7 @@ async function main() {
     // unattended, not two controls that could be confused for each other.
     if (!autoEnableBox.checked || !polling) return;
     try {
-      const active = isMyTurn(textForTurn(), turnPhrases);
+      const active = turnBannerPresent();
 
       if (!active) {
         turnActive = false;
