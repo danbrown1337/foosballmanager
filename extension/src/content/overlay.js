@@ -178,7 +178,8 @@ async function main() {
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
-    setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton;
+    setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
+    findQueueRemove;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn } =
@@ -188,7 +189,7 @@ async function main() {
   ({ isMyTurn, looksLikeAFutureTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
-     findListScroller, findQueueStar, findDraftButton } =
+     findListScroller, findQueueStar, findDraftButton, findQueueRemove } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
@@ -868,7 +869,28 @@ async function main() {
         if (attempts === 1) {
           noteQueueIdle(`queue: checking — ${inRoom.size} in the room's queue`);
         }
-        const wanted = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
+        /* Take out what no longer belongs. Yahoo drafts from this queue, so an
+     * entry left there is a pick waiting to happen — and entries added before
+     * the roster changed are how a team ended up with three tight ends and
+     * two quarterbacks. Only players the shortlist no longer wants at all,
+     * one per cycle, so a queue the user curated isn't emptied underneath
+     * them. */
+    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
+    const keep = new Set(shortlistNow.map((p) => p.name));
+    const stale = [...inRoom].filter((name) => !keep.has(name));
+    if (stale.length > 0) {
+      const name = stale[0];
+      const control = findQueueRemove(document.body, name);
+      if (control) {
+        clickElement(control);
+        queuedByUs.delete(name);
+        addLog(`Took ${name} out of the queue — no longer in the shortlist.`);
+        await wait(600);
+        return; // re-read the queue next cycle rather than acting on stale counts
+      }
+    }
+
+    const wanted = shortlistNow;
         const pick = wanted.find(
           (p) => !inRoom.has(p.name) && !queuedByUs.has(p.name) && !tried.has(p.name)
         );
