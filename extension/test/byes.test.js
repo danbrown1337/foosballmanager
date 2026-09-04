@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { makePlayer, applyByes } from "../src/engine/board.js";
-import { byePenalty, DEFAULT_BYE_PENALTY } from "../src/engine/autopilot.js";
+import { byePenalty, surplusPenalty, DEFAULT_BYE_PENALTY } from "../src/engine/autopilot.js";
 
 const CONFIG = {
   league: { name: "T", num_teams: 12, scoring: "ppr" },
@@ -51,5 +51,34 @@ describe("applyByes", () => {
     applyByes(players, { DET: 6 });
     assert.equal(players[0].bye, 6);
     assert.equal(players[1].bye, null);
+  });
+});
+
+describe("surplusPenalty", () => {
+  const te = (name, bye) => ({ ...makePlayer({ rank: 1, name, team: "KC", pos: "TE", adp: 30 }), bye });
+  const rb = (name) => ({ ...makePlayer({ rank: 1, name, team: "DET", pos: "RB", adp: 30 }), bye: 6 });
+  const qb = (name) => ({ ...makePlayer({ rank: 1, name, team: "BUF", pos: "QB", adp: 30 }), bye: 7 });
+
+  test("costs nothing while the starting slots are still empty", () => {
+    assert.equal(surplusPenalty(te("A", 5), [], CONFIG), 0);
+  });
+
+  test("charges for a second tight end when the league starts one", () => {
+    // The case that prompted this: three tight ends offered to a roster
+    // already holding one.
+    assert.ok(surplusPenalty(te("B", 5), [te("A", 6)], CONFIG) > 0);
+  });
+
+  test("charges more for a backup QB than a third running back", () => {
+    // A spare quarterback sits on the bench; a third back starts in the flex.
+    const spareQb = surplusPenalty(qb("B"), [qb("A")], CONFIG);
+    const thirdRb = surplusPenalty(rb("C"), [rb("A"), rb("B")], CONFIG);
+    assert.ok(spareQb > thirdRb, `${spareQb} should exceed ${thirdRb}`);
+  });
+
+  test("grows with each additional spare", () => {
+    const first = surplusPenalty(te("B", 5), [te("A", 6)], CONFIG);
+    const second = surplusPenalty(te("C", 5), [te("A", 6), te("B", 5)], CONFIG);
+    assert.ok(second > first);
   });
 });

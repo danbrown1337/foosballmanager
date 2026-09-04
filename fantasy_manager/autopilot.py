@@ -50,6 +50,24 @@ def _strategy_bias(pos: str, strategy: str, picks_made: int) -> float:
 
 DEFAULT_BYE_PENALTY = 6.0
 
+# Cost of a player at a position whose starting slots are already filled.
+# Heavier where the position has nowhere else to play: a second QB, kicker or
+# defence sits on the bench all season, while a third back or receiver still
+# starts in the flex or covers a bye.
+SURPLUS_PENALTY = {"QB": 14, "K": 20, "DEF": 20, "TE": 8, "RB": 3, "WR": 3}
+
+
+def surplus_penalty(player, mine, config):
+    """Cost of stacking a position whose starters are already filled."""
+    starters = config["roster"]["starters"]
+    need = starters.get(player.pos, 0)
+    have = sum(1 for p in mine if p.pos == player.pos)
+    if have < need:
+        return 0.0
+    surplus = have - need + 1
+    weights = config.get("autopilot", {}).get("surplus_penalty", SURPLUS_PENALTY)
+    return surplus * weights.get(player.pos, 5)
+
 
 def bye_penalty(player, mine, config):
     """Cost of stacking this player's bye with players already rostered.
@@ -107,7 +125,7 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     # ranks players in isolation. Applied to every path below, so even a
     # forced need pick prefers the candidate who doesn't empty the same week.
     for p in avail:
-        scores[p.name] += bye_penalty(p, mine, config)
+        scores[p.name] += bye_penalty(p, mine, config) + surplus_penalty(p, mine, config)
 
     starters = config["roster"]["starters"]
     bench_cap = config.get("autopilot", {}).get("max_bench_per_pos", 3)

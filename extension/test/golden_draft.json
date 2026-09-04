@@ -204,7 +204,7 @@
       "team": 1,
       "player": "Omarion Hampton",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 22.6, adjusted 22.6).",
+      "reason": "Best available by adjusted value (raw ADP 22.6, adjusted 25.6).",
       "needOverride": false
     },
     {
@@ -250,33 +250,33 @@
     {
       "pickNo": 28,
       "team": 7,
-      "player": "DeVonta Smith",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 29.7, adjusted 29.7).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 29,
-      "team": 8,
       "player": "Ashton Jeanty",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 21.0, adjusted 31.0). injury_watch: Ankle sprain, no firm return timeline as of late Aug \u2014 talent is real, term is the risk",
       "needOverride": false
     },
     {
+      "pickNo": 29,
+      "team": 8,
+      "player": "Kyren Williams",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 31.8, adjusted 31.8).",
+      "needOverride": false
+    },
+    {
       "pickNo": 30,
       "team": 9,
-      "player": "Tetairoa McMillan",
+      "player": "DeVonta Smith",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 31.1, adjusted 31.1).",
+      "reason": "Best available by adjusted value (raw ADP 29.7, adjusted 29.7).",
       "needOverride": false
     },
     {
       "pickNo": 31,
       "team": 0,
-      "player": "Kyren Williams",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 31.8, adjusted 31.8).",
+      "player": "Tetairoa McMillan",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 31.1, adjusted 31.1).",
       "needOverride": false
     },
     {
@@ -298,57 +298,57 @@
     {
       "pickNo": 34,
       "team": 3,
-      "player": "Emeka Egbuka",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 35.1, adjusted 35.1).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 35,
-      "team": 4,
       "player": "Breece Hall",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 33.5, adjusted 36.5). injury_watch: Groin strain, trainers expect Week 1 despite early 2-3 week projection",
       "needOverride": false
     },
     {
-      "pickNo": 36,
-      "team": 5,
+      "pickNo": 35,
+      "team": 4,
       "player": "Javonte Williams",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 36.8, adjusted 36.8).",
       "needOverride": false
     },
     {
-      "pickNo": 37,
-      "team": 6,
-      "player": "Tee Higgins",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 36.8, adjusted 36.8).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 38,
-      "team": 7,
+      "pickNo": 36,
+      "team": 5,
       "player": "Travis Etienne Jr.",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 37.3, adjusted 37.3).",
       "needOverride": false
     },
     {
+      "pickNo": 37,
+      "team": 6,
+      "player": "Emeka Egbuka",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 35.1, adjusted 35.1).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 38,
+      "team": 7,
+      "player": "Josh Allen",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 34.1, adjusted 39.1). value_note: Priced as an overall top-20 pick well ahead of the next QB off the board (Lamar ~pick 41)",
+      "needOverride": false
+    },
+    {
       "pickNo": 39,
       "team": 8,
-      "player": "Ladd McConkey",
+      "player": "Tee Higgins",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 38.0, adjusted 38.0).",
+      "reason": "Best available by adjusted value (raw ADP 36.8, adjusted 39.8).",
       "needOverride": false
     },
     {
       "pickNo": 40,
       "team": 9,
-      "player": "Josh Allen",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 34.1, adjusted 39.1). value_note: Priced as an overall top-20 pick well ahead of the next QB off the board (Lamar ~pick 41)",
+      "player": "Ladd McConkey",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 38.0, adjusted 41.0).",
       "needOverride": false
     },
     {
@@ -356,23 +356,23 @@
       "team": 0,
       "player": "Davante Adams",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 42.1, adjusted 42.1).",
+      "reason": "Best available by adjusted value (raw ADP 42.1, adjusted 45.1).",
       "needOverride": false
     },
     {
       "pickNo": 42,
       "team": 1,
-      "player": "D'Andre Swift",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 45.0, adjusted 45.0).",
+      "player": "Jaylen Waddle",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 45.1, adjusted 45.1).",
       "needOverride": false
     },
     {
       "pickNo": 43,
       "team": 2,
-      "player": "Jaylen Waddle",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 45.1, adjusted 45.1).",
+      "player": "D'Andre Swift",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 45.0, adjusted 45.0).",
       "needOverride": false
     },
     {
@@ -380,7 +380,7 @@
       "team": 3,
       "player": "Jameson Williams",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 45.3, adjusted 45.3).",
+      "reason": "Best available by adjusted value (raw ADP 45.3, adjusted 48.3).",
       "needOverride": false
     },
     {
@@ -388,7 +388,7 @@
       "team": 4,
       "player": "Bucky Irving",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 45.5, adjusted 45.5).",
+      "reason": "Best available by adjusted value (raw ADP 45.5, adjusted 48.5).",
       "needOverride": false
     },
     {
@@ -396,7 +396,7 @@
       "team": 5,
       "player": "DJ Moore",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 48.0, adjusted 48.0).",
+      "reason": "Best available by adjusted value (raw ADP 48.0, adjusted 51.0).",
       "needOverride": false
     },
     {
@@ -404,7 +404,7 @@
       "team": 6,
       "player": "Terry McLaurin",
       "pos": "WR",
-      "reason": "Need override: WR is 3 picks from the replacement cliff league-wide and you have none rostered.",
+      "reason": "Need override: WR is 3 picks from the replacement cliff league-wide and you have 1 of 2 rostered.",
       "needOverride": true
     },
     {
@@ -436,37 +436,37 @@
       "team": 0,
       "player": "Bhayshul Tuten",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 52.9, adjusted 52.9).",
+      "reason": "Best available by adjusted value (raw ADP 52.9, adjusted 55.9).",
       "needOverride": false
     },
     {
       "pickNo": 52,
       "team": 1,
-      "player": "Rome Odunze",
-      "pos": "WR",
-      "reason": "Need override: WR is 2 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 53,
-      "team": 2,
-      "player": "Cam Skattebo",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 39.6, adjusted 53.6). bust: Real committee with Tracy Jr., Singletary, Harris \u2014 ADP prices him as a clear lead back",
-      "needOverride": false
-    },
-    {
-      "pickNo": 54,
-      "team": 3,
       "player": "Colston Loveland",
       "pos": "TE",
       "reason": "Best available by adjusted value (raw ADP 55.9, adjusted 55.9).",
       "needOverride": false
     },
     {
+      "pickNo": 53,
+      "team": 2,
+      "player": "Cam Skattebo",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 39.6, adjusted 56.6). bust: Real committee with Tracy Jr., Singletary, Harris \u2014 ADP prices him as a clear lead back",
+      "needOverride": false
+    },
+    {
+      "pickNo": 54,
+      "team": 3,
+      "player": "Lamar Jackson",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 56.8, adjusted 56.8).",
+      "needOverride": false
+    },
+    {
       "pickNo": 55,
       "team": 4,
-      "player": "Lamar Jackson",
+      "player": "Joe Burrow",
       "pos": "QB",
       "reason": "Best available by adjusted value (raw ADP 56.8, adjusted 56.8).",
       "needOverride": false
@@ -474,9 +474,9 @@
     {
       "pickNo": 56,
       "team": 5,
-      "player": "Joe Burrow",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 56.8, adjusted 56.8).",
+      "player": "Rome Odunze",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 54.0, adjusted 60.0).",
       "needOverride": false
     },
     {
@@ -484,7 +484,7 @@
       "team": 6,
       "player": "David Montgomery",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 57.5, adjusted 57.5).",
+      "reason": "Best available by adjusted value (raw ADP 57.5, adjusted 60.5).",
       "needOverride": false
     },
     {
@@ -492,295 +492,295 @@
       "team": 7,
       "player": "Luther Burden III",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 55.4, adjusted 58.4). injury_watch: Groin injury, trending in a positive direction",
+      "reason": "Best available by adjusted value (raw ADP 55.4, adjusted 61.4). injury_watch: Groin injury, trending in a positive direction",
       "needOverride": false
     },
     {
       "pickNo": 59,
       "team": 8,
-      "player": "Christian Watson",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 58.9, adjusted 58.9).",
+      "player": "Rhamondre Stevenson",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 61.7, adjusted 64.7).",
       "needOverride": false
     },
     {
       "pickNo": 60,
       "team": 9,
-      "player": "Rhamondre Stevenson",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 61.7, adjusted 61.7).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 61,
-      "team": 0,
       "player": "Jaylen Warren",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 62.2, adjusted 62.2).",
       "needOverride": false
     },
     {
+      "pickNo": 61,
+      "team": 0,
+      "player": "Christian Watson",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 58.9, adjusted 64.9).",
+      "needOverride": false
+    },
+    {
       "pickNo": 62,
       "team": 1,
-      "player": "Parker Washington",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 64.1, adjusted 64.1).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 63,
-      "team": 2,
-      "player": "Marvin Harrison Jr.",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 64.3, adjusted 64.3).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 64,
-      "team": 3,
       "player": "Dak Prescott",
       "pos": "QB",
       "reason": "Best available by adjusted value (raw ADP 65.4, adjusted 65.4).",
       "needOverride": false
     },
     {
-      "pickNo": 65,
-      "team": 4,
-      "player": "Mike Evans",
+      "pickNo": 63,
+      "team": 2,
+      "player": "Parker Washington",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 55.1, adjusted 67.1). bust: Age 33; three preseason injuries; crowded new SF receiving corps behind Kittle/CMC",
+      "reason": "Best available by adjusted value (raw ADP 64.1, adjusted 67.1).",
       "needOverride": false
     },
     {
-      "pickNo": 66,
-      "team": 5,
+      "pickNo": 64,
+      "team": 3,
       "player": "Tyler Warren",
       "pos": "TE",
       "reason": "Best available by adjusted value (raw ADP 65.4, adjusted 68.4). injury_watch: Groin injury, not considered serious",
       "needOverride": false
     },
     {
-      "pickNo": 67,
-      "team": 6,
-      "player": "Tony Pollard",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 69.6, adjusted 69.6).",
+      "pickNo": 65,
+      "team": 4,
+      "player": "Marvin Harrison Jr.",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 64.3, adjusted 67.3).",
       "needOverride": false
     },
     {
-      "pickNo": 68,
-      "team": 7,
+      "pickNo": 66,
+      "team": 5,
       "player": "Jayden Daniels",
       "pos": "QB",
       "reason": "Best available by adjusted value (raw ADP 72.1, adjusted 72.1).",
       "needOverride": false
     },
     {
+      "pickNo": 67,
+      "team": 6,
+      "player": "Mike Evans",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 55.1, adjusted 70.1). bust: Age 33; three preseason injuries; crowded new SF receiving corps behind Kittle/CMC",
+      "needOverride": false
+    },
+    {
+      "pickNo": 68,
+      "team": 7,
+      "player": "Tony Pollard",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 69.6, adjusted 72.6).",
+      "needOverride": false
+    },
+    {
       "pickNo": 69,
       "team": 8,
-      "player": "Brian Thomas Jr.",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 72.8, adjusted 72.8).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 70,
-      "team": 9,
-      "player": "Courtland Sutton",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 60.9, adjusted 72.9). bust: Target share drops after Waddle trade; Pat Bryant also pushing for looks",
-      "needOverride": false
-    },
-    {
-      "pickNo": 71,
-      "team": 0,
-      "player": "Michael Wilson",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 75.3, adjusted 75.3).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 72,
-      "team": 1,
-      "player": "Jadarian Price",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 73.7, adjusted 73.7).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 73,
-      "team": 2,
-      "player": "TreVeyon Henderson",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 64.1, adjusted 74.1). bust: NE role only clicks when Rhamondre Stevenson is hurt; 6.4 PPG average otherwise",
-      "needOverride": false
-    },
-    {
-      "pickNo": 74,
-      "team": 3,
-      "player": "Rico Dowdle",
-      "pos": "RB",
-      "reason": "Need override: RB is 3 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 75,
-      "team": 4,
-      "player": "DK Metcalf",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 65.8, adjusted 75.8). bust: Career-low target share in 2025; Rodgers' deep-ball rate is a poor scheme match",
-      "needOverride": false
-    },
-    {
-      "pickNo": 76,
-      "team": 5,
-      "player": "Michael Pittman Jr.",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 75.8, adjusted 75.8).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 77,
-      "team": 6,
       "player": "Matthew Stafford",
       "pos": "QB",
       "reason": "Best available by adjusted value (raw ADP 75.8, adjusted 75.8).",
       "needOverride": false
     },
     {
-      "pickNo": 78,
-      "team": 7,
+      "pickNo": 70,
+      "team": 9,
+      "player": "Jadarian Price",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 73.7, adjusted 76.7).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 71,
+      "team": 0,
+      "player": "Jalen Hurts",
+      "pos": "QB",
+      "reason": "Need override: QB is 3 picks from the replacement cliff league-wide and you have 0 of 1 rostered.",
+      "needOverride": true
+    },
+    {
+      "pickNo": 72,
+      "team": 1,
+      "player": "Brian Thomas Jr.",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 72.8, adjusted 75.8).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 73,
+      "team": 2,
+      "player": "Brock Purdy",
+      "pos": "QB",
+      "reason": "Need override: QB is 2 picks from the replacement cliff league-wide and you have 0 of 1 rostered.",
+      "needOverride": true
+    },
+    {
+      "pickNo": 74,
+      "team": 3,
+      "player": "TreVeyon Henderson",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 64.1, adjusted 77.1). bust: NE role only clicks when Rhamondre Stevenson is hurt; 6.4 PPG average otherwise",
+      "needOverride": false
+    },
+    {
+      "pickNo": 75,
+      "team": 4,
       "player": "Kyle Pitts Sr.",
       "pos": "TE",
       "reason": "Best available by adjusted value (raw ADP 77.4, adjusted 77.4).",
       "needOverride": false
     },
     {
+      "pickNo": 76,
+      "team": 5,
+      "player": "Rico Dowdle",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 74.8, adjusted 77.8).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 77,
+      "team": 6,
+      "player": "Caleb Williams",
+      "pos": "QB",
+      "reason": "Need override: QB is 1 picks from the replacement cliff league-wide and you have 0 of 1 rostered.",
+      "needOverride": true
+    },
+    {
+      "pickNo": 78,
+      "team": 7,
+      "player": "Courtland Sutton",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 60.9, adjusted 78.9). bust: Target share drops after Waddle trade; Pat Bryant also pushing for looks",
+      "needOverride": false
+    },
+    {
       "pickNo": 79,
       "team": 8,
-      "player": "Jalen Hurts",
-      "pos": "QB",
-      "reason": "Need override: QB is 3 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
+      "player": "Michael Wilson",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 75.3, adjusted 81.3).",
+      "needOverride": false
     },
     {
       "pickNo": 80,
       "team": 9,
-      "player": "Chris Godwin Jr.",
+      "player": "DK Metcalf",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 79.4, adjusted 79.4).",
+      "reason": "Best available by adjusted value (raw ADP 65.8, adjusted 81.8). bust: Career-low target share in 2025; Rodgers' deep-ball rate is a poor scheme match",
       "needOverride": false
     },
     {
       "pickNo": 81,
       "team": 0,
-      "player": "Brock Purdy",
-      "pos": "QB",
-      "reason": "Need override: QB is 2 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 82,
-      "team": 1,
-      "player": "Caleb Williams",
-      "pos": "QB",
-      "reason": "Need override: QB is 1 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 83,
-      "team": 2,
-      "player": "Trevor Lawrence",
-      "pos": "QB",
-      "reason": "Need override: QB is 0 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 84,
-      "team": 3,
-      "player": "Carnell Tate",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 80.2, adjusted 80.2).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 85,
-      "team": 4,
       "player": "Seattle Defense",
       "pos": "DEF",
       "reason": "Best available by adjusted value (raw ADP 81.9, adjusted 81.9).",
       "needOverride": false
     },
     {
-      "pickNo": 86,
-      "team": 5,
-      "player": "Chuba Hubbard",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 82.7, adjusted 82.7).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 87,
-      "team": 6,
-      "player": "Alec Pierce",
+      "pickNo": 82,
+      "team": 1,
+      "player": "Michael Pittman Jr.",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 69.9, adjusted 84.9). bust: Ankle surgery recovery, gradual workload plan, Keenan Allen added as direct competition",
+      "reason": "Best available by adjusted value (raw ADP 75.8, adjusted 81.8).",
       "needOverride": false
     },
     {
-      "pickNo": 88,
-      "team": 7,
-      "player": "Jakobi Meyers",
+      "pickNo": 83,
+      "team": 2,
+      "player": "Chris Godwin Jr.",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 86.3, adjusted 86.3).",
+      "reason": "Best available by adjusted value (raw ADP 79.4, adjusted 85.4).",
       "needOverride": false
     },
     {
-      "pickNo": 89,
-      "team": 8,
-      "player": "Harold Fannin Jr.",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 76.6, adjusted 86.6). bust: New OC less TE-friendly; Watson has a thin TE target history; rookie competition at the position",
-      "needOverride": false
-    },
-    {
-      "pickNo": 90,
-      "team": 9,
-      "player": "Wan'Dale Robinson",
+      "pickNo": 84,
+      "team": 3,
+      "player": "Carnell Tate",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 86.4, adjusted 86.4).",
+      "reason": "Best available by adjusted value (raw ADP 80.2, adjusted 86.2).",
       "needOverride": false
     },
     {
-      "pickNo": 91,
-      "team": 0,
+      "pickNo": 85,
+      "team": 4,
       "player": "Denver Defense",
       "pos": "DEF",
       "reason": "Best available by adjusted value (raw ADP 87.2, adjusted 87.2).",
       "needOverride": false
     },
     {
+      "pickNo": 86,
+      "team": 5,
+      "player": "Harold Fannin Jr.",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 76.6, adjusted 86.6). bust: New OC less TE-friendly; Watson has a thin TE target history; rookie competition at the position",
+      "needOverride": false
+    },
+    {
+      "pickNo": 87,
+      "team": 6,
+      "player": "Chuba Hubbard",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 82.7, adjusted 88.7).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 88,
+      "team": 7,
+      "player": "J.K. Dobbins",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 87.2, adjusted 93.2).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 89,
+      "team": 8,
+      "player": "Alec Pierce",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 69.9, adjusted 93.9). bust: Ankle surgery recovery, gradual workload plan, Keenan Allen added as direct competition",
+      "needOverride": false
+    },
+    {
+      "pickNo": 90,
+      "team": 9,
+      "player": "Jakobi Meyers",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 86.3, adjusted 95.3).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 91,
+      "team": 0,
+      "player": "Wan'Dale Robinson",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 86.4, adjusted 95.4).",
+      "needOverride": false
+    },
+    {
       "pickNo": 92,
       "team": 1,
-      "player": "Josh Downs",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 89.4, adjusted 89.4).",
+      "player": "Kenny Gainwell",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 91.2, adjusted 97.2).",
       "needOverride": false
     },
     {
       "pickNo": 93,
       "team": 2,
-      "player": "J.K. Dobbins",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 87.2, adjusted 87.2).",
+      "player": "Houston Defense",
+      "pos": "DEF",
+      "reason": "Best available by adjusted value (raw ADP 97.9, adjusted 97.9).",
       "needOverride": false
     },
     {
       "pickNo": 94,
       "team": 3,
-      "player": "Kenny Gainwell",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 91.2, adjusted 91.2).",
+      "player": "Josh Downs",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 89.4, adjusted 98.4).",
       "needOverride": false
     },
     {
@@ -788,7 +788,7 @@
       "team": 4,
       "player": "Stefon Diggs",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 91.8, adjusted 91.8).",
+      "reason": "Best available by adjusted value (raw ADP 91.8, adjusted 97.8).",
       "needOverride": false
     },
     {
@@ -796,47 +796,47 @@
       "team": 5,
       "player": "Jonathon Brooks",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 92.8, adjusted 92.8).",
+      "reason": "Best available by adjusted value (raw ADP 92.8, adjusted 98.8).",
       "needOverride": false
     },
     {
       "pickNo": 97,
       "team": 6,
-      "player": "RJ Harvey",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 94.1, adjusted 94.1).",
+      "player": "Jayden Reed",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 94.7, adjusted 100.7).",
       "needOverride": false
     },
     {
       "pickNo": 98,
       "team": 7,
-      "player": "Jaleel McLaughlin",
+      "player": "RJ Harvey",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 97.8, adjusted 97.8).",
+      "reason": "Best available by adjusted value (raw ADP 94.1, adjusted 103.1).",
       "needOverride": false
     },
     {
       "pickNo": 99,
       "team": 8,
-      "player": "Houston Defense",
-      "pos": "DEF",
-      "reason": "Best available by adjusted value (raw ADP 97.9, adjusted 97.9).",
+      "player": "George Kittle",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 99.6, adjusted 103.6). injury_watch: Torn Achilles, cleared PUP, on track for Week 1",
       "needOverride": false
     },
     {
       "pickNo": 100,
       "team": 9,
-      "player": "Jared Goff",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 101.2, adjusted 101.2).",
+      "player": "Jaleel McLaughlin",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 97.8, adjusted 103.8).",
       "needOverride": false
     },
     {
       "pickNo": 101,
       "team": 0,
-      "player": "Jayden Reed",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 94.7, adjusted 94.7).",
+      "player": "Dallas Goedert",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 105.2, adjusted 105.2).",
       "needOverride": false
     },
     {
@@ -844,99 +844,19 @@
       "team": 1,
       "player": "Quentin Johnston",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 96.5, adjusted 96.5).",
+      "reason": "Best available by adjusted value (raw ADP 96.5, adjusted 105.5).",
       "needOverride": false
     },
     {
       "pickNo": 103,
       "team": 2,
-      "player": "Jordan Addison",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 96.9, adjusted 96.9).",
+      "player": "Trevor Lawrence",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 91.6, adjusted 105.6).",
       "needOverride": false
     },
     {
       "pickNo": 104,
-      "team": 3,
-      "player": "Patrick Mahomes",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 102.8, adjusted 102.8).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 105,
-      "team": 4,
-      "player": "George Kittle",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 99.6, adjusted 103.6). injury_watch: Torn Achilles, cleared PUP, on track for Week 1",
-      "needOverride": false
-    },
-    {
-      "pickNo": 106,
-      "team": 5,
-      "player": "Khalil Shakir",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 103.5, adjusted 103.5).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 107,
-      "team": 6,
-      "player": "Justin Herbert",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 105.0, adjusted 105.0).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 108,
-      "team": 7,
-      "player": "Dallas Goedert",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 105.2, adjusted 105.2).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 109,
-      "team": 8,
-      "player": "Aaron Jones Sr.",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 105.3, adjusted 105.3).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 110,
-      "team": 9,
-      "player": "Travis Kelce",
-      "pos": "TE",
-      "reason": "Need override: TE is 3 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 111,
-      "team": 0,
-      "player": "Tucker Kraft",
-      "pos": "TE",
-      "reason": "Need override: TE is 2 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 112,
-      "team": 1,
-      "player": "Sam LaPorta",
-      "pos": "TE",
-      "reason": "Need override: TE is 1 picks from the replacement cliff league-wide and you have none rostered.",
-      "needOverride": true
-    },
-    {
-      "pickNo": 113,
-      "team": 2,
-      "player": "Jordan Mason",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 115.5, adjusted 107.5). breakout: Outproduces Jones on efficiency; new zone scheme fits his profile; clear path to touches",
-      "needOverride": false
-    },
-    {
-      "pickNo": 114,
       "team": 3,
       "player": "LA Rams Defense",
       "pos": "DEF",
@@ -944,15 +864,15 @@
       "needOverride": false
     },
     {
-      "pickNo": 115,
+      "pickNo": 105,
       "team": 4,
-      "player": "Kyle Monangai",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 110.6, adjusted 110.6).",
+      "player": "Jordan Addison",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 96.9, adjusted 105.9).",
       "needOverride": false
     },
     {
-      "pickNo": 116,
+      "pickNo": 106,
       "team": 5,
       "player": "Minnesota Defense",
       "pos": "DEF",
@@ -960,19 +880,99 @@
       "needOverride": false
     },
     {
-      "pickNo": 117,
+      "pickNo": 107,
       "team": 6,
+      "player": "Khalil Shakir",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 103.5, adjusted 112.5).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 108,
+      "team": 7,
+      "player": "Travis Kelce",
+      "pos": "TE",
+      "reason": "Need override: TE is 3 picks from the replacement cliff league-wide and you have 0 of 1 rostered.",
+      "needOverride": true
+    },
+    {
+      "pickNo": 109,
+      "team": 8,
+      "player": "Aaron Jones Sr.",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 105.3, adjusted 111.3).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 110,
+      "team": 9,
+      "player": "Tucker Kraft",
+      "pos": "TE",
+      "reason": "Need override: TE is 2 picks from the replacement cliff league-wide and you have 0 of 1 rostered.",
+      "needOverride": true
+    },
+    {
+      "pickNo": 111,
+      "team": 0,
+      "player": "Jordan Mason",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 115.5, adjusted 113.5). breakout: Outproduces Jones on efficiency; new zone scheme fits his profile; clear path to touches",
+      "needOverride": false
+    },
+    {
+      "pickNo": 112,
+      "team": 1,
+      "player": "Jared Goff",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 101.2, adjusted 115.2).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 113,
+      "team": 2,
       "player": "Xavier Worthy",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 105.4, adjusted 105.4).",
+      "reason": "Best available by adjusted value (raw ADP 105.4, adjusted 114.4).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 114,
+      "team": 3,
+      "player": "Kyle Monangai",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 110.6, adjusted 116.6).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 115,
+      "team": 4,
+      "player": "Patrick Mahomes",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 102.8, adjusted 116.8).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 116,
+      "team": 5,
+      "player": "Matthew Golden",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 107.7, adjusted 116.7).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 117,
+      "team": 6,
+      "player": "Justin Herbert",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 105.0, adjusted 119.0).",
       "needOverride": false
     },
     {
       "pickNo": 118,
       "team": 7,
-      "player": "Bo Nix",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 111.8, adjusted 111.8).",
+      "player": "Deebo Samuel Sr.",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 109.1, adjusted 118.1).",
       "needOverride": false
     },
     {
@@ -980,159 +980,159 @@
       "team": 8,
       "player": "Jacory Croskey-Merritt",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 114.8, adjusted 114.8).",
+      "reason": "Best available by adjusted value (raw ADP 114.8, adjusted 123.8).",
       "needOverride": false
     },
     {
       "pickNo": 120,
       "team": 9,
-      "player": "Rachaad White",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 115.3, adjusted 115.3).",
+      "player": "Sam LaPorta",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 116.2, adjusted 124.2).",
       "needOverride": false
     },
     {
       "pickNo": 121,
       "team": 0,
-      "player": "Matthew Golden",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 107.7, adjusted 107.7).",
+      "player": "Rachaad White",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 115.3, adjusted 124.3).",
       "needOverride": false
     },
     {
       "pickNo": 122,
       "team": 1,
-      "player": "Jaxson Dart",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 118.1, adjusted 118.1).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 123,
-      "team": 2,
-      "player": "Kyler Murray",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 134.6, adjusted 126.6). breakout: New O'Connell offense; rushing floor alone (36.7 YPG career) supports the price",
-      "needOverride": false
-    },
-    {
-      "pickNo": 124,
-      "team": 3,
-      "player": "Blake Corum",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 122.9, adjusted 122.9).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 125,
-      "team": 4,
       "player": "Detroit Defense",
       "pos": "DEF",
       "reason": "Best available by adjusted value (raw ADP 127.8, adjusted 127.8).",
       "needOverride": false
     },
     {
+      "pickNo": 123,
+      "team": 2,
+      "player": "Blake Corum",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 122.9, adjusted 128.9).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 124,
+      "team": 3,
+      "player": "Bo Nix",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 111.8, adjusted 125.8).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 125,
+      "team": 4,
+      "player": "Tyjae Spears",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 129.3, adjusted 135.3).",
+      "needOverride": false
+    },
+    {
       "pickNo": 126,
       "team": 5,
-      "player": "Isaiah Likely",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 137.0, adjusted 129.0). breakout: Clear starting TE role in NYG's thin pass-catching corps",
+      "player": "Jaxson Dart",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 118.1, adjusted 132.1).",
       "needOverride": false
     },
     {
       "pickNo": 127,
       "team": 6,
-      "player": "Deebo Samuel Sr.",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 109.1, adjusted 109.1).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 128,
-      "team": 7,
-      "player": "Tyjae Spears",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 129.3, adjusted 129.3).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 129,
-      "team": 8,
-      "player": "Baker Mayfield",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 130.6, adjusted 130.6).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 130,
-      "team": 9,
-      "player": "Mark Andrews",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 130.7, adjusted 130.7).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 131,
-      "team": 0,
-      "player": "Tyler Shough",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 135.7, adjusted 130.7). breakout: Efficient early-career numbers; Kellen Moore's system designs him rushing work",
-      "needOverride": false
-    },
-    {
-      "pickNo": 132,
-      "team": 1,
       "player": "New England Defense",
       "pos": "DEF",
       "reason": "Best available by adjusted value (raw ADP 131.8, adjusted 131.8).",
       "needOverride": false
     },
     {
-      "pickNo": 133,
-      "team": 2,
-      "player": "Jake Ferguson",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 132.5, adjusted 132.5).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 134,
-      "team": 3,
-      "player": "Zach Charbonnet",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 133.0, adjusted 133.0).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 135,
-      "team": 4,
+      "pickNo": 128,
+      "team": 7,
       "player": "Pittsburgh Defense",
       "pos": "DEF",
       "reason": "Best available by adjusted value (raw ADP 135.8, adjusted 135.8).",
       "needOverride": false
     },
     {
-      "pickNo": 136,
-      "team": 5,
-      "player": "MarShawn Lloyd",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 142.4, adjusted 137.4). breakout: Addressed lingering ACL issues; real touches path if Jacobs' camp issues persist",
+      "pickNo": 129,
+      "team": 8,
+      "player": "Isaiah Likely",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 137.0, adjusted 137.0). breakout: Clear starting TE role in NYG's thin pass-catching corps",
       "needOverride": false
     },
     {
-      "pickNo": 137,
-      "team": 6,
+      "pickNo": 130,
+      "team": 9,
       "player": "Philadelphia Defense",
       "pos": "DEF",
       "reason": "Best available by adjusted value (raw ADP 137.9, adjusted 137.9).",
       "needOverride": false
     },
     {
-      "pickNo": 138,
-      "team": 7,
+      "pickNo": 131,
+      "team": 0,
+      "player": "Mark Andrews",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 130.7, adjusted 138.7).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 132,
+      "team": 1,
+      "player": "Jake Ferguson",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 132.5, adjusted 140.5).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 133,
+      "team": 2,
+      "player": "Zach Charbonnet",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 133.0, adjusted 142.0).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 134,
+      "team": 3,
+      "player": "MarShawn Lloyd",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 142.4, adjusted 146.4). breakout: Addressed lingering ACL issues; real touches path if Jacobs' camp issues persist",
+      "needOverride": false
+    },
+    {
+      "pickNo": 135,
+      "team": 4,
       "player": "Woody Marks",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 139.4, adjusted 139.4).",
+      "reason": "Best available by adjusted value (raw ADP 139.4, adjusted 148.4).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 136,
+      "team": 5,
+      "player": "Emari Demercado",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 141.5, adjusted 150.5).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 137,
+      "team": 6,
+      "player": "Dalton Kincaid",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 148.8, adjusted 150.8). breakout: Best yards-per-route among high-target TEs since 2020; Bills committed to more routes",
+      "needOverride": false
+    },
+    {
+      "pickNo": 138,
+      "team": 7,
+      "player": "Kyler Murray",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 134.6, adjusted 140.6). breakout: New O'Connell offense; rushing floor alone (36.7 YPG career) supports the price",
       "needOverride": false
     },
     {
@@ -1146,89 +1146,89 @@
     {
       "pickNo": 140,
       "team": 9,
-      "player": "Emari Demercado",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 141.5, adjusted 141.5).",
+      "player": "Baker Mayfield",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 130.6, adjusted 144.6).",
       "needOverride": false
     },
     {
       "pickNo": 141,
       "team": 0,
-      "player": "Dalton Kincaid",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 148.8, adjusted 142.8). breakout: Best yards-per-route among high-target TEs since 2020; Bills committed to more routes",
+      "player": "Tyler Shough",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 135.7, adjusted 144.7). breakout: Efficient early-career numbers; Kellen Moore's system designs him rushing work",
       "needOverride": false
     },
     {
       "pickNo": 142,
       "team": 1,
-      "player": "Jordan Love",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 144.6, adjusted 144.6).",
+      "player": "Mike Washington Jr.",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 146.8, adjusted 155.8).",
       "needOverride": false
     },
     {
       "pickNo": 143,
       "team": 2,
-      "player": "San Francisco Defense",
-      "pos": "DEF",
-      "reason": "Roster-completion override: only 1 pick(s) left and DEF still unfilled \u2014 can't afford to punt this any further.",
-      "needOverride": true
+      "player": "David Njoku",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 147.2, adjusted 155.2).",
+      "needOverride": false
     },
     {
       "pickNo": 144,
       "team": 3,
-      "player": "Sam Darnold",
-      "pos": "QB",
-      "reason": "Best available by adjusted value (raw ADP 145.2, adjusted 145.2).",
+      "player": "Juwan Johnson",
+      "pos": "TE",
+      "reason": "Best available by adjusted value (raw ADP 151.2, adjusted 159.2).",
       "needOverride": false
     },
     {
       "pickNo": 145,
       "team": 4,
-      "player": "Mike Washington Jr.",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 146.8, adjusted 146.8).",
+      "player": "San Francisco Defense",
+      "pos": "DEF",
+      "reason": "Best available by adjusted value (raw ADP 145.1, adjusted 165.1).",
       "needOverride": false
     },
     {
       "pickNo": 146,
       "team": 5,
-      "player": "David Njoku",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 147.2, adjusted 147.2).",
+      "player": "NY Jets Defense",
+      "pos": "DEF",
+      "reason": "Best available by adjusted value (raw ADP 147.7, adjusted 167.7).",
       "needOverride": false
     },
     {
       "pickNo": 147,
       "team": 6,
-      "player": "NY Jets Defense",
-      "pos": "DEF",
-      "reason": "Best available by adjusted value (raw ADP 147.7, adjusted 147.7).",
+      "player": "Jonah Coleman",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 148.3, adjusted 157.3).",
       "needOverride": false
     },
     {
       "pickNo": 148,
       "team": 7,
-      "player": "Jacksonville Defense",
-      "pos": "DEF",
-      "reason": "Roster-completion override: only 1 pick(s) left and DEF still unfilled \u2014 can't afford to punt this any further.",
-      "needOverride": true
+      "player": "Jordan Love",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 144.6, adjusted 172.6).",
+      "needOverride": false
     },
     {
       "pickNo": 149,
       "team": 8,
-      "player": "Jonah Coleman",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 148.3, adjusted 148.3).",
+      "player": "Sam Darnold",
+      "pos": "QB",
+      "reason": "Best available by adjusted value (raw ADP 145.2, adjusted 159.2).",
       "needOverride": false
     },
     {
       "pickNo": 150,
       "team": 9,
-      "player": "Juwan Johnson",
-      "pos": "TE",
-      "reason": "Best available by adjusted value (raw ADP 151.2, adjusted 151.2).",
+      "player": "Emmett Johnson",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 151.7, adjusted 160.7).",
       "needOverride": false
     }
   ]

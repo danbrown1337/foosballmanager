@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
+import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
 
 const BOARD = new Set([
   "Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.", "A.J. Brown",
@@ -388,13 +388,19 @@ describe("draft position", () => {
     assert.deepEqual(parseDraftPosition("Sam's Pick • Round 4, Pick 50"), { round: 4, pick: 50 });
   });
 
-  test("counts picks to your turn in an odd round", () => {
-    // 12 teams, slot 11, currently at pick 5: your pick is 11th overall.
-    assert.equal(picksUntilMyTurn({ round: 1, pick: 5 }, 11, 12), 6);
+  test("counts picks to your turn the way the room does", () => {
+    // 12 teams, slot 11, pick 5 in progress: yours is 11th overall, and the
+    // room calls that "7 picks until your turn" — the in-progress one counts.
+    assert.equal(picksUntilMyTurn({ round: 1, pick: 5 }, 11, 12), 7);
   });
 
-  test("counts picks to your turn in an even round, where the order reverses", () => {
-    // Round 2 runs 12..1, so slot 11 picks 2nd in that round: overall 14.
-    assert.equal(picksUntilMyTurn({ round: 2, pick: 13 }, 11, 12), 1);
+  test("follows the snake into an even round", () => {
+    // Round 2 runs 12..1, so slot 11 picks 2nd in it: overall 14.
+    assert.equal(picksUntilMyTurn({ round: 2, pick: 13 }, 11, 12), 2);
+  });
+
+  test("bounds the team count from the round and pick", () => {
+    // Pick 15 of round 2 can only happen in a league of 8 to 14 teams.
+    assert.deepEqual(teamCountBounds({ round: 2, pick: 15 }), { min: 8, max: 14 });
   });
 });

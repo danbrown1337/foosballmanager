@@ -155,7 +155,23 @@ export function parseDraftPosition(text) {
   return m ? { round: Number(m[1]), pick: Number(m[2]) } : null;
 }
 
-/* Snake order: odd rounds run 1..N, even rounds run N..1. */
+/* What the team count can be, given the draft is at this round and pick.
+ * Pick p in round r means (r-1)*T < p <= r*T, so T is bounded either side.
+ * Used to check the configured count against the room the user is actually
+ * in: a 10-team config in a 14-team room makes every pick calculation wrong,
+ * and nothing else would notice. */
+export function teamCountBounds(position) {
+  if (!position || position.round < 1) return null;
+  const min = Math.ceil(position.pick / position.round);
+  const max = position.round > 1
+    ? Math.floor((position.pick - 1) / (position.round - 1))
+    : Infinity;
+  return { min, max };
+}
+
+/* Snake order: odd rounds run 1..N, even rounds run N..1. Counted the way the
+ * room counts it — inclusive of the pick in progress — so the panel and
+ * Yahoo's own "N picks until your turn" agree. */
 export function picksUntilMyTurn(position, slot, teams) {
   if (!position || !slot || !teams) return null;
   const overall = position.pick;
@@ -163,7 +179,7 @@ export function picksUntilMyTurn(position, slot, teams) {
     const mineThisRound = round % 2 === 1
       ? (round - 1) * teams + slot
       : (round - 1) * teams + (teams - slot + 1);
-    if (mineThisRound >= overall) return mineThisRound - overall;
+    if (mineThisRound >= overall) return mineThisRound - overall + 1;
   }
   return null;
 }
