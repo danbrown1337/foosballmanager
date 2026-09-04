@@ -801,6 +801,25 @@ async function main() {
     if (document.querySelectorAll('[data-icon*="star" i]').length < 5) {
       return noteQueueIdle("queue: open the room's Players tab — nothing to star while it's hidden");
     }
+
+    /* A filter in the room's search box narrows the list to a handful of
+     * players, and then nothing else can be found — reported one name at a
+     * time as "couldn't confirm". Clearing only our own text wasn't enough:
+     * a filter left from an earlier session isn't ours by record and stayed
+     * forever. With fully-automatic on the user has handed the pick over, so
+     * clear it and say so; otherwise ask, rather than wiping their typing. */
+    const box = findPlayerSearchBox(document.body);
+    if (box?.value) {
+      if (autoFullBox.checked) {
+        addLog(`Cleared "${box.value}" from the room's search so the whole list is visible.`);
+        setInputValue(box, "");
+        searchWeTyped = null;
+        previousBoardNames = null;
+        await wait(500);
+      } else {
+        return noteQueueIdle(`queue: the room's search box has "${box.value}" in it — clear it to see the full list`);
+      }
+    }
     const inRoom = findQueueNames(text, boardNameSet, boardPlayers);
     if (inRoom === null) {
       noteQueueIdle("queue: can't see the queue panel — open the Queue tab in the left column");
