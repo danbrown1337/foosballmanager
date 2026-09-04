@@ -526,9 +526,29 @@ async function main() {
   const countNames = () =>
     (document.body.innerText.match(/(?<!\w)[A-Z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/g) || []).length;
 
+  /* The room renders most of the available list at once — a hundred-odd rows
+   * of the hundred-odd players left. So when the list is that complete and a
+   * player isn't in it, that is already the answer, and searching for him
+   * costs five seconds to learn nothing. Only search when the list is too
+   * short to draw a conclusion from. */
+  const LIST_COMPLETE_ROWS = 60;
+  function missingFromFullList(name) {
+    const scroller = findListScroller(document.body);
+    if (!scroller) return false;
+    const text = scroller.innerText || "";
+    const rows = (text.match(/(?<!\w)[A-Za-z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/g) || []).length;
+    if (rows < LIST_COMPLETE_ROWS) return false;
+    return findBoardNames(text, new Set([name]), boardPlayers).size === 0;
+  }
+
   async function locatePlayer(name, meta) {
     let el = findPlayerClickTarget(document.body, name, { player: meta });
     if (el) return { el, searchBox: null, searched: false, filtered: false };
+
+    if (missingFromFullList(name)) {
+      // The whole list is on screen and he isn't in it.
+      return { el: null, searchBox: null, searched: false, filtered: true };
+    }
 
     const searchBox = findPlayerSearchBox(document.body);
     if (!searchBox) return { el: null, searchBox: null, searched: false, filtered: false };
@@ -581,7 +601,7 @@ async function main() {
       searchBox = located.searchBox;
       if (located.el) return { snapshot, name, el: located.el, searchBox, skipped, exhausted: false };
 
-      if (!searchBox || !located.filtered) {
+      if (!located.filtered) {
         // Either there's no search box, or the search never took effect. In
         // both cases absence proves nothing, so change nothing.
         return { snapshot, name, el: null, searchBox, skipped, exhausted: false };
@@ -661,7 +681,7 @@ async function main() {
         const located = await locatePlayer(pick.name, meta);
         searchBox = located.searchBox;
         if (!located.el) {
-          if (!searchBox) {
+          if (!searchBox && !located.filtered) {
             noteQueueIdle("queue: no search box on this page, so players can't be found to queue");
             break;
           }
