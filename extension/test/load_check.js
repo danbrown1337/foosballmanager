@@ -39,7 +39,7 @@ const ADP = JSON.parse(
 );
 // Abbreviated exactly as the room writes them, with position and team so the
 // matcher can settle any that share an initial and surname.
-const SWEEP_NAMES = ADP.slice(0, 60).map((p) => {
+const SWEEP_NAMES = ADP.slice(0, 100).map((p) => {
   const [first, ...rest] = p.name.split(" ");
   return `${first[0]}. ${rest.join(" ")} ${p.pos} \u00b7 ${p.team}`;
 });
@@ -53,7 +53,7 @@ const FAKE_ROOM = `<html><body>
   <p>You're on the clock!</p>
   <div>Ja'Marr Chase</div><div>Bijan Robinson</div><div>CeeDee Lamb</div>
   <div id="scroller" style="height:120px;overflow-y:auto">
-    <div id="spacer" style="height:1200px;position:relative">
+    <div id="spacer" style="height:2000px;position:relative">
       <ul id="window" style="margin:0;position:absolute;left:0;right:0"></ul>
     </div>
   </div>
@@ -240,8 +240,27 @@ async function main() {
   console.log(`  ${syncLine}`);
   // A single read sees at most a screenful, so anything approaching the full
   // list proves the sweep scrolled and collected as it went.
-  if (syncedCount < 40 || !/across \d+ screens/.test(syncLine || "")) {
-    console.error(`FAIL: swept only ${syncedCount} of 60 rows — "${syncLine}"`);
+  if (syncedCount < 70 || !/across \d+ screens/.test(syncLine || "")) {
+    console.error(`FAIL: swept only ${syncedCount} of 100 rows — "${syncLine}"`);
+    failed = true;
+  }
+
+  // Rebuild from the room's available list. The decisive part is repair: a
+  // board that has wrongly marked players drafted cannot recover any other
+  // way, since detection only ever adds picks.
+  await roomPage.click("#fm-rebuild");
+  await roomPage.waitForTimeout(11000);
+  const rebuildLine = await roomPage.evaluate(() =>
+    [...document.querySelectorAll("#fm-log div")].map((d) => d.textContent).find((s) => /Rebuilt from Yahoo/.test(s))
+  );
+  const stillAvailable = Number((rebuildLine || "").match(/(\d+) still available/)?.[1] || 0);
+  const putBack = Number((rebuildLine || "").match(/(\d+) put back/)?.[1] || -1);
+  console.log(`\n--- rebuild from the room's list ---`);
+  console.log(`  ${rebuildLine}`);
+  // The sync above marked those same players drafted; the rebuild must undo
+  // that, which is the whole point of it.
+  if (stillAvailable < 70 || putBack <= 0) {
+    console.error(`FAIL: rebuild didn't repair the board — "${rebuildLine}"`);
     failed = true;
   }
 

@@ -176,6 +176,43 @@ export async function shortlist(n = 5) {
   return topPicks(players, config, n);
 }
 
+/* Rebuild the drafted list from what the room still offers.
+ *
+ * Everything else here infers picks — watching names appear or vanish,
+ * searching for a player and concluding from silence. This reads Yahoo's own
+ * answer to the only question that matters: who is still available. Anything
+ * on our board that Yahoo no longer lists has been drafted, and — the part
+ * that repairs rather than accumulates — anything Yahoo still lists is
+ * available, whatever we previously recorded.
+ *
+ * Your own picks are never touched: they're the one thing the available list
+ * cannot tell us, since a player you drafted is missing from it for the same
+ * reason a rival's pick is.
+ */
+export async function repairBoard(availableNames) {
+  const available = new Set(availableNames);
+  const { adp } = await loadStaticData();
+  const players = loadPlayers(adp);
+  const state = await Storage.getDraftState();
+
+  let markedDrafted = 0;
+  let freed = 0;
+  for (const player of players) {
+    if (state.drafted[player.name] === "mine") continue;
+    if (available.has(player.name)) {
+      if (player.name in state.drafted) {
+        delete state.drafted[player.name];
+        freed++;
+      }
+    } else if (!(player.name in state.drafted)) {
+      state.drafted[player.name] = "rival";
+      markedDrafted++;
+    }
+  }
+  await Storage.setDraftState(state);
+  return { markedDrafted, freed, seen: available.size };
+}
+
 export async function importPicks(names, by = "rival") {
   if (by !== "mine" && by !== "rival") throw new Error("Pick must be 'mine' or 'rival'.");
   const state = await Storage.getDraftState();
