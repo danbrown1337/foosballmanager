@@ -88,6 +88,9 @@ function buildPanel() {
                   background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                   cursor: pointer; margin-bottom: 8px; }
       #fm-reset.armed { border-color: #b91c1c; color: #fca5a5; }
+      #fm-pool { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
+                 background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
+                 cursor: pointer; margin-bottom: 8px; }
       #fm-update { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
                  background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                  cursor: pointer; margin-bottom: 8px; }
@@ -131,6 +134,7 @@ function buildPanel() {
       <div id="fm-rec-why"></div>
       <button id="fm-take" disabled>I drafted this player</button>
       <button id="fm-update">Update board from Yahoo</button>
+      <button id="fm-pool">Import player pool from Yahoo</button>
       <button id="fm-reset">New draft — clear picks</button>
       <div id="fm-log"></div>
       <div id="fm-status">
@@ -170,7 +174,7 @@ function buildPanel() {
 }
 
 async function main() {
-  let diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
+  let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar;
@@ -178,6 +182,7 @@ async function main() {
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
+  ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
@@ -203,6 +208,7 @@ async function main() {
   const deadBox = root.querySelector("#fm-dead");
   const practiceBox = root.querySelector("#fm-practice");
   const updateBtn = root.querySelector("#fm-update");
+  const poolBtn = root.querySelector("#fm-pool");
   /* Which build is actually running. Reloading the extension without
    * reloading the page leaves an old content script in place, and a stale
    * panel is indistinguishable from a current one until something it should
@@ -837,6 +843,51 @@ async function main() {
       roomBusy = false;
       updateBtn.disabled = false;
       updateBtn.textContent = label;
+    }
+  });
+
+  /* Replace the bundled board with the league's own player list. The shipped
+   * file is a pre-season snapshot and is wrong in ways nothing downstream can
+   * repair — both Robinsons on Atlanta, so "B. Robinson" can never be
+   * resolved. Yahoo's list has current teams, positions and byes. */
+  poolBtn.addEventListener("click", async () => {
+    if (poolBtn.disabled) return;
+    poolBtn.disabled = true;
+    const label = poolBtn.textContent;
+    poolBtn.textContent = "Reading Yahoo's player list\u2026";
+    try {
+      const leagueId = leagueIdFromUrl(location.href);
+      if (!leagueId) {
+        addLog("No league id in this page's address — open your league's Players page.");
+        return;
+      }
+      const get = (url) =>
+        new Promise((res, rej) => {
+          const req = new XMLHttpRequest();
+          req.open("GET", url, true);
+          req.onload = () => res(req.responseText);
+          req.onerror = () => rej(new Error(`couldn't read ${url}`));
+          req.send();
+        });
+      const players = await fetchPool(leagueId, { get, pages: 12 });
+      if (players.length < 100) {
+        // A short read means the page wasn't what we expected; the bundled
+        // board is stale but coherent, and half a pool is worse than either.
+        addLog(`Only read ${players.length} players — keeping the existing board.`);
+        return;
+      }
+      await Storage.setPool({ fetchedAt: Date.now(), leagueId, players });
+      boardNameSet = null;
+      boardPlayers = null;
+      previousBoardNames = null;
+      addLog(`Imported ${players.length} players from Yahoo — the board is now the league's own list.`);
+      await refresh();
+    } catch (err) {
+      if (isContextGone(err)) return handleDeadContext();
+      showError(String(err.message || err));
+    } finally {
+      poolBtn.disabled = false;
+      poolBtn.textContent = label;
     }
   });
 

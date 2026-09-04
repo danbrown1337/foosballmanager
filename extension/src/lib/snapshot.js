@@ -13,6 +13,21 @@ let cachedAdp = null;
 let cachedNotes = null;
 let cachedByes = null;
 
+/* Yahoo's own list, if it has been imported: current teams, current
+ * positions, per-player byes and Yahoo's rank — against a bundled file
+ * compiled before the season, which has both Robinsons on Atlanta. Rank
+ * stands in for ADP: it orders the board the same way, and it is the number
+ * the league itself is showing. */
+function playersFromPool(pool) {
+  return pool.players.map((p) => ({
+    rank: p.rank,
+    name: p.name,
+    team: p.team,
+    pos: p.pos,
+    adp: p.rank,
+  }));
+}
+
 async function loadStaticData() {
   if (cachedAdp && cachedNotes && cachedByes) return { adp: cachedAdp, notes: cachedNotes, byes: cachedByes };
   const [adpRes, notesRes, byeRes] = await Promise.all([
@@ -26,6 +41,25 @@ async function loadStaticData() {
   return { adp: cachedAdp, notes: cachedNotes, byes: cachedByes };
 }
 
+/* One place that decides where the board comes from, so every caller —
+ * snapshot, shortlist, repair — sees the same players. */
+async function buildPlayers(adp, notes, byes) {
+  const pool = await Storage.getPool();
+  const rows = pool?.players?.length ? playersFromPool(pool) : adp;
+  const players = loadPlayers(rows);
+  applyNotes(players, notes);
+  if (pool?.players?.length) {
+    // Per-player byes from the league page beat a team lookup: a player who
+    // changed team mid-season is right here and wrong in a static map.
+    const byeByName = new Map(pool.players.map((p) => [p.name, p.bye ?? null]));
+    for (const p of players) p.bye = byeByName.get(p.name) ?? null;
+  } else {
+    applyByes(players, byes);
+  }
+  assignTiers(players);
+  return players;
+}
+
 export async function buildSnapshot() {
   const [{ adp, notes, byes }, config, draftState, practice] = await Promise.all([
     loadStaticData(),
@@ -34,10 +68,7 @@ export async function buildSnapshot() {
     Storage.getPractice(),
   ]);
 
-  const players = loadPlayers(adp);
-  applyNotes(players, notes);
-  applyByes(players, byes);
-  assignTiers(players);
+  const players = await buildPlayers(adp, notes, byes);
   applyDraftState(players, draftState);
 
   const decision = autoPick(players, config);
@@ -173,10 +204,7 @@ export async function shortlist(n = 5) {
     Storage.getConfig(),
     Storage.getDraftState(),
   ]);
-  const players = loadPlayers(adp);
-  applyNotes(players, notes);
-  applyByes(players, byes);
-  assignTiers(players);
+  const players = await buildPlayers(adp, notes, byes);
   applyDraftState(players, draftState);
   return topPicks(players, config, n);
 }
@@ -196,8 +224,10 @@ export async function shortlist(n = 5) {
  */
 export async function repairBoard(availableNames) {
   const available = new Set(availableNames);
-  const { adp } = await loadStaticData();
-  const players = loadPlayers(adp);
+  const { adp, notes, byes } = await loadStaticData();
+  // Same source as everywhere else: repairing against a different set of
+  // names than the board is built from would mark players who don't exist.
+  const players = await buildPlayers(adp, notes, byes);
   const state = await Storage.getDraftState();
 
   let markedDrafted = 0;

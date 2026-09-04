@@ -128,6 +128,7 @@ const PROBE_CONTENT_SRC = `
 const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
   findPlayerSearchBox, setInputValue, surnameOf, findQueueStar } from "../src/lib/domActions.js";
+import { parsePoolPage } from "../src/lib/yahooPool.js";
 
 export async function run(document) {
   const results = {};
@@ -200,6 +201,27 @@ export async function run(document) {
 
   // The overlay's own search box must never be mistaken for the room's.
   results.searchNotOurs = !document.getElementById("fantasy-manager-overlay").contains(searchBox);
+
+  /* Yahoo's league player list, in the markup a live league page returns.
+   * Both awkward names are here on purpose: a regex over the whole cell read
+   * "Amon-Ra St. Brown" as team "Amon", and put A.J. Brown on the wrong team.
+   * Built by concatenation because this whole probe is itself a template. */
+  const poolRow = (name, team, pos, bye, proj, rank) =>
+    '<tr><td></td><td></td><td><div class="ysf-player-name">' +
+    '<a href="/nfl/players/1">' + name + '</a>' +
+    '<span class="Fz-xxs">' + team + ' - ' + pos + '</span></div></td>' +
+    '<td>FA</td><td>17</td><td>' + bye + '</td><td>' + proj + '</td><td>' + rank + '</td></tr>';
+  const poolHtml = '<table><tbody>' +
+    poolRow("Amon-Ra St. Brown", "Det", "WR", 6, 324, 7) +
+    poolRow("A.J. Brown", "Phi", "WR", 9, 220.3, 23) +
+    poolRow("Bijan Robinson", "Atl", "RB", 11, 370.8, 2) +
+    poolRow("Brian Robinson", "SF", "RB", 14, 120.5, 88) +
+    '</tbody></table>';
+  const pool = parsePoolPage(poolHtml);
+  results.poolCount = pool.length;
+  results.poolHyphenated = pool.find((p) => p.name === "Amon-Ra St. Brown") || null;
+  results.poolInitials = pool.find((p) => p.name === "A.J. Brown") || null;
+  results.poolRobinsons = pool.filter((p) => /Robinson/.test(p.name)).map((p) => p.name + "/" + p.team);
 
   // The queue star lives in a sibling cell of the row, not in the name's cell.
   const star = findQueueStar(document.body, "Travis Kelce", { player: { pos: "TE", team: "KC" } });
@@ -310,6 +332,13 @@ async function main() {
       ["finds the queue star in the row's other cell", result.starClass === "star-btn"],
       ["and it's the star on that player's row", result.starInRightRow === "row-kelce"],
       ["refuses a filled star, which would un-queue the player", result.filledStarRefused === true],
+      ["parses every player row from Yahoo's list", result.poolCount === 4],
+      ["keeps a hyphenated name whole, with the right team",
+        result.poolHyphenated?.name === "Amon-Ra St. Brown" && result.poolHyphenated?.team === "DET"],
+      ["handles initials with periods", result.poolInitials?.team === "PHI"],
+      ["separates the two Robinsons by their real teams",
+        JSON.stringify(result.poolRobinsons) === JSON.stringify(["Bijan Robinson/ATL", "Brian Robinson/SF"])],
+      ["carries bye week and rank", result.poolHyphenated?.bye === 6 && result.poolHyphenated?.rank === 7],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);

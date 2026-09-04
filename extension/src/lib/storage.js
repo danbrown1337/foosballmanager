@@ -22,6 +22,7 @@ const KEYS = {
   confirmPhrases: "fm_confirm_phrases",
   practice: "fm_practice",
   queueEnabled: "fm_queue_enabled",
+  pool: "fm_pool",
 };
 
 /* Yahoo's standard mock draft room starts one W/R/T flex and a kicker; the
@@ -132,6 +133,15 @@ export const Storage = {
   /* Practice mode keeps the real league config alongside the mock one rather
    * than trying to reconstruct it later — restoring has to be exact, and the
    * whole point is that forgetting is not survivable on draft day. */
+  /* The player pool scraped from the league's own list, when one has been
+   * imported. Null means fall back to the bundled snapshot. */
+  async getPool() {
+    return get(KEYS.pool, null);
+  },
+  async setPool(pool) {
+    return set(KEYS.pool, pool);
+  },
+
   async getQueueEnabled() {
     return get(KEYS.queueEnabled, false);
   },
