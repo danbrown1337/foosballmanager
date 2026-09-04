@@ -412,7 +412,10 @@ async function main() {
     const line = document.createElement("div");
     line.textContent = text;
     log.prepend(line);
-    while (log.children.length > 6) log.removeChild(log.lastChild);
+    // Twenty, not six: the panel is the only account of what it did, and a
+    // busy turn was scrolling away the very lines needed to explain a
+    // feature that looked silent.
+    while (log.children.length > 20) log.removeChild(log.lastChild);
   }
 
   /* The room states your roster outright ("YOUR TEAM (5/15)"), so read it
@@ -940,6 +943,11 @@ async function main() {
       turnActive = true;
 
       if (turnHandled) return;
+      /* Claim the turn before anything slow runs. Resolving can take several
+       * seconds — it may search the room more than once — while polls come
+       * every four, so two ticks were both clearing this check and acting on
+       * the same turn. Seen live: Patrick Mahomes auto-filled twice. */
+      turnHandled = true;
 
       /* Resolve to someone the room can actually produce, skipping past
        * anyone already drafted. */
@@ -953,11 +961,9 @@ async function main() {
       if (!playerEl) {
         addLog(`Your turn — couldn't find "${currentRecName || "a recommendation"}" in this room, draft it manually.`);
         await clearSearch();
-        turnHandled = true;
         return;
       }
 
-      turnHandled = true; // set before awaiting, so a second poll tick can't double-act
       highlightElement(playerEl);
       addLog(`Your turn — found ${currentRecName} on the page.`);
 
