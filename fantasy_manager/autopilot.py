@@ -135,7 +135,12 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     all_positions = [pos for pos in starters if pos != "FLEX"]
     unfilled_starters = [pos for pos in all_positions if have.get(pos, 0) < starters[pos]]
 
-    if unfilled_starters and my_picks_remaining <= len(unfilled_starters):
+    # Strictly positive: at zero or below, the configured roster is already
+    # full, and "you have no picks left, so spend a pick on a kicker" is a
+    # contradiction. It means the league config doesn't describe this draft —
+    # a three-slot config in a fifteen-slot room forced a round-one kicker in
+    # testing — and forcing a pick on those numbers makes it worse, not safer.
+    if unfilled_starters and 0 < my_picks_remaining <= len(unfilled_starters):
         candidates = [p for p in avail if p.pos in unfilled_starters]
         if candidates:
             # Fill whichever unfilled position is scarcest league-wide first.
