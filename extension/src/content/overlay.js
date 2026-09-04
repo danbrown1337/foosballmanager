@@ -523,21 +523,33 @@ async function main() {
    * the caller must clear it. Polls for the row rather than waiting a fixed
    * interval, because a fixed wait turns a slow search into a false "not
    * there", and a false "not there" now means marking a player drafted. */
+  const countNames = () =>
+    (document.body.innerText.match(/(?<!\w)[A-Z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/g) || []).length;
+
   async function locatePlayer(name, meta) {
     let el = findPlayerClickTarget(document.body, name, { player: meta });
-    if (el) return { el, searchBox: null };
+    if (el) return { el, searchBox: null, searched: false, filtered: false };
 
     const searchBox = findPlayerSearchBox(document.body);
-    if (!searchBox) return { el: null, searchBox: null };
+    if (!searchBox) return { el: null, searchBox: null, searched: false, filtered: false };
 
+    /* Not finding someone is only evidence they're drafted if the search
+     * actually ran. Straight after a board sweep the list is still
+     * re-rendering, and a search that hasn't taken effect looks exactly like
+     * a player who isn't there — which marked Davante Adams and D'Andre Swift
+     * drafted seconds after the same sweep counted both as available. So
+     * check the list actually narrowed before drawing any conclusion. */
+    const before = countNames();
     detectionSuspended = true;
     setInputValue(searchBox, surnameOf(name));
-    for (let waited = 0; waited < 2500; waited += 250) {
+    let filtered = false;
+    for (let waited = 0; waited < 5000; waited += 250) {
       await wait(250);
       el = findPlayerClickTarget(document.body, name, { player: meta });
-      if (el) break;
+      if (el) return { el, searchBox, searched: true, filtered: true };
+      if (!filtered && countNames() < before) filtered = true;
     }
-    return { el, searchBox };
+    return { el: null, searchBox, searched: true, filtered };
   }
 
   async function closeSearch(searchBox) {
@@ -569,9 +581,9 @@ async function main() {
       searchBox = located.searchBox;
       if (located.el) return { snapshot, name, el: located.el, searchBox, skipped, exhausted: false };
 
-      if (!searchBox) {
-        // No search box on this page: absence proves nothing, so change
-        // nothing. Marking a player drafted on that basis would be a guess.
+      if (!searchBox || !located.filtered) {
+        // Either there's no search box, or the search never took effect. In
+        // both cases absence proves nothing, so change nothing.
         return { snapshot, name, el: null, searchBox, skipped, exhausted: false };
       }
       addLog(`${name} isn't in this room any more — marking drafted and taking the next name.`);
@@ -651,6 +663,10 @@ async function main() {
         if (!located.el) {
           if (!searchBox) {
             noteQueueIdle("queue: no search box on this page, so players can't be found to queue");
+            break;
+          }
+          if (!located.filtered) {
+            noteQueueIdle("queue: the room's search isn't responding — leaving the board alone");
             break;
           }
           // The room can't produce him: he's drafted. Same reasoning the
