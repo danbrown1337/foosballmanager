@@ -6,8 +6,38 @@ a lowball-trade generator. It was built for one specific league (10-team,
 full PPR, standard 1-QB) — nothing about it is hardcoded to *whose*
 league, so anyone can point it at their own.
 
-There are two ways to make it yours. Pick whichever matches how you like
-to work.
+There are three ways to make it yours. Pick whichever matches how you like
+to work — Path 0 is the one to start with if you don't write code.
+
+## Path 0 — just the Chrome extension (no terminal, ~5 minutes)
+
+If you don't write code and would rather not start now: skip everything
+below. The Chrome extension is the draft assistant in a browser tab — the
+same recommendation engine, verified pick-for-pick against the Python one —
+and it needs no Python, no terminal, no YAML, and no waiting on Yahoo API
+approval. The ADP board and player notes are bundled inside it.
+
+1. On the repo's GitHub page, click **Code -> Download ZIP**, then unzip it
+   wherever you like. Keep that folder: Chrome loads the extension from it,
+   so moving or deleting it uninstalls the extension.
+2. In Chrome, go to `chrome://extensions`.
+3. Turn on **Developer mode** — the toggle in the top-right corner.
+4. Click **Load unpacked**, and select the `extension` folder inside the
+   folder you just unzipped. That's the one containing `manifest.json`, not
+   the folder above it.
+5. Still on that page, click the extension's **Details -> Extension
+   options**, and fill in the **League** section: league name, number of
+   teams, scoring, and your starter slots. That is the entire setup.
+6. Open your Yahoo draft room on the **website** (a Chrome extension can't
+   reach the phone app) and the panel appears on the page.
+
+Your league settings and recorded picks live in your own browser's storage,
+not in the unzipped folder — whoever sent you this never sees them.
+
+What the extension will and won't do on its own — including the two opt-in
+auto-draft toggles, and why actually confirming a pick stays your click by
+default — is in `extension/README.md`. Read that section before turning
+auto-draft on, and try it in a Yahoo mock draft first.
 
 ## Path A — run it yourself
 
