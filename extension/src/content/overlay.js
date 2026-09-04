@@ -626,10 +626,15 @@ async function main() {
   /* Maintain the room's queue between picks. Everything fiddly — searching,
    * scrolling, clicking — happens here, off the clock, where a failure costs
    * a retry instead of a pick. */
-  let lastQueueNote = "";
+  /* Say it again after a while. Once-per-reason-forever meant a cycle that
+   * had explained itself early went permanently silent, and "it isn't
+   * queueing anyone" then had no answer anywhere in the panel — which is
+   * exactly the position this left us in during a live draft. */
+  const queueNotes = new Map();
   function noteQueueIdle(message) {
-    if (lastQueueNote === message) return; // once per reason, not every cycle
-    lastQueueNote = message;
+    const last = queueNotes.get(message) || 0;
+    if (Date.now() - last < 60000) return;
+    queueNotes.set(message, Date.now());
     addLog(message);
   }
 
@@ -667,6 +672,9 @@ async function main() {
     try {
       while (added < 2 && attempts < 8) {
         attempts++;
+        if (attempts === 1) {
+          noteQueueIdle(`queue: checking — ${inRoom.size} in the room's queue`);
+        }
         const wanted = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
         const pick = wanted.find((p) => !inRoom.has(p.name) && !queuedByUs.has(p.name));
         if (!pick) {
@@ -697,7 +705,7 @@ async function main() {
         }
         const star = findQueueStar(document.body, pick.name, { player: meta });
         if (!star) {
-          addLog(`Found ${pick.name} but not a queue control on his row — queueing needs a look at this room.`);
+          noteQueueIdle(`queue: found ${pick.name} but no star on his row`);
           break;
         }
         clickElement(star);
