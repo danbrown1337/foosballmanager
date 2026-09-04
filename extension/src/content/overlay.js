@@ -543,11 +543,17 @@ async function main() {
   const LIST_COMPLETE_ROWS = 60;
   function missingFromFullList(name) {
     const scroller = findListScroller(document.body);
-    if (!scroller) return false;
+    if (!scroller || !boardNameSet) return false;
     const text = scroller.innerText || "";
-    const rows = (text.match(/(?<!\w)[A-Za-z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/g) || []).length;
-    if (rows < LIST_COMPLETE_ROWS) return false;
-    return findBoardNames(text, new Set([name]), boardPlayers).size === 0;
+
+    /* Count players from OUR board, not name-shaped text. A scrolling list of
+     * something else — managers, pick history, anything — clears a raw
+     * pattern count easily, and then every candidate looks absent. That
+     * marked Jahmyr Gibbs drafted in a room where the draft had not started
+     * and no player had been taken at all. */
+    const present = findBoardNames(text, boardNameSet, boardPlayers);
+    if (present.size < LIST_COMPLETE_ROWS) return false;
+    return !present.has(name);
   }
 
   async function locatePlayer(name, meta) {
