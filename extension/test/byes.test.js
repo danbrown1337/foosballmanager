@@ -94,6 +94,15 @@ describe("unavailable players", () => {
     assert.equal(autoPick(players, CONFIG).player.name, "Fit Guy");
   });
 
+  test("a Not Active player is not draftable either", () => {
+    // Yahoo's NA tag. Two were queued before this existed.
+    const players = [
+      { ...makePlayer({ rank: 1, name: "Not Active", team: "FA", pos: "WR", adp: 1 }), status: "NA" },
+      { ...makePlayer({ rank: 2, name: "Fit Guy", team: "DET", pos: "WR", adp: 40 }), status: null },
+    ];
+    assert.equal(autoPick(players, CONFIG).player.name, "Fit Guy");
+  });
+
   test("week-to-week designations are left alone", () => {
     // Questionable is a lineup decision, not a lost season.
     const players = [
