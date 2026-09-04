@@ -65,8 +65,14 @@ export function parsePoolPage(html, DomParser = DOMParser) {
     const cells = [...tr.children].map((td) => (td.textContent || "").trim());
     const byeValue = Number(cells[byeCol]);
     const bye = Number.isInteger(byeValue) && byeValue >= 1 && byeValue <= 18 ? byeValue : null;
-    const adpRaw = adpCol >= 0 ? cells[adpCol] : "";
-    const adp = /^\d+(\.\d+)?$/.test(adpRaw) ? Number(adpRaw) : null;
+    /* null means the page showed "-" — nobody drafts him. undefined means
+     * there is no ADP column at all, which is a different thing entirely: the
+     * league player list has none, and treating that as "no ADP" marked every
+     * imported player undraftable and left a kicker at the top of an empty
+     * board. */
+    const adp = adpCol < 0
+      ? undefined
+      : (/^\d+(\.\d+)?$/.test(cells[adpCol] || "") ? Number(cells[adpCol]) : null);
     players.push({ name: link.textContent.trim(), team, pos, bye, status, adp });
   }
   return players;
