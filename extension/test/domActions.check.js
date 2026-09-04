@@ -70,6 +70,11 @@ const PAGE_HTML = `<!doctype html><html><body>
       <td><span>T. Kelce</span> <span>TE</span> <span>KC</span> <span>Bye 5</span></td>
       <td>21.0</td>
     </tr>
+    <tr id="row-draftable">
+      <td><button class="draft-btn">Draft</button></td>
+      <td><span>D. Achane</span> <span>RB</span> <span>Mia</span> <span>Bye 6</span></td>
+      <td>15.3</td>
+    </tr>
     <tr id="row-queued">
       <td><button class="star-btn"><svg data-icon="star-filled"></svg></button></td>
       <td><span>P. Nacua</span> <span>WR</span> <span>LAR</span> <span>Bye 11</span></td>
@@ -127,7 +132,8 @@ const PROBE_CONTENT_SRC = `
 
 const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
-  findPlayerSearchBox, setInputValue, surnameOf, findQueueStar } from "../src/lib/domActions.js";
+  findPlayerSearchBox, setInputValue, surnameOf, findQueueStar,
+  findDraftButton } from "../src/lib/domActions.js";
 import { parsePoolPage } from "../src/lib/yahooPool.js";
 
 export async function run(document) {
@@ -241,6 +247,14 @@ export async function run(document) {
   const queuedStar = findQueueStar(document.body, "Puka Nacua", { player: { pos: "WR", team: "LAR" } });
   results.filledStarRefused = queuedStar === null;
 
+  // The room's Draft button submits immediately — no confirm step — so it
+  // must be found on that player's own row and nowhere else.
+  const draftBtn = findDraftButton(document.body, "De'Von Achane", { player: { pos: "RB", team: "Mia" } });
+  results.draftBtnClass = draftBtn ? draftBtn.className : null;
+  results.draftBtnRow = draftBtn ? draftBtn.closest("tr").id : null;
+  // A row without one must yield nothing rather than the nearest button.
+  results.noDraftBtn = findDraftButton(document.body, "Travis Kelce", { player: { pos: "TE", team: "KC" } }) === null;
+
   return results;
 }
 `;
@@ -348,6 +362,9 @@ async function main() {
         JSON.stringify(result.poolRobinsons) === JSON.stringify(["Bijan Robinson/ATL", "Brian Robinson/SF"])],
       ["carries the bye week", result.poolHyphenated?.bye === 6],
       ["never reads a stat column as a bye week", result.statBye === 9],
+      ["finds the room's Draft button on the right row",
+        result.draftBtnClass === "draft-btn" && result.draftBtnRow === "row-draftable"],
+      ["returns nothing when that row has no Draft button", result.noDraftBtn === true],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);

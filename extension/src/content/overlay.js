@@ -177,7 +177,7 @@ async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
-    setInputValue, surnameOf, findListScroller, findQueueStar;
+    setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
@@ -186,7 +186,7 @@ async function main() {
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
-     findListScroller, findQueueStar } =
+     findListScroller, findQueueStar, findDraftButton } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
@@ -1129,32 +1129,29 @@ async function main() {
       }
 
       highlightElement(playerEl);
-      addLog(`Your turn — found ${currentRecName} on the page.`);
+
+      /* This room has no confirm step: its Draft button submits the pick the
+       * moment it is clicked. So the two-level split is not "select, then
+       * confirm" here — it is "show you the pick" versus "make it". */
+      const draftBtn = findDraftButton(document.body, currentRecName, { player: recRowMeta });
 
       if (!autoFullBox.checked) {
-        // Default, safer mode: select the player and stop. Selecting is
-        // easy to undo; the actual submit click is not, so that stays yours.
-        await wait(jitterDelay());
-        clickElement(playerEl);
-        addLog(`Auto-filled ${currentRecName} — click Yahoo's own Confirm/Draft button to finish the pick.`);
+        addLog(draftBtn
+          ? `Your pick: ${currentRecName} — his Draft button is highlighted, press it.`
+          : `Your pick: ${currentRecName} — found on the page, draft him.`);
+        highlightElement(draftBtn || playerEl);
         await clearSearch();
         return;
       }
 
-      await wait(jitterDelay());
-      clickElement(playerEl);
-      await wait(jitterDelay());
-      const confirmEl = findConfirmClickTarget(document.body, confirmPhrases || DEFAULT_CONFIRM_PHRASES);
-      if (confirmEl) {
-        clickElement(confirmEl);
-        addLog(`Auto-drafted ${currentRecName}.`);
-      } else {
-        const offered = [...document.querySelectorAll("button,[role=button]")]
-          .map((el) => (el.textContent || "").trim())
-          .filter((s) => s && s.length <= 24)
-          .slice(0, 6);
-        addLog(`Selected ${currentRecName} but no Confirm/Draft button matched — finish manually. Buttons here: ${offered.join(" | ") || "none"}`);
+      if (!draftBtn) {
+        addLog(`Found ${currentRecName} but no Draft button on his row — draft him manually.`);
+        await clearSearch();
+        return;
       }
+      await wait(jitterDelay());
+      clickElement(draftBtn);
+      addLog(`Drafted ${currentRecName}.`);
       await clearSearch();
     } catch (err) {
       // A throw mid-search would otherwise leave detection suspended for the
