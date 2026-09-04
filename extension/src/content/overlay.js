@@ -540,6 +540,21 @@ async function main() {
    * player isn't in it, that is already the answer, and searching for him
    * costs five seconds to learn nothing. Only search when the list is too
    * short to draw a conclusion from. */
+  /* Is this player's name on the page at all, in the form the room writes it?
+   *
+   * Distinct from matching him: the matcher declines an abbreviation shared by
+   * two players, and with a 300-name pool imported from Yahoo those collisions
+   * are common. Declining to identify someone is not evidence he is gone —
+   * treating it that way marked Justin Jefferson drafted in round two, because
+   * some other J. Jefferson exists in the pool. */
+  function nameAppears(name, text) {
+    if (text.includes(name)) return true;
+    const parts = name.trim().split(/\s+/);
+    if (parts.length < 2 || !surnameOf) return false;
+    const last = surnameOf(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?<!\\w)${parts[0][0]}\\.\\s?${last}(?!\\w)`, "i").test(text);
+  }
+
   const LIST_COMPLETE_ROWS = 60;
   function missingFromFullList(name) {
     const scroller = findListScroller(document.body);
@@ -553,7 +568,9 @@ async function main() {
      * and no player had been taken at all. */
     const present = findBoardNames(text, boardNameSet, boardPlayers);
     if (present.size < LIST_COMPLETE_ROWS) return false;
-    return !present.has(name);
+    if (present.has(name)) return false;
+    // Ambiguous is not absent.
+    return !nameAppears(name, text);
   }
 
   async function locatePlayer(name, meta) {
@@ -584,7 +601,11 @@ async function main() {
       if (el) return { el, searchBox, searched: true, filtered: true };
       if (!filtered && countNames() < before) filtered = true;
     }
-    return { el: null, searchBox, searched: true, filtered };
+    /* The search narrowed the list but we still couldn't identify him: that
+     * means the row is there and something about it didn't confirm, not that
+     * he's drafted. Only a page without his name at all is evidence. */
+    const gone = filtered && !nameAppears(name, document.body.innerText);
+    return { el: null, searchBox, searched: true, filtered: gone };
   }
 
   async function closeSearch(searchBox) {
