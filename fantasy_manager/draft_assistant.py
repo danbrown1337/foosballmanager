@@ -111,6 +111,16 @@ def cmd_recommend(args):
     avail = [p for p in players if p.drafted_by is None]
     avail.sort(key=lambda p: p.adp)
 
+    decision = auto_pick(players, config)
+    if decision:
+        p = decision.player
+        tag = " [NEED OVERRIDE]" if decision.need_override else ""
+        print(f"Primary recommendation: {p.name} ({p.pos}, {p.team}) — Tier {p.tier}{tag}")
+        print(f"  {decision.reason}")
+    else:
+        print("No recommendation available.")
+
+    print()
     print("Top recommendation(s):")
     if needs:
         for pos in needs:
