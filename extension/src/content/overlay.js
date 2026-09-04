@@ -175,7 +175,7 @@ function buildPanel() {
 
 async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
-    findQueueNames, withoutQueuePanel, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
+    findQueueNames, withoutQueuePanel, Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
@@ -183,7 +183,7 @@ async function main() {
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
-  ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
+  ({ isMyTurn, looksLikeAFutureTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton } =
@@ -573,7 +573,9 @@ async function main() {
       if (scroller?.contains(el)) continue; // the ranking divider
       if (overlay?.contains(el)) continue; // our own panel's log
       const value = node.nodeValue.trim();
-      if (RANKING_DIVIDER.test(value)) continue; // a divider found outside the list
+      // "You're up in 11 Picks" and the ranking divider both contain a turn
+      // phrase and both mean it is somebody else's pick.
+      if (looksLikeAFutureTurn(value)) continue;
       // Record what convinced it, so a wrong turn can be read off the panel
       // instead of inferred from the outside.
       if (value.slice(0, 60) !== lastTurnEvidence) {
