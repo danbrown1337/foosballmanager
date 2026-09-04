@@ -156,9 +156,14 @@ export function autoPick(players, config) {
     const candidates = pool.filter((p) => urgentNeeds.includes(p.pos));
     if (candidates.length > 0) {
       const best = minBy(candidates, (p) => scores[p.name]);
+      // State the real count. "None rostered" was hardcoded, so a roster with
+      // one of two starters filled was told it had none — which reads as the
+      // engine having ignored the pick you just made, and is the fastest way
+      // to lose trust in advice that is actually correct.
       const reason =
         `Need override: ${best.pos} is ${repl[best.pos] - (draftedAtPos[best.pos] || 0)} ` +
-        `picks from the replacement cliff league-wide and you have none rostered.`;
+        `picks from the replacement cliff league-wide and you have ` +
+        `${have[best.pos] || 0} of ${starters[best.pos] || 0} rostered.`;
       return { player: best, score: scores[best.name], reason, needOverride: true };
     }
   }

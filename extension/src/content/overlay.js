@@ -84,6 +84,13 @@ function buildPanel() {
                  font: inherit; margin-bottom: 8px; }
       #fm-take:disabled { opacity: .5; cursor: default; }
       #fm-sync.stale { border-color: #f59e0b; color: #fbbf24; }
+      #fm-reset { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
+                  background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
+                  cursor: pointer; margin-bottom: 8px; }
+      #fm-reset.armed { border-color: #b91c1c; color: #fca5a5; }
+      #fm-verify { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
+                   background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
+                   cursor: pointer; margin-bottom: 8px; }
       #fm-sync { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
                  background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                  cursor: pointer; margin-bottom: 8px; }
@@ -125,6 +132,8 @@ function buildPanel() {
       <div id="fm-rec-why"></div>
       <button id="fm-take" disabled>I drafted this player</button>
       <button id="fm-sync">Sync picks already made</button>
+      <button id="fm-reset">New draft — clear picks</button>
+      <button id="fm-verify">Check this pick is still available</button>
       <div id="fm-log"></div>
       <div id="fm-status">
         watching page (opponent picks + auto-draft) —
@@ -168,7 +177,8 @@ async function main() {
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
-  ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES } =
+  ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
+     DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
@@ -201,6 +211,8 @@ async function main() {
   }
   const shapeBox = root.querySelector("#fm-shape");
   const practiceToggle = root.querySelector("#fm-practice-toggle");
+  const resetBtn = root.querySelector("#fm-reset");
+  const verifyBtn = root.querySelector("#fm-verify");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -451,6 +463,134 @@ async function main() {
     }
   });
 
+  /* Draft state carries over between rooms, so a fresh mock opens with the
+   * last one's picks still recorded and recommends against a draft that
+   * already happened. Reset existed only in the settings page — and the
+   * moment you need it is while sitting in the new room.
+   *
+   * Two clicks rather than a confirm() dialog: this runs inside Yahoo's page,
+   * and blocking it with a modal during a draft is its own hazard. */
+  let resetArmed = null;
+  resetBtn.addEventListener("click", async () => {
+    if (!resetArmed) {
+      resetBtn.classList.add("armed");
+      resetBtn.textContent = "Click again to clear every pick";
+      resetArmed = setTimeout(() => {
+        resetArmed = null;
+        resetBtn.classList.remove("armed");
+        resetBtn.textContent = "New draft — clear picks";
+      }, 4000);
+      return;
+    }
+    clearTimeout(resetArmed);
+    resetArmed = null;
+    resetBtn.classList.remove("armed");
+    resetBtn.textContent = "New draft — clear picks";
+    try {
+      const snapshot = await sendMessage({ type: "RESET_DRAFT" });
+      previousBoardNames = null;
+      reportedAmbiguous.clear();
+      turnActive = false;
+      turnHandled = false;
+      turnConfidence = 0;
+      syncBtn.classList.remove("stale");
+      render(snapshot);
+      addLog("Board cleared — starting from an empty draft.");
+    } catch (err) {
+      if (isContextGone(err)) return handleDeadContext();
+      showError(String(err.message || err));
+    }
+  });
+
+  /* Find a player on the page, searching the room for them if they aren't
+   * rendered. Returns the element and whether a search is currently open —
+   * the caller must clear it. Polls for the row rather than waiting a fixed
+   * interval, because a fixed wait turns a slow search into a false "not
+   * there", and a false "not there" now means marking a player drafted. */
+  async function locatePlayer(name, meta) {
+    let el = findPlayerClickTarget(document.body, name, { player: meta });
+    if (el) return { el, searchBox: null };
+
+    const searchBox = findPlayerSearchBox(document.body);
+    if (!searchBox) return { el: null, searchBox: null };
+
+    detectionSuspended = true;
+    setInputValue(searchBox, surnameOf(name));
+    for (let waited = 0; waited < 2500; waited += 250) {
+      await wait(250);
+      el = findPlayerClickTarget(document.body, name, { player: meta });
+      if (el) break;
+    }
+    return { el, searchBox };
+  }
+
+  async function closeSearch(searchBox) {
+    if (!searchBox) return;
+    setInputValue(searchBox, "");
+    await wait(400);
+    previousBoardNames = null; // the filtered page was never a real board
+    detectionSuspended = false;
+  }
+
+  /* A recommendation for someone already drafted is the single most common
+   * way this panel is wrong: picks made off-screen are unobservable, so the
+   * board goes on offering players who left the pool rounds ago.
+   *
+   * Searching the room for them answers it directly. If the room cannot
+   * produce the player, he is gone — record that and ask the engine for its
+   * next choice, rather than reporting failure and stopping. */
+  async function resolveAvailableRecommendation(maxSkips = 4) {
+    let searchBox = null;
+    for (let skips = 0; skips <= maxSkips; skips++) {
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
+      const name = snapshot.recommendation?.name;
+      if (!name) return { snapshot, name: null, el: null, searchBox };
+
+      const meta = (boardPlayers || []).find((p) => p.name === name) || null;
+      await closeSearch(searchBox);
+      const located = await locatePlayer(name, meta);
+      searchBox = located.searchBox;
+      if (located.el) return { snapshot, name, el: located.el, searchBox };
+
+      if (!searchBox) {
+        // No search box on this page: absence proves nothing, so change
+        // nothing. Marking a player drafted on that basis would be a guess.
+        return { snapshot, name, el: null, searchBox };
+      }
+      addLog(`${name} isn't in this room any more — marking drafted and taking the next name.`);
+      await sendMessage({ type: "IMPORT_PICKS", names: [name], by: "rival" });
+    }
+    return { snapshot: null, name: null, el: null, searchBox };
+  }
+
+  /* On demand, without waiting for a turn: the recommendation is worth
+   * nothing if the player went three rounds ago, and off-screen picks are
+   * invisible until something goes looking. */
+  verifyBtn.addEventListener("click", async () => {
+    if (verifyBtn.disabled) return;
+    verifyBtn.disabled = true;
+    const label = verifyBtn.textContent;
+    verifyBtn.textContent = "Checking the room…";
+    try {
+      const resolved = await resolveAvailableRecommendation();
+      await closeSearch(resolved.searchBox);
+      if (resolved.name && resolved.el) addLog(`${resolved.name} is still available.`);
+      else if (!resolved.name) addLog("No recommendation to check yet.");
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
+      render(snapshot);
+    } catch (err) {
+      if (detectionSuspended) {
+        detectionSuspended = false;
+        previousBoardNames = null;
+      }
+      if (isContextGone(err)) return handleDeadContext();
+      showError(String(err.message || err));
+    } finally {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = label;
+    }
+  });
+
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;
     const mine = [...findMyTeamNames(text, boardNameSet, boardPlayers)];
@@ -580,48 +720,19 @@ async function main() {
       if (turnActive && turnHandled) return; // already acted this turn, waiting for it to end
       turnActive = true;
 
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
-      const recommended = snapshot.recommendation?.name;
-      if (!recommended) return; // nothing to draft yet (board empty / not loaded)
-      if (recommended !== currentRecName) {
-        currentRecName = recommended;
-        turnHandled = false;
-      }
       if (turnHandled) return;
-      const recRow = snapshot.board.find((player) => player.name === currentRecName);
-      if (!recRow || recRow.draftedBy) {
-        turnHandled = true;
-        return;
-      }
 
-      const recRowMeta = (boardPlayers || []).find((p) => p.name === currentRecName) || null;
-      let playerEl = findPlayerClickTarget(document.body, currentRecName, { player: recRowMeta });
-      let searchBox = null;
-
-      /* Not on the page is the normal case, not the exceptional one: Yahoo
-       * renders a window of the list, and the recommended player is rarely
-       * inside it. Search for them the way a person would. */
-      if (!playerEl) {
-        searchBox = findPlayerSearchBox(document.body);
-        if (searchBox) {
-          detectionSuspended = true;
-          setInputValue(searchBox, surnameOf(currentRecName));
-          await wait(900);
-          playerEl = findPlayerClickTarget(document.body, currentRecName, { player: recRowMeta });
-        }
-      }
-
-      const clearSearch = async () => {
-        if (!searchBox) return;
-        setInputValue(searchBox, "");
-        await wait(500);
-        // The filtered page was never a real board state; start clean.
-        previousBoardNames = null;
-        detectionSuspended = false;
-      };
+      /* Resolve to someone the room can actually produce, skipping past
+       * anyone already drafted. */
+      const resolved = await resolveAvailableRecommendation();
+      const searchBox = resolved.searchBox;
+      const clearSearch = () => closeSearch(searchBox);
+      const playerEl = resolved.el;
+      if (resolved.name) currentRecName = resolved.name;
+      if (resolved.snapshot) render(resolved.snapshot);
 
       if (!playerEl) {
-        addLog(`Your turn detected but couldn't find "${currentRecName}"${searchBox ? " even after searching" : ""} — draft it manually.`);
+        addLog(`Your turn — couldn't find "${currentRecName || "a recommendation"}" in this room, draft it manually.`);
         await clearSearch();
         turnHandled = true;
         return;
