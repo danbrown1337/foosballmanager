@@ -1135,6 +1135,7 @@ async function main() {
       /* This room has no confirm step: its Draft button submits the pick the
        * moment it is clicked. So the two-level split is not "select, then
        * confirm" here — it is "show you the pick" versus "make it". */
+      const recRowMeta = (boardPlayers || []).find((p) => p.name === currentRecName) || null;
       const draftBtn = findDraftButton(document.body, currentRecName, { player: recRowMeta });
 
       if (!autoFullBox.checked) {
@@ -1163,8 +1164,12 @@ async function main() {
         previousBoardNames = null;
       }
       if (isContextGone(err)) return handleDeadContext();
-      // Same policy as pollPage(): stay silent on other poll errors rather
-      // than spamming the panel on a page you aren't actively drafting on.
+      /* Not silent any more. This swallowed a ReferenceError on every turn —
+       * recRowMeta was referenced after a refactor removed the line defining
+       * it — and the panel simply did nothing at each pick with no indication
+       * why. A failure during a turn is the least acceptable moment to say
+       * nothing. */
+      addLog(`Auto-draft failed this turn: ${String(err.message || err)}`);
     }
   }
 
