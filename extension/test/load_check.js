@@ -234,6 +234,45 @@ async function main() {
     failed = true;
   }
 
+  // The panel's own practice toggle must drive the same swap the options page
+  // does — it is the control someone will actually reach for, sitting in a
+  // room that starts a kicker their league doesn't.
+  // Wait for the panel to have re-rendered after the options-page round trip,
+  // so the click lands on a checkbox showing the true state.
+  await roomPage.waitForFunction(
+    () => document.getElementById("fm-practice-toggle")?.checked === false,
+    null,
+    { timeout: 15000 }
+  );
+  await roomPage.click("#fm-practice-toggle");
+  await roomPage.waitForTimeout(1500);
+  const panelPractice = await roomPage.evaluate(() => ({
+    banner: document.getElementById("fm-practice")
+      ? !document.getElementById("fm-practice").hidden
+      : false,
+    checked: document.getElementById("fm-practice-toggle")?.checked,
+  }));
+  await optionsPage.reload();
+  await optionsPage.waitForTimeout(1000);
+  const kFromPanel = await optionsPage.inputValue("#s_K");
+  console.log(`\n--- practice toggled from the panel ---`);
+  console.log(`  banner: ${panelPractice.banner}, box: ${panelPractice.checked}, options K=${kFromPanel}`);
+  if (!panelPractice.banner || panelPractice.checked !== true || kFromPanel !== "1") {
+    console.error("FAIL: the panel toggle did not apply practice mode.");
+    failed = true;
+  }
+
+  await roomPage.click("#fm-practice-toggle");
+  await roomPage.waitForTimeout(1500);
+  await optionsPage.reload();
+  await optionsPage.waitForTimeout(1000);
+  const kRestored = await optionsPage.inputValue("#s_K");
+  console.log(`  after toggling back: options K="${kRestored}"`);
+  if (kRestored !== kVal) {
+    console.error("FAIL: toggling practice off from the panel did not restore settings.");
+    failed = true;
+  }
+
   // Regression: reloading the extension orphans the content script already
   // running in an open page — every chrome.runtime call from it throws
   // "Extension context invalidated" from then on, permanently. The panel used

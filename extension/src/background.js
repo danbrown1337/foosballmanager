@@ -8,6 +8,7 @@
 import {
   buildSnapshot,
   importPicks,
+  setPracticeMode,
   markPick,
   undoPick,
   autopickCommit,
@@ -38,6 +39,9 @@ async function handle(message, sender) {
       if (result.changed) await setBadge("\u2022");
       return result;
     }
+
+    case "SET_PRACTICE":
+      return setPracticeMode(!!message.active);
 
     case "MARK_PICK":
       return markPick(message.name, message.by);
