@@ -682,27 +682,42 @@ async function main() {
    * produce the player, he is gone — record that and ask the engine for its
    * next choice, rather than reporting failure and stopping. */
   async function resolveAvailableRecommendation(maxSkips = 4) {
-    let skipped = 0;
     let searchBox = null;
-    for (let skips = 0; skips <= maxSkips; skips++) {
+    let skipped = 0;
+    /* Candidates that can't be confirmed either way on this pass.
+     *
+     * A player queued in the room is pulled out of its available list, so he
+     * has no row and no Draft button — while his name is still on the page,
+     * in the queue panel, so he can't be called drafted either. Without
+     * setting him aside he stays the recommendation for ever and every turn
+     * deadlocks on him. Seen live: Cam Ward, at pick 180, with the panel
+     * reporting "couldn't find Cam Ward" while his name was on the page. */
+    const unusable = new Set();
+
+    for (let attempt = 0; attempt <= maxSkips; attempt++) {
       const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
-      const name = snapshot.recommendation?.name;
-      if (!name) return { snapshot, name: null, el: null, searchBox, skipped, exhausted: false };
-
-      const meta = (boardPlayers || []).find((p) => p.name === name) || null;
-      await closeSearch(searchBox);
-      const located = await locatePlayer(name, meta);
-      searchBox = located.searchBox;
-      if (located.el) return { snapshot, name, el: located.el, searchBox, skipped, exhausted: false };
-
-      if (!located.filtered) {
-        // Either there's no search box, or the search never took effect. In
-        // both cases absence proves nothing, so change nothing.
-        return { snapshot, name, el: null, searchBox, skipped, exhausted: false };
+      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2 });
+      const candidate = shortlist.find((p) => !unusable.has(p.name));
+      if (!candidate) {
+        return { snapshot, name: null, el: null, searchBox, skipped, exhausted: true };
       }
-      addLog(`${name} isn't in this room any more — marking drafted and taking the next name.`);
-      await sendMessage({ type: "IMPORT_PICKS", names: [name], by: "rival" });
-      skipped++;
+
+      const meta = (boardPlayers || []).find((p) => p.name === candidate.name) || null;
+      await closeSearch(searchBox);
+      const located = await locatePlayer(candidate.name, meta);
+      searchBox = located.searchBox;
+      if (located.el) {
+        return { snapshot, name: candidate.name, el: located.el, searchBox, skipped, exhausted: false };
+      }
+
+      if (located.filtered) {
+        addLog(`${candidate.name} isn't in this room any more — marking drafted and taking the next name.`);
+        await sendMessage({ type: "IMPORT_PICKS", names: [candidate.name], by: "rival" });
+        skipped++;
+      } else {
+        // Can't confirm him either way: change nothing, but don't stall here.
+        unusable.add(candidate.name);
+      }
     }
     return { snapshot: null, name: null, el: null, searchBox, skipped, exhausted: true };
   }
