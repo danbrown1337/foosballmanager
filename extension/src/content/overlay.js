@@ -82,6 +82,7 @@ function buildPanel() {
                  background: #1d4ed8; color: #fff; font-weight: 600; cursor: pointer;
                  font: inherit; margin-bottom: 8px; }
       #fm-take:disabled { opacity: .5; cursor: default; }
+      #fm-sync.stale { border-color: #f59e0b; color: #fbbf24; }
       #fm-sync { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
                  background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                  cursor: pointer; margin-bottom: 8px; }
@@ -182,6 +183,7 @@ async function main() {
   let polling = true;
   let contextGone = false;
   let timers = [];
+  let lastPollAt = Date.now();
   let previousBoardNames = null;
   let boardNameSet = null;
   let currentRecName = null;
@@ -386,6 +388,7 @@ async function main() {
         await sendMessage({ type: "IMPORT_PICKS", names: rivals, by: "rival" });
       }
       addLog(`Synced ${rivals.length} pick(s) from this page.`);
+      syncBtn.classList.remove("stale");
       previousBoardNames = null; // this page is the new baseline
       await refresh();
     } catch (err) {
@@ -396,6 +399,20 @@ async function main() {
 
   async function pollPage() {
     if (!polling) return;
+
+    /* Chrome throttles timers in a hidden tab to about once a minute, and
+     * discards tabs outright under Memory Saver. Either way the poll simply
+     * stops for a while, and picks made in that window are never seen — the
+     * panel comes back looking healthy and quietly out of date. It can't
+     * prevent that, but it can refuse to hide it. */
+    const now = Date.now();
+    const gap = now - lastPollAt;
+    lastPollAt = now;
+    if (gap > POLL_INTERVAL_MS * 3) {
+      addLog(`Stopped watching for ${Math.round(gap / 1000)}s (tab was in the background?) — picks may have been missed. Re-sync.`);
+      syncBtn.classList.add("stale");
+    }
+
     try {
       if (!boardNameSet) {
         const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
