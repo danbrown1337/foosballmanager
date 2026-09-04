@@ -156,3 +156,40 @@ describe("parseLeaguePage", () => {
     assert.equal(total, 1);
   });
 });
+
+describe("findBoardNames — abbreviated names (Yahoo draft room)", () => {
+  const board = new Set([
+    "Jahmyr Gibbs", "Ja'Marr Chase", "Ashton Jeanty", "Tee Higgins",
+    "Bijan Robinson", "Brian Robinson Jr.", "Marvin Harrison Jr.",
+  ]);
+
+  test("matches an initial and surname, as the draft room renders it", () => {
+    const found = findBoardNames("RB J. Gibbs Det Bye 6", board);
+    assert.equal(found.has("Jahmyr Gibbs"), true);
+  });
+
+  test("matches an upper-case surname from the last-pick banner", () => {
+    const found = findBoardNames("Last: A. JEANTY (RB \u00b7 LV)", board);
+    assert.equal(found.has("Ashton Jeanty"), true);
+  });
+
+  test("keeps apostrophes in surnames intact", () => {
+    assert.equal(findBoardNames("J. Chase", board).has("Ja'Marr Chase"), true);
+  });
+
+  test("keys off the surname, not a generational suffix", () => {
+    assert.equal(findBoardNames("M. Harrison", board).has("Marvin Harrison Jr."), true);
+  });
+
+  test("refuses to guess when an abbreviation is ambiguous", () => {
+    // B. Robinson is both Bijan and Brian: crediting the wrong one marks a
+    // player drafted who is still there to take.
+    const found = findBoardNames("B. Robinson", board);
+    assert.equal(found.has("Bijan Robinson"), false);
+    assert.equal(found.has("Brian Robinson Jr."), false);
+  });
+
+  test("still matches full names where a page renders them", () => {
+    assert.equal(findBoardNames("Jahmyr Gibbs", board).has("Jahmyr Gibbs"), true);
+  });
+});

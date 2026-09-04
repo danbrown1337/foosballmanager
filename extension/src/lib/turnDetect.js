@@ -14,6 +14,10 @@
 export const DEFAULT_TURN_PHRASES = [
   "you're on the clock",
   "you are on the clock",
+  // What Yahoo's live draft room actually shows, confirmed in a real mock
+  // room on 2026-09-03: "YOUR TURN • ROUND 1, PICK 1". None of the longer
+  // phrases below match it, so auto-draft never fired there.
+  "your turn",
   "your turn to pick",
   "your turn now",
   "it's your pick",
