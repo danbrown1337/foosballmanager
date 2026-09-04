@@ -675,16 +675,22 @@ async function main() {
   }
 
   async function maintainQueue(text) {
-    if (!queueEnabled || detectionSuspended) return;
+    if (!queueEnabled) return;
+
+    /* Report which guard stopped the cycle. Every silent early return in here
+     * has cost a round of guessing from outside the panel — three times now —
+     * so each one says its own name, once a minute. */
+    if (detectionSuspended) return noteQueueIdle("queue: waiting — the page is being swept");
     if (Date.now() - lastQueueRunAt < 15000) return;
-    if (isMyTurn(text, turnPhrases)) return; // never fight the clock
-    if (roomBusy) return; // a board update is driving the search box
+    if (isMyTurn(text, turnPhrases)) return noteQueueIdle("queue: waiting — it's your turn");
+    if (roomBusy) return noteQueueIdle("queue: waiting — a board update is using the search");
     lastQueueRunAt = Date.now();
 
     /* Refresh the board first if it's been a few minutes: a shortlist built
      * from a stale board is a list of players who are already gone, and the
      * cycle below would spend itself discovering that one name at a time. */
     if (Date.now() - lastBoardUpdateAt > 180000) {
+      noteQueueIdle("queue: refreshing the board first");
       roomBusy = true;
       try {
         const out = await updateBoardFromRoom({ verify: false });
@@ -699,6 +705,7 @@ async function main() {
       return; // let the next cycle queue against the fresh board
     }
 
+    if (!boardNameSet) return noteQueueIdle("queue: waiting — the board hasn't loaded yet");
     const inRoom = findQueueNames(text, boardNameSet, boardPlayers);
     if (inRoom === null) {
       noteQueueIdle("queue: can't see the queue panel — open the Queue tab in the left column");
