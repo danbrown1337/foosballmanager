@@ -94,6 +94,8 @@ function buildPanel() {
       #fm-mode { font-size: 10px; background: #1e222a; color: #9aa1ab; border: 1px solid #2a2f38;
                  border-radius: 4px; padding: 1px 2px; }
       #fm-err { color: #fca5a5; font-size: 11px; margin-top: 6px; }
+      #fm-shape { background: #78350f; color: #fde68a; font-size: 10px; font-weight: 700;
+                  padding: 4px 10px; }
       #fm-practice { background: #78350f; color: #fde68a; font-size: 10px; font-weight: 700;
                      letter-spacing: .04em; padding: 4px 10px; }
       #fm-dead { border-top: 1px solid #2a2f38; margin-top: 8px; padding-top: 8px;
@@ -112,6 +114,7 @@ function buildPanel() {
       <span id="fm-collapse-icon">–</span>
     </div>
     <div id="fm-practice" hidden>PRACTICE SETTINGS — not your league</div>
+    <div id="fm-shape" hidden></div>
     <div id="fm-body">
       <div id="fm-rec-flag" hidden></div>
       <div id="fm-rec-name">Loading…</div>
@@ -150,9 +153,9 @@ function buildPanel() {
 }
 
 async function main() {
-  let diffDrafted, findMyTeamNames, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
+  let diffDrafted, findMyTeamNames, findRosterSlots, findAmbiguousAbbrevs, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES;
-  ({ findBoardNames, diffDrafted, findMyTeamNames } =
+  ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findAmbiguousAbbrevs } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
@@ -178,6 +181,7 @@ async function main() {
   const deadBox = root.querySelector("#fm-dead");
   const practiceBox = root.querySelector("#fm-practice");
   const syncBtn = root.querySelector("#fm-sync");
+  const shapeBox = root.querySelector("#fm-shape");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -186,6 +190,9 @@ async function main() {
   let lastPollAt = Date.now();
   let previousBoardNames = null;
   let boardNameSet = null;
+  let boardPlayers = null;
+  let lastConfig = null;
+  const reportedAmbiguous = new Set();
   let currentRecName = null;
   let turnPhrases = [];
   let confirmPhrases = [];
@@ -310,6 +317,7 @@ async function main() {
   }
 
   function render(snapshot) {
+    lastConfig = snapshot.config;
     // Shown outside the collapsible body: a mock-settings warning is useless
     // if it's hidden behind the panel being collapsed.
     practiceBox.hidden = !snapshot.practice;
@@ -359,9 +367,28 @@ async function main() {
    * rather than making you click Mine five times. Additive only: this can
    * add a player to your team or correct one previously recorded as a
    * rival's, never take one away. */
+  /* The room's own slot labels are the league's starter construction. If it
+   * shows a slot the configured league doesn't start, every player at that
+   * position is unrostable to the engine — it will never recommend one, and
+   * the unfilled-starter guardrail reads the same config so it stays silent
+   * too. That combination emptied a kicker slot in live testing. */
+  function checkRosterShape(text, config) {
+    if (!findRosterSlots || !config) return;
+    const slots = findRosterSlots(text);
+    const starters = config.roster?.starters || {};
+    const missing = ["K", "DEF"].filter((pos) => slots.has(pos) && !starters[pos]);
+    if (missing.length === 0) {
+      shapeBox.hidden = true;
+      return;
+    }
+    shapeBox.textContent =
+      `THIS ROOM STARTS ${missing.join(" AND ")} — your settings don't, so none will ever be recommended. Turn on practice mode in Settings.`;
+    shapeBox.hidden = false;
+  }
+
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;
-    const mine = [...findMyTeamNames(text, boardNameSet)];
+    const mine = [...findMyTeamNames(text, boardNameSet, boardPlayers)];
     if (mine.length === 0) return false;
     const { changed } = await sendMessage({ type: "IMPORT_PICKS", names: mine, by: "mine" });
     if (changed) addLog(`Read your team off the page: ${mine.join(", ")}`);
@@ -380,9 +407,11 @@ async function main() {
       if (!boardNameSet) {
         const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
         boardNameSet = new Set(snapshot.board.map((p) => p.name));
+        boardPlayers = snapshot.board;
       }
-      const mineNames = findMyTeamNames(text, boardNameSet);
-      const rivals = [...findBoardNames(text, boardNameSet)].filter((n) => !mineNames.has(n));
+      const mineNames = findMyTeamNames(text, boardNameSet, boardPlayers);
+      const rivals = [...findBoardNames(text, boardNameSet, boardPlayers)]
+        .filter((n) => !mineNames.has(n));
       await importMyTeam(text);
       if (rivals.length > 0) {
         await sendMessage({ type: "IMPORT_PICKS", names: rivals, by: "rival" });
@@ -417,10 +446,20 @@ async function main() {
       if (!boardNameSet) {
         const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
         boardNameSet = new Set(snapshot.board.map((p) => p.name));
+        boardPlayers = snapshot.board;
       }
       const text = document.body.innerText;
       await importMyTeam(text);
-      const found = findBoardNames(text, boardNameSet);
+      checkRosterShape(text, lastConfig);
+      const found = findBoardNames(text, boardNameSet, boardPlayers);
+
+      // Say it once per name: a pick this can't attribute is a hole in the
+      // board, and the fix is one manual click in the popup.
+      for (const abbrev of findAmbiguousAbbrevs(text, boardNameSet, boardPlayers)) {
+        if (reportedAmbiguous.has(abbrev)) continue;
+        reportedAmbiguous.add(abbrev);
+        addLog(`"${abbrev}" matches two players — mark it by hand if it was drafted.`);
+      }
 
       if (previousBoardNames) {
         // "appear": a picks feed — names show up as taken.
