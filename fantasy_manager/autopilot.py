@@ -173,9 +173,13 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
         candidates = [p for p in pool if p.pos in urgent_needs]
         if candidates:
             best = min(candidates, key=lambda p: scores[p.name])
+            # State the real count: "none rostered" was hardcoded, so a
+            # roster with one of two starters filled was told it had none,
+            # which reads as the engine ignoring the pick you just made.
             reason = (
                 f"Need override: {best.pos} is {repl[best.pos] - drafted_at_pos.get(best.pos, 0)} "
-                f"picks from the replacement cliff league-wide and you have none rostered."
+                f"picks from the replacement cliff league-wide and you have "
+                f"{have.get(best.pos, 0)} of {starters.get(best.pos, 0)} rostered."
             )
             return PickDecision(best, scores[best.name], reason, need_override=True)
 

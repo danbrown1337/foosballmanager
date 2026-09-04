@@ -195,6 +195,23 @@ async function main() {
     for (const e of roomErrors) console.error(`  ERROR: ${e}`);
   }
 
+  // Every helper the panel imports must actually be bound: these are
+  // destructured from dynamic imports, so a name added to the declaration but
+  // missed in the assignment stays undefined and fails only when a draft is
+  // live. Clicking the verify button exercises that whole path.
+  await roomPage.click("#fm-verify");
+  await roomPage.waitForTimeout(4000);
+  const verifyErr = await roomPage.evaluate(() => {
+    const e = document.getElementById("fm-err");
+    return e && !e.hidden ? e.textContent : null;
+  });
+  console.log(`\n--- verify button ---`);
+  console.log(`  error box: ${verifyErr || "empty"}`);
+  if (verifyErr) {
+    console.error("FAIL: verifying the recommendation raised an error.");
+    failed = true;
+  }
+
   // Practice mode: the mock-settings swap has to reach both the form and the
   // live panel, and — the part that actually matters on draft day — restore
   // the real league settings exactly when it's switched back off.
@@ -273,6 +290,26 @@ async function main() {
     failed = true;
   }
 
+  // Reset from the panel: two clicks, and the pick recorded earlier via the
+  // popup must be gone. State carries between rooms otherwise, which is how a
+  // fresh mock opens recommending against the previous draft.
+  await roomPage.click("#fm-reset");
+  await roomPage.waitForTimeout(300);
+  const armedLabel = await roomPage.evaluate(
+    () => document.getElementById("fm-reset")?.textContent.trim()
+  );
+  await roomPage.click("#fm-reset");
+  await roomPage.waitForTimeout(1200);
+  await popupPage.reload();
+  await popupPage.waitForTimeout(1500);
+  const myCountAfterReset = await popupPage.textContent("#myCount");
+  console.log(`\n--- reset from the panel ---`);
+  console.log(`  first click armed it ("${armedLabel}"), myCount after reset: ${myCountAfterReset}`);
+  if (!/click again/i.test(armedLabel || "") || myCountAfterReset !== "0") {
+    console.error("FAIL: panel reset did not clear the recorded picks.");
+    failed = true;
+  }
+
   // Regression: reloading the extension orphans the content script already
   // running in an open page — every chrome.runtime call from it throws
   // "Extension context invalidated" from then on, permanently. The panel used
@@ -280,8 +317,18 @@ async function main() {
   // a live-looking draft button, which is exactly what "the extension does
   // nothing" looks like from the outside. It has to say so and stop.
   if (extId) {
-    await workers[0].evaluate(() => chrome.runtime.reload()).catch(() => {});
-    await roomPage.waitForTimeout(7000);
+    // Re-fetch the worker: Chrome retires an idle MV3 service worker and
+    // starts a fresh one, so the handle captured at startup can be dead by
+    // now — and a dead handle silently skips the reload, making this check
+    // pass by never running.
+    const liveWorker = context.serviceWorkers()[0] || workers[0];
+    await liveWorker.evaluate(() => chrome.runtime.reload()).catch((e) =>
+      console.error(`  could not reload the extension: ${e.message}`)
+    );
+    // The panel's guaranteed heartbeat is refresh() every 8s — pollPage only
+    // messages the worker when it has something to report, so a shorter wait
+    // can end before anything has tried to talk to the dead extension.
+    await roomPage.waitForTimeout(12000);
     const dead = await roomPage
       .evaluate(() => ({
         // Explicit null check: a missing element must read as "not shown",
