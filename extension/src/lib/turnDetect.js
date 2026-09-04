@@ -11,6 +11,20 @@
  * turn goes undetected.
  */
 
+/* Text that contains a turn phrase but means the opposite. The room's status
+ * bar permanently reads "You're up in 11 Picks", and the player list carries a
+ * "YOUR TURN - 22ND PICK" divider marking a future pick — both matched, so the
+ * panel believed it was your turn for entire drafts. */
+export const NOT_A_TURN = [
+  /you'?re up in \s*\d+/i,
+  /your turn\s*[-\u2013\u2014]\s*\d+/i,
+  /up in \s*\d+\s*picks?/i,
+];
+
+export function looksLikeAFutureTurn(text) {
+  return NOT_A_TURN.some((re) => re.test(text));
+}
+
 export const DEFAULT_TURN_PHRASES = [
   "you're on the clock",
   "you are on the clock",
@@ -24,7 +38,6 @@ export const DEFAULT_TURN_PHRASES = [
   "it is your pick",
   "make your pick",
   "draft time",
-  "you're up",
 ];
 
 function normalizeText(text) {
