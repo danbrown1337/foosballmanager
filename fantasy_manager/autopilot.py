@@ -48,6 +48,24 @@ def _strategy_bias(pos: str, strategy: str, picks_made: int) -> float:
     return 0.0
 
 
+DEFAULT_BYE_PENALTY = 6.0
+
+
+def bye_penalty(player, mine, config):
+    """Cost of stacking this player's bye with players already rostered.
+
+    In ADP points, and only where byes are known: a player with no bye data
+    is treated as unknown rather than clash-free, so this never silently
+    changes behaviour where it cannot see.
+    """
+    weight = config.get("autopilot", {}).get("bye_penalty", DEFAULT_BYE_PENALTY)
+    bye = getattr(player, "bye", None)
+    if not weight or not bye:
+        return 0.0
+    clashes = sum(1 for p in mine if p.pos == player.pos and getattr(p, "bye", None) == bye)
+    return clashes * weight
+
+
 def score_players(players: list[Player], config: dict, picks_made: int) -> dict[str, float]:
     """Effective adjusted_adp per player name, after risk-tolerance scaling
     and strategy bias — lower is better, same units as ADP (picks)."""
@@ -84,6 +102,12 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
 
     picks_made = sum(1 for p in players if p.drafted_by is not None)
     scores = score_players(players, config, picks_made)
+    # A roster is played weekly, not drafted once: two starters at one
+    # position sharing a bye means a week without that position, and ADP
+    # ranks players in isolation. Applied to every path below, so even a
+    # forced need pick prefers the candidate who doesn't empty the same week.
+    for p in avail:
+        scores[p.name] += bye_penalty(p, mine, config)
 
     starters = config["roster"]["starters"]
     bench_cap = config.get("autopilot", {}).get("max_bench_per_pos", 3)
