@@ -39,7 +39,10 @@ const ADP = JSON.parse(
 );
 // Abbreviated exactly as the room writes them, with position and team so the
 // matcher can settle any that share an initial and surname.
-const SWEEP_NAMES = ADP.slice(0, 100).map((p) => {
+/* The whole board, not a slice of it: a real draft room lists every player
+ * still available, and a fixture that lists half of them makes a complete
+ * sweep look like a partial one — which the repair now refuses to act on. */
+const SWEEP_NAMES = ADP.map((p) => {
   const [first, ...rest] = p.name.split(" ");
   return `${first[0]}. ${rest.join(" ")} ${p.pos} \u00b7 ${p.team}`;
 });
@@ -55,7 +58,7 @@ const FAKE_ROOM = `<html><body>
   <div>Ja'Marr Chase</div><div>Bijan Robinson</div><div>CeeDee Lamb</div>
   <div id="scroller" style="height:120px;overflow-y:auto">
     <div class="ys-divider">YOUR TURN - 22ND PICK</div>
-    <div id="spacer" style="height:2000px;position:relative">
+    <div id="spacer" style="height:4000px;position:relative">
       <ul id="window" style="margin:0;position:absolute;left:0;right:0"></ul>
     </div>
   </div>
