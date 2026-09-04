@@ -160,9 +160,10 @@ function buildPanel() {
 }
 
 async function main() {
-  let diffDrafted, findMyTeamNames, findRosterSlots, findAmbiguousAbbrevs, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
+  let diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES;
-  ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findAmbiguousAbbrevs } =
+  ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
+     findAmbiguousAbbrevs } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
@@ -392,8 +393,26 @@ async function main() {
    * too. That combination emptied a kicker slot in live testing. */
   function checkRosterShape(text, config) {
     if (!findRosterSlots || !config) return;
-    const slots = findRosterSlots(text);
     const starters = config.roster?.starters || {};
+
+    /* The size check first, because getting this wrong is not a nuance — the
+     * engine derives "picks left" from sum(starters) + bench, and a config
+     * describing a smaller roster than the room means it believes the draft
+     * is nearly over from the first round. Seen live: a three-slot config in
+     * a fifteen-slot room, which forced a kicker at round one and reported
+     * "0 picks left" at round four. */
+    const configured =
+      Object.values(starters).reduce((a, b) => a + b, 0) + (config.roster?.bench || 0);
+    const room = findRosterTotal ? findRosterTotal(text) : null;
+    if (room && configured !== room.total) {
+      shapeBox.textContent =
+        `THIS ROOM DRAFTS ${room.total} PLAYERS — your settings add up to ${configured}. ` +
+        `Recommendations will be wrong until they match. Fix the starters and bench in Settings.`;
+      shapeBox.hidden = false;
+      return;
+    }
+
+    const slots = findRosterSlots(text);
     const missing = ["K", "DEF"].filter((pos) => slots.has(pos) && !starters[pos]);
     if (missing.length === 0) {
       shapeBox.hidden = true;

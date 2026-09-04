@@ -113,6 +113,15 @@ export function findAmbiguousAbbrevs(text, boardNames, players) {
  * the configured league has none, where the engine treats every kicker as
  * unrostable and the unfilled-starter guardrail reads the same config and so
  * never warns either. */
+/* How many players this room drafts, from its own header: "YOUR TEAM (3/15)".
+ * The total is the one number in the roster panel that needs no parsing of
+ * slot labels interleaved with player rows, and it is enough to catch a
+ * league config that doesn't describe this room. */
+export function findRosterTotal(text) {
+  const m = /YOUR TEAM\s*\((\d+)\s*\/\s*(\d+)\)/i.exec(text);
+  return m ? { filled: Number(m[1]), total: Number(m[2]) } : null;
+}
+
 export function findRosterSlots(text) {
   const start = text.search(/YOUR TEAM/i);
   if (start === -1) return new Set();

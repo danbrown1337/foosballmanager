@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
+import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
 
 const BOARD = new Set([
   "Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.", "A.J. Brown",
@@ -285,5 +285,16 @@ BN`;
 
   test("no roster panel means no claims about the league's shape", () => {
     assert.equal(findRosterSlots("A league homepage").size, 0);
+  });
+});
+
+describe("findRosterTotal", () => {
+  test("reads how many players the room drafts", () => {
+    // The number the engine's "picks left" arithmetic has to agree with.
+    assert.deepEqual(findRosterTotal("YOUR TEAM (3/15)\nQB\nWR"), { filled: 3, total: 15 });
+  });
+
+  test("returns null when the room shows no roster panel", () => {
+    assert.equal(findRosterTotal("Mock Draft Lobby"), null);
   });
 });

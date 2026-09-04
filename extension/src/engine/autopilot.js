@@ -115,7 +115,11 @@ export function autoPick(players, config) {
   const allPositions = Object.keys(starters).filter((pos) => pos !== "FLEX");
   const unfilledStarters = allPositions.filter((pos) => (have[pos] || 0) < starters[pos]);
 
-  if (unfilledStarters.length > 0 && myPicksRemaining <= unfilledStarters.length) {
+  // Strictly positive: at zero or below the configured roster is already
+  // full, and "no picks left, so spend one on a kicker" is a contradiction —
+  // it means the league config doesn't describe this draft.
+  if (unfilledStarters.length > 0 && myPicksRemaining > 0 &&
+      myPicksRemaining <= unfilledStarters.length) {
     const candidates = avail.filter((p) => unfilledStarters.includes(p.pos));
     if (candidates.length > 0) {
       const replNow = replacementRanks(config);
