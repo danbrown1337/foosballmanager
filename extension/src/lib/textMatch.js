@@ -18,6 +18,29 @@
 
 import { normalizePos } from "../engine/board.js";
 
+/* Yahoo's live draft room never renders a full name. Every player in the
+ * board, the pick feed and the roster is abbreviated to an initial and a
+ * surname — "J. Gibbs", and in the last-pick banner "A. JEANTY" — so full-name
+ * search finds nothing there at all, which is exactly how a working panel
+ * ends up never detecting a single pick. Confirmed against a real Yahoo mock
+ * draft room, 2026-09-03.
+ *
+ * Abbreviations are matched only where they're unambiguous. Two board players
+ * sharing an initial and surname (J. Williams could be Jameson or Javonte)
+ * resolve to nothing rather than to a guess: a missed pick leaves the board
+ * one name stale, while a wrong one credits a rival with a player who is
+ * still sitting there to be drafted. */
+function abbrevKey(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length < 2) return null;
+  const surname = parts[parts.length - 1].replace(/[.,]/g, "");
+  // Drop generational suffixes so "Marvin Harrison Jr." keys off "Harrison".
+  const last = /^(jr|sr|ii|iii|iv|v)$/i.test(surname) && parts.length > 2
+    ? parts[parts.length - 2]
+    : surname;
+  return `${parts[0][0]} ${last}`.toLowerCase();
+}
+
 /** Which known player names appear in this page's text. Word-boundary
  * guards (JS regex lookaround, same as Python's) keep "Josh Allen" from
  * matching inside "Josh Allenson". */
@@ -27,6 +50,23 @@ export function findBoardNames(text, boardNames) {
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const re = new RegExp(`(?<!\\w)${escaped}(?!\\w)`);
     if (re.test(text)) found.add(name);
+  }
+
+  // Second pass: initial-plus-surname, as the draft room actually writes it.
+  const byAbbrev = new Map();
+  for (const name of boardNames) {
+    const key = abbrevKey(name);
+    if (!key) continue;
+    if (byAbbrev.has(key)) byAbbrev.get(key).push(name);
+    else byAbbrev.set(key, [name]);
+  }
+  // Surnames may be title case or upper case depending on where in the room
+  // they appear, and apostrophes/hyphens are part of the name (Ja'Marr, Smith-Njigba).
+  const abbrevRe = /(?<!\w)([A-Za-z])\.\s*([A-Za-z][A-Za-z'\u2019-]+)(?!\w)/g;
+  for (const m of text.matchAll(abbrevRe)) {
+    const key = `${m[1]} ${m[2]}`.toLowerCase();
+    const candidates = byAbbrev.get(key);
+    if (candidates && candidates.length === 1) found.add(candidates[0]);
   }
   return found;
 }
