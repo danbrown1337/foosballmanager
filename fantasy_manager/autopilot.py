@@ -54,6 +54,11 @@ DEFAULT_BYE_PENALTY = 6.0
 # Heavier where the position has nowhere else to play: a second QB, kicker or
 # defence sits on the bench all season, while a third back or receiver still
 # starts in the flex or covers a bye.
+# Designations meaning the player will not play this season. Drafting one
+# spends a roster spot on nobody, so they are removed from consideration
+# entirely — the same treatment a position the league doesn't start gets.
+UNAVAILABLE = {"IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O"}
+
 SURPLUS_PENALTY = {"QB": 14, "K": 20, "DEF": 20, "TE": 8, "RB": 3, "WR": 3}
 
 
@@ -114,7 +119,10 @@ class PickDecision:
 
 def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     mine = [p for p in players if p.drafted_by == "mine"]
-    avail = [p for p in players if p.drafted_by is None]
+    avail = [
+        p for p in players
+        if p.drafted_by is None and getattr(p, "status", None) not in UNAVAILABLE
+    ]
     if not avail:
         return None
 

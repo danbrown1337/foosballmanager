@@ -49,6 +49,10 @@ async function buildPlayers(adp, notes, byes) {
   const players = loadPlayers(rows);
   applyNotes(players, notes);
   if (pool?.players?.length) {
+    // Injury designations come only from the imported pool; the bundled file
+    // has none, and a player who cannot play must not look draftable.
+    const statusByName = new Map(pool.players.map((p) => [p.name, p.status ?? null]));
+    for (const p of players) p.status = statusByName.get(p.name) ?? null;
     // Per-player byes from the league page beat a team lookup: a player who
     // changed team mid-season is right here and wrong in a static map.
     const byeByName = new Map(pool.players.map((p) => [p.name, p.bye ?? null]));
@@ -77,6 +81,7 @@ export async function buildSnapshot() {
   return {
     board: [...players].sort((a, b) => a.adp - b.adp).map((p) => ({
       name: p.name, pos: p.pos, team: p.team, adp: p.adp, tier: p.tier, bye: p.bye,
+      status: p.status,
       draftedBy: p.draftedBy, noteTag: p.noteTag, note: p.note,
     })),
     mine: mine.map((p) => ({ name: p.name, pos: p.pos, team: p.team })),

@@ -27,6 +27,11 @@ export const DEFAULT_BYE_PENALTY = 6.0;
  * defence sits on the bench all season, while a third RB or receiver still
  * starts in the flex or covers a bye. Without this the shortlist happily
  * offered three tight ends to a roster that starts one. */
+/* Designations that mean the player will not play this season. Drafting one
+ * spends a roster spot on nobody — so they are removed from consideration
+ * entirely, the same treatment a position the league doesn't start gets. */
+export const UNAVAILABLE = new Set(["IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O"]);
+
 export const SURPLUS_PENALTY = { QB: 14, K: 20, DEF: 20, TE: 8, RB: 3, WR: 3 };
 
 function strategyBias(pos, strategy, picksMade) {
@@ -99,7 +104,7 @@ export function byePenalty(player, mine, config) {
  */
 export function autoPick(players, config) {
   const mine = players.filter((p) => p.draftedBy === "mine");
-  const avail = players.filter((p) => !p.draftedBy);
+  const avail = players.filter((p) => !p.draftedBy && !UNAVAILABLE.has(p.status));
   if (avail.length === 0) return null;
 
   const picksMade = players.filter((p) => p.draftedBy).length;

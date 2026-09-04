@@ -16,6 +16,11 @@
 
 const TEAM_POS = /^\s*([A-Za-z.]{2,4})\s*-\s*([A-Z]{1,3}(?:,[A-Z]{1,3})*)\s*$/;
 
+/* The designation Yahoo prints beside a name. The ones that mean "not playing
+ * this season" matter most: a player on PUP-R or IR is a wasted roster spot,
+ * and without this he is just another name on the board — one was queued. */
+const STATUS_TAGS = /^(Q|D|O|SUSP|IR|IR-R|PUP|PUP-R|NFI|NFI-R|NA|COV)$/i;
+
 /* Which column holds what, from the table's own header row. Guessing by value
  * doesn't work — games played is 16 or 17, indistinguishable from a bye week —
  * and fixed positions shift when a row carries a note or an injury tag, which
@@ -38,12 +43,14 @@ export function parsePoolPage(html, DomParser = DOMParser) {
 
     let team = null;
     let pos = null;
+    let status = null;
     for (const el of container.querySelectorAll("span, div, em")) {
-      const m = TEAM_POS.exec(el.textContent || "");
+      const value = (el.textContent || "").trim();
+      if (!status && STATUS_TAGS.test(value)) status = value.toUpperCase();
+      const m = TEAM_POS.exec(value);
       if (m) {
         team = m[1].toUpperCase();
         pos = m[2].split(",")[0];
-        break;
       }
     }
     /* Cell positions are not stable — a player note, an injury tag or a
@@ -54,7 +61,7 @@ export function parsePoolPage(html, DomParser = DOMParser) {
     const cells = [...tr.children].map((td) => (td.textContent || "").trim());
     const byeValue = Number(cells[byeCol]);
     const bye = Number.isInteger(byeValue) && byeValue >= 1 && byeValue <= 18 ? byeValue : null;
-    players.push({ name: link.textContent.trim(), team, pos, bye });
+    players.push({ name: link.textContent.trim(), team, pos, bye, status });
   }
   return players;
 }
