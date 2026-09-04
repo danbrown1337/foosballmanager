@@ -1,11 +1,21 @@
 /*
- * Loads the actual unpacked extension into a real Chromium (via Playwright,
- * driving the browser this environment has bundled) and checks for load
- * errors, then opens the popup and options pages directly and checks for
- * JS errors in each. This is real verification that the extension loads
- * and runs — not just that its files exist.
+ * Loads the actual unpacked extension into a real Chromium (via Playwright)
+ * and checks that it runs: the background service worker registers, the popup
+ * and options pages render without errors and are interactive, and the content
+ * script injects its overlay on a matching Yahoo URL. This is real
+ * verification that the extension loads and runs — not just that its files
+ * exist.
  *
- * Not part of the extension itself; a one-off check for this build.
+ * Not part of the extension itself, and not wired into run_all.sh: it needs a
+ * browser download, while everything in run_all.sh runs on vanilla node.
+ *
+ *   cd extension
+ *   npm install playwright
+ *   npx playwright install chromium
+ *   node test/load_check.js
+ *
+ * FM_CHROME can point at a different Chromium binary, but read the branded
+ * Chrome note below before reaching for it.
  */
 import { chromium } from "playwright";
 import { fileURLToPath } from "node:url";
@@ -15,7 +25,20 @@ import { tmpdir } from "node:os";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const EXT_PATH = join(HERE, "..");
-const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+
+// Playwright's bundled Chromium by default, so this runs anywhere the browser
+// has been installed rather than only where some fixed path happens to exist.
+const CHROME = process.env.FM_CHROME || chromium.executablePath();
+const IS_BRANDED_CHROME = /google-chrome|chrome-stable|Google Chrome/i.test(CHROME);
+
+// A synthetic draft room. The content script is text-driven and never reads
+// Yahoo's DOM structure, so a plain page with a turn phrase and a few board
+// names exercises the same paths the real room would — no account, no network.
+const FAKE_ROOM = `<html><body>
+  <h1>Mock Draft Room</h1>
+  <p>You're on the clock!</p>
+  <div>Ja'Marr Chase</div><div>Bijan Robinson</div><div>CeeDee Lamb</div>
+</body></html>`;
 
 async function main() {
   const userDataDir = mkdtempSync(join(tmpdir(), "fm-ext-"));
@@ -31,15 +54,24 @@ async function main() {
   });
 
   let failed = false;
-  const errors = [];
 
   // Give the service worker a moment to register.
-  await new Promise((r) => setTimeout(r, 1500));
+  await new Promise((r) => setTimeout(r, 2000));
 
   const workers = context.serviceWorkers();
+  console.log(`Browser: ${CHROME}`);
   console.log(`Service workers registered: ${workers.length}`);
   if (workers.length === 0) {
     console.error("FAIL: no service worker registered — background.js did not load.");
+    if (IS_BRANDED_CHROME) {
+      console.error(
+        "\n  This is branded Google Chrome, which ignores --load-extension\n" +
+        "  outright (a deliberate restriction since Chrome 137). Nothing was\n" +
+        "  loaded at all, so this result says nothing about the extension —\n" +
+        "  a minimal, valid extension fails here identically.\n" +
+        "  Unset FM_CHROME to use Playwright's bundled Chromium instead."
+      );
+    }
     failed = true;
   } else {
     console.log(`  worker URL: ${workers[0].url()}`);
@@ -115,13 +147,45 @@ async function main() {
     failed = true;
   }
 
+  // Content script: does the overlay inject on a URL matching the manifest?
+  // Route ONLY the Yahoo URL. A catch-all ("**/*") also intercepts the
+  // overlay's own dynamic import()s of chrome-extension:// modules and serves
+  // them back as text/html, which trips strict MIME checking and looks exactly
+  // like a broken extension when the extension is fine.
+  const roomPage = await context.newPage();
+  const roomErrors = [];
+  roomPage.on("pageerror", (err) => roomErrors.push(String(err)));
+  roomPage.on("console", (msg) => {
+    if (msg.type() === "error") roomErrors.push(`console.error: ${msg.text()}`);
+  });
+  await roomPage.route("https://football.fantasysports.yahoo.com/**", (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: FAKE_ROOM })
+  );
+  await roomPage.goto("https://football.fantasysports.yahoo.com/f1/000000/draftclient");
+  await roomPage.waitForTimeout(3000);
+
+  const overlayText = await roomPage
+    .evaluate(() => document.getElementById("fantasy-manager-overlay")?.innerText || "")
+    .catch(() => "");
+  console.log("\n--- content script on football.fantasysports.yahoo.com ---");
+  if (!overlayText) {
+    console.error("FAIL: overlay panel never injected on a matching URL.");
+    failed = true;
+  } else {
+    console.log(`  overlay injected, first line: "${overlayText.split("\n")[0]}"`);
+  }
+  if (roomErrors.length > 0) {
+    failed = true;
+    for (const e of roomErrors) console.error(`  ERROR: ${e}`);
+  }
+
   await context.close();
 
   if (failed) {
     console.error("\n=== LOAD CHECK FAILED ===");
     process.exit(1);
   }
-  console.log("\n=== LOAD CHECK PASSED: extension loads, popup renders and is interactive, options page correct ===");
+  console.log("\n=== LOAD CHECK PASSED: extension loads, popup renders and is interactive, options page correct, overlay injects ===");
 }
 
 main().catch((err) => {
