@@ -550,6 +550,14 @@ async function main() {
    * subtracting one from the other silently removed nothing, and the panel
    * went on believing it was your turn for a whole draft. Here the node's own
    * position decides — inside the list it doesn't count, outside it does. */
+  /* The list's divider names a future pick — "YOUR TURN - 22ND PICK". The
+   * room's real banner names the current one — "YOUR TURN \u2022 ROUND 4,
+   * PICK 50". Rejecting the divider by its own shape as well as by position,
+   * because position alone depends on finding the list, and a poll that
+   * doesn't find it would claim a turn that isn't happening. */
+  const RANKING_DIVIDER = /your turn\s*[-\u2013\u2014]\s*\d+\s*(st|nd|rd|th)?\s*pick/i;
+
+  let lastTurnEvidence = "";
   function turnBannerPresent() {
     const scroller = findListScroller(document.body);
     const overlay = document.getElementById("fantasy-manager-overlay");
@@ -564,6 +572,14 @@ async function main() {
       if (!el) continue;
       if (scroller?.contains(el)) continue; // the ranking divider
       if (overlay?.contains(el)) continue; // our own panel's log
+      const value = node.nodeValue.trim();
+      if (RANKING_DIVIDER.test(value)) continue; // a divider found outside the list
+      // Record what convinced it, so a wrong turn can be read off the panel
+      // instead of inferred from the outside.
+      if (value.slice(0, 60) !== lastTurnEvidence) {
+        lastTurnEvidence = value.slice(0, 60);
+        addLog(`Turn banner seen: "${lastTurnEvidence}"`);
+      }
       return true;
     }
     return false;
