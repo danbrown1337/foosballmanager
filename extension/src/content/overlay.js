@@ -236,6 +236,12 @@ async function main() {
    * the board from the page text, and the pick detector would read that as
    * every one of those players being drafted at once. */
   let detectionSuspended = false;
+  /* The exact text we last typed into the room's search box. If a cycle is
+   * interrupted — a throw, a reload, a turn arriving mid-search — the filter
+   * is left in place, and every later lookup searches a list narrowed to
+   * somebody else. Seen live: "Wilson" sat in the box while the panel
+   * reported it couldn't confirm player after player. */
+  let searchWeTyped = null;
   const QUEUE_DEPTH = 5;
   let queueEnabled = false;
   let lastQueueRunAt = 0;
@@ -651,7 +657,8 @@ async function main() {
      * check the list actually narrowed before drawing any conclusion. */
     const before = countNames();
     detectionSuspended = true;
-    setInputValue(searchBox, surnameOf(name));
+    searchWeTyped = surnameOf(name);
+    setInputValue(searchBox, searchWeTyped);
     let filtered = false;
     for (let waited = 0; waited < 5000; waited += 250) {
       await wait(250);
@@ -668,6 +675,7 @@ async function main() {
 
   async function closeSearch(searchBox) {
     if (!searchBox) return;
+    searchWeTyped = null;
     setInputValue(searchBox, "");
     await wait(400);
     previousBoardNames = null; // the filtered page was never a real board
@@ -1055,6 +1063,18 @@ async function main() {
 
   async function pollPage() {
     if (!polling || detectionSuspended) return;
+
+    /* Clear a filter we left behind — only ever text we typed ourselves, so a
+     * search the user is running is never wiped from under them. */
+    if (searchWeTyped && !roomBusy) {
+      const box = findPlayerSearchBox(document.body);
+      if (box && box.value === searchWeTyped) {
+        setInputValue(box, "");
+        addLog("Cleared a leftover player search.");
+        previousBoardNames = null;
+      }
+      searchWeTyped = null;
+    }
 
     /* Chrome throttles timers in a hidden tab to about once a minute, and
      * discards tabs outright under Memory Saver. Either way the poll simply
