@@ -30,6 +30,9 @@ async function loadForm() {
 
   const phrases = await Storage.getTurnPhrases();
   document.getElementById("turnPhrases").value = phrases.join("\n");
+
+  const confirmPhrases = await Storage.getConfirmPhrases();
+  document.getElementById("confirmPhrases").value = confirmPhrases.join("\n");
 }
 
 function renderTeamList(rosters) {
@@ -92,6 +95,15 @@ document.getElementById("saveTurnPhrases").addEventListener("click", async () =>
     .filter(Boolean);
   await Storage.setTurnPhrases(phrases);
   flash("turnPhrasesStatus");
+});
+
+document.getElementById("saveConfirmPhrases").addEventListener("click", async () => {
+  const phrases = document.getElementById("confirmPhrases").value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  await Storage.setConfirmPhrases(phrases);
+  flash("confirmPhrasesStatus");
 });
 
 document.getElementById("resetDraft").addEventListener("click", async () => {

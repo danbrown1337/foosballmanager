@@ -113,6 +113,18 @@
   </div>
 
   <div class="card">
+    <h2>Auto-draft confirm phrases</h2>
+    <p class="hint">
+      Fully automatic mode clicks the draft room's confirm/submit button after
+      selecting your player. If your room uses custom button text, add that
+      text here, one per line.
+    </p>
+    <textarea id="confirmPhrases" placeholder="draft&#10;confirm pick&#10;confirm&#10;submit pick"></textarea>
+    <button id="saveConfirmPhrases" class="primary">Save confirm phrases</button>
+    <span id="confirmPhrasesStatus" class="status" hidden>Saved</span>
+  </div>
+
+  <div class="card">
     <h2>Reset</h2>
     <p class="hint">Clears every pick recorded so far. League settings and rosters are kept.</p>
     <button id="resetDraft">Reset draft state</button>

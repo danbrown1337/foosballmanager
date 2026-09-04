@@ -8,6 +8,10 @@ describe("isMyTurn", () => {
     assert.equal(isMyTurn("Round 3, Pick 4 — YOU'RE ON THE CLOCK"), true);
   });
 
+  test("matches default phrase with punctuation and extra spacing", () => {
+    assert.equal(isMyTurn("  You’re on the clock!!!  "), true);
+  });
+
   test("no match when no phrase is present", () => {
     assert.equal(isMyTurn("Waiting for Team Bravo to pick..."), false);
   });

@@ -30,6 +30,14 @@ function isInsideOwnOverlay(el) {
   return !!el.closest?.("#fantasy-manager-overlay");
 }
 
+function normalizeText(text) {
+  return (text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Find the best element to click to select `playerName` on the page.
  * Walks up from the matching text node looking for the nearest ancestor
  * that looks interactive (button/link/role=button/onclick); falls back to
@@ -65,13 +73,18 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6 }
  * unrelated page chrome ("Mock Draft Lobby", nav links, etc). */
 export function findConfirmClickTarget(root, phrases) {
   const candidates = root.querySelectorAll(CLICKABLE_SELECTOR);
-  const wanted = phrases.map((p) => p.trim().toLowerCase()).filter(Boolean);
+  const wanted = (phrases || [])
+    .map((p) => normalizeText(p))
+    .filter(Boolean);
+  const normalizedDefaults = DEFAULT_CONFIRM_PHRASES.map(normalizeText);
+  const useDefaults = wanted.length === 0;
+  const wantedSet = new Set(useDefaults ? normalizedDefaults : wanted);
 
   for (const el of candidates) {
     if (isInsideOwnOverlay(el)) continue;
-    const text = (el.textContent || "").trim().toLowerCase();
+    const text = normalizeText(el.textContent || "");
     if (!text || text.length > 40) continue;
-    if (wanted.includes(text)) return el;
+    if (wantedSet.has(text)) return el;
   }
   return null;
 }

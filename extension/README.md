@@ -98,6 +98,32 @@ where the small floating panel also appears on the page itself). Click **the
 recommended player's Mine/Taken buttons**, or **"Draft this player for
 me"** on the top card to take the current recommendation.
 
+## Rivendell quick-start (open room, minimal setup)
+
+If you want the panel to run with almost no manual steps:
+
+1. Open **Settings → Auto-draft turn phrases** and keep:
+   - `you're on the clock`
+   - `you are on the clock`
+   - `your turn to pick`
+   - `your turn now`
+   - `it's your pick`
+   - `make your pick`
+   - `draft time`
+2. Open **Settings → Auto-draft confirm phrases** only if you plan to use
+   fully automatic mode:
+   - `draft`
+   - `confirm pick`
+   - `confirm`
+   - `submit pick`
+3. In the draft room, open the panel and click **Auto-draft when it's my
+   turn**.
+4. Keep **Fully automatic** OFF until you validate behavior in a Yahoo mock
+   draft. This keeps the flow safe: the extension selects your player and you
+   confirm manually.
+5. After first clean mock runs, flip **Fully automatic** on if you want it to
+   click confirm for you as well.
+
 If you turn on watching (the floating panel on the page, which polls every
 few seconds), it auto-detects opponent picks by searching the page's own
 text for the ~190 names on the ADP board — no CSS selectors to break, and it
