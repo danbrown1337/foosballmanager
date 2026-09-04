@@ -176,13 +176,14 @@ function buildPanel() {
 async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
+    defenceAliases,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
     findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
-     parseDraftSlot, parseDraftPosition, picksUntilMyTurn } =
+     parseDraftSlot, parseDraftPosition, picksUntilMyTurn, defenceAliases } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -617,6 +618,13 @@ async function main() {
    * some other J. Jefferson exists in the pool. */
   function nameAppears(name, text) {
     if (text.includes(name)) return true;
+    // A defence appears under its nickname, never under the board's name.
+    const meta = (boardPlayers || []).find((p) => p.name === name);
+    if (meta?.pos === "DEF" && defenceAliases) {
+      for (const alias of defenceAliases(meta)) {
+        if (new RegExp(`(?<!\\w)${alias}(?!\\w)`, "i").test(text)) return true;
+      }
+    }
     const parts = name.trim().split(/\s+/);
     if (parts.length < 2 || !surnameOf) return false;
     const last = surnameOf(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

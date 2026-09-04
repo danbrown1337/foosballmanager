@@ -82,6 +82,11 @@ const PAGE_HTML = `<!doctype html><html><body>
       <td><span>D. Achane</span> <span>RB</span> <span>Mia</span> <span>Bye 6</span></td>
       <td>15.3</td>
     </tr>
+    <tr id="row-defence">
+      <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
+      <td><span>Texans</span> <span>DEF</span> <span>Hou</span> <span>Bye 8</span></td>
+      <td>140.0</td>
+    </tr>
     <tr id="row-inactive">
       <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
       <td><span>J. Reed</span> <span>NA</span> <span>WR</span> <span>Car</span></td>
@@ -306,6 +311,11 @@ export async function run(document) {
   results.noAdpRow = rowShowsNoAdp(document.body, "Jayden Reed");
   results.hasAdpRow = rowShowsNoAdp(document.body, "De'Von Achane");
 
+  // A defence's row never carries the board's name for it.
+  const defEl = findPlayerClickTarget(document.body, "Houston Defense",
+    { player: { pos: "DEF", team: "HOU" } });
+  results.defenceRow = defEl ? defEl.closest("tr").id : null;
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
 
@@ -428,6 +438,7 @@ async function main() {
       ["returns nothing for a player who isn't queued", result.removeMissing === true],
       ["reads an out designation off the row itself", result.naOnPage === true],
       ["spots a row whose ADP column is a dash", result.noAdpRow === true],
+      ["finds a defence by its team nickname", result.defenceRow === "row-defence"],
       ["and leaves a row with a real ADP alone", result.hasAdpRow === false],
       ["and doesn't flag a healthy player", result.fitOnPage === false],
     ];
