@@ -110,6 +110,7 @@ function buildPanel() {
         watching page (opponent picks + auto-draft) —
         <span id="fm-toggle-poll">pause</span>
         · <select id="fm-mode" title="Which direction signals a pick on this page">
+            <option value="auto">auto-detect</option>
             <option value="appear">names appear (picks feed)</option>
             <option value="disappear">names disappear (player pool)</option>
           </select>
@@ -160,8 +161,11 @@ async function main() {
   let boardNameSet = null;
   let currentRecName = null;
   let turnPhrases = [];
+  let confirmPhrases = [];
   let turnActive = false;   // was the "your turn" phrase present last poll
   let turnHandled = false;  // already acted on this turn (reset when the phrase clears)
+  const TURN_CONFIDENCE_TICKS = 2;
+  let turnConfidence = 0;
 
   head.addEventListener("click", () => {
     body.classList.toggle("collapsed");
@@ -204,11 +208,35 @@ async function main() {
   });
   Storage.getAutoDraftFullyAutomatic().then((full) => { autoFullBox.checked = full; });
   Storage.getTurnPhrases().then((phrases) => { turnPhrases = phrases; });
+  Storage.getConfirmPhrases().then((phrases) => { confirmPhrases = phrases; });
+
+  function inferDraftedFromPoll(previous, current, fallbackMode) {
+    if (!previous) return new Set();
+    if (fallbackMode !== "auto") {
+      return diffDrafted(previous, current, fallbackMode);
+    }
+
+    // In auto-detect mode, tolerate both Yahoo page patterns:
+    // * a running picks feed where newly drafted names appear,
+    // * a player-pool list where drafted names disappear.
+    const appear = diffDrafted(previous, current, "appear");
+    const disappear = diffDrafted(previous, current, "disappear");
+    if (appear.size === 0) return disappear;
+    if (disappear.size === 0) return appear;
+
+    const prevSize = previous.size;
+    const currSize = current.size;
+    if (currSize < prevSize) return disappear;
+    if (currSize > prevSize) return appear;
+    return appear.size >= disappear.size ? appear : disappear;
+  }
 
   autoEnableBox.addEventListener("change", () => {
     Storage.setAutoDraftEnabled(autoEnableBox.checked);
     autoFullRow.hidden = !autoEnableBox.checked;
+    turnConfidence = 0;
     turnHandled = false;
+    turnActive = false;
     updateAutoStatus();
   });
   autoFullBox.addEventListener("change", () => {
@@ -276,7 +304,7 @@ async function main() {
       if (previousBoardNames) {
         // "appear": a picks feed — names show up as taken.
         // "disappear": an available-player pool — names leave it as taken.
-        const newlyDrafted = diffDrafted(previousBoardNames, found, modeSelect.value);
+        const newlyDrafted = inferDraftedFromPoll(previousBoardNames, found, modeSelect.value);
         if (newlyDrafted.size > 0) {
           const names = [...newlyDrafted];
           const { changed } = await sendMessage({ type: "DETECTED_PICKS", names });
@@ -315,13 +343,28 @@ async function main() {
 
       if (!active) {
         turnActive = false;
+        turnConfidence = 0;
         turnHandled = false;
         return;
       }
+      turnConfidence = Math.min(turnConfidence + 1, TURN_CONFIDENCE_TICKS);
+      if (turnConfidence < TURN_CONFIDENCE_TICKS) return;
       if (turnActive && turnHandled) return; // already acted this turn, waiting for it to end
       turnActive = true;
 
-      if (!currentRecName) return; // nothing to draft yet (board empty / not loaded)
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
+      const recommended = snapshot.recommendation?.name;
+      if (!recommended) return; // nothing to draft yet (board empty / not loaded)
+      if (recommended !== currentRecName) {
+        currentRecName = recommended;
+        turnHandled = false;
+      }
+      if (turnHandled) return;
+      const recRow = snapshot.board.find((player) => player.name === currentRecName);
+      if (!recRow || recRow.draftedBy) {
+        turnHandled = true;
+        return;
+      }
 
       const playerEl = findPlayerClickTarget(document.body, currentRecName);
       if (!playerEl) {
@@ -346,7 +389,7 @@ async function main() {
       await wait(jitterDelay());
       clickElement(playerEl);
       await wait(jitterDelay());
-      const confirmEl = findConfirmClickTarget(document.body, DEFAULT_CONFIRM_PHRASES);
+      const confirmEl = findConfirmClickTarget(document.body, confirmPhrases || DEFAULT_CONFIRM_PHRASES);
       if (confirmEl) {
         clickElement(confirmEl);
         addLog(`Auto-drafted ${currentRecName}.`);

@@ -15,16 +15,30 @@ export const DEFAULT_TURN_PHRASES = [
   "you're on the clock",
   "you are on the clock",
   "your turn to pick",
+  "your turn now",
   "it's your pick",
   "it is your pick",
   "make your pick",
+  "draft time",
   "you're up",
 ];
+
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 /** True if any configured phrase appears in the page text, case-insensitive.
  * Phrases are short sentences, not single words, so a plain substring check
  * (no word-boundary regex) is enough and avoids over-engineering this. */
 export function isMyTurn(text, phrases = DEFAULT_TURN_PHRASES) {
-  const lower = text.toLowerCase();
-  return phrases.some((phrase) => phrase.trim() && lower.includes(phrase.trim().toLowerCase()));
+  const normalized = normalizeText(text);
+  return phrases.some((phrase) => {
+    const p = phrase.trim();
+    if (!p) return false;
+    return normalized.includes(normalizeText(p));
+  });
 }

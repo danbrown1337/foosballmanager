@@ -8,6 +8,7 @@
  */
 
 import { DEFAULT_TURN_PHRASES } from "./turnDetect.js";
+import { DEFAULT_CONFIRM_PHRASES } from "./domActions.js";
 
 const KEYS = {
   config: "fm_config",
@@ -18,6 +19,7 @@ const KEYS = {
   autoDraftEnabled: "fm_auto_draft_enabled",
   autoDraftFullyAutomatic: "fm_auto_draft_fully_automatic",
   turnPhrases: "fm_turn_phrases",
+  confirmPhrases: "fm_confirm_phrases",
 };
 
 // Matches the confirmed real starter construction: 1 QB, 2 RB, 2 WR, 1 TE,
@@ -113,5 +115,11 @@ export const Storage = {
   },
   async setTurnPhrases(phrases) {
     return set(KEYS.turnPhrases, phrases);
+  },
+  async getConfirmPhrases() {
+    return get(KEYS.confirmPhrases, DEFAULT_CONFIRM_PHRASES);
+  },
+  async setConfirmPhrases(phrases) {
+    return set(KEYS.confirmPhrases, phrases);
   },
 };
