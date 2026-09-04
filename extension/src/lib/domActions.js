@@ -159,7 +159,43 @@ export function setInputValue(input, value) {
  * The row is bounded the same way abbreviated names are confirmed: stop
  * climbing before an ancestor that holds another player, or the "star" found
  * would belong to a neighbour. */
+/* Every place this player's name appears, as elements. The name shows up in
+ * the pick feed and the queue panel as well as in his row, and taking only
+ * the first occurrence meant the lookup often landed somewhere with no row
+ * around it — reported live as "found Omarion Hampton but no star on his
+ * row" while 101 stars sat on the page. */
+function nameOccurrences(root, playerName) {
+  const doc = root.ownerDocument || root;
+  const forms = [playerName, ...abbrevForms(playerName)];
+  const res = forms.map((f) => new RegExp(`(?<!\\w)${escapeRegExp(f)}(?!\\w)`, "i"));
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue || isInsideOwnOverlay(node.parentElement)) return NodeFilter.FILTER_SKIP;
+      return res.some((re) => re.test(node.nodeValue))
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_SKIP;
+    },
+  });
+  const out = [];
+  for (let n = walker.nextNode(); n && out.length < 12; n = walker.nextNode()) {
+    if (n.parentElement) out.push(n.parentElement);
+  }
+  return out;
+}
+
 export function findQueueStar(root, playerName, { player = null } = {}) {
+  /* Look at every row this player appears in, not just the first place the
+   * name turns up. */
+  for (const el of nameOccurrences(root, playerName)) {
+    const row = el.closest?.("tr, [role='row']");
+    const star = row?.querySelector('[data-icon*="star" i]');
+    if (!star) continue;
+    const icon = star.getAttribute("data-icon") || "";
+    if (!/unfilled/i.test(icon) && /filled/i.test(icon)) return null; // already queued
+    const button = star.closest(CLICKABLE_SELECTOR) || star.parentElement;
+    if (button) return button;
+  }
+
   const nameEl = findPlayerClickTarget(root, playerName, { player });
   if (!nameEl) return null;
 
@@ -210,16 +246,17 @@ export function findQueueStar(root, playerName, { player = null } = {}) {
  * same careful way as the queue star: scoped to that player's row, and null
  * rather than a guess. */
 export function findDraftButton(root, playerName, { player = null } = {}) {
-  const nameEl = findPlayerClickTarget(root, playerName, { player });
-  if (!nameEl) return null;
-  const row = nameEl.closest?.("tr, [role='row']");
-  if (!row) return null;
-
-  for (const el of row.querySelectorAll(CLICKABLE_SELECTOR)) {
-    if (isInsideOwnOverlay(el)) continue;
-    const text = (el.textContent || "").trim();
-    const label = el.getAttribute("aria-label") || "";
-    if (/^draft$/i.test(text) || /^draft\b/i.test(label)) return el;
+  // Same reasoning as the star: his name is in the feed and the queue panel
+  // too, and only one of its occurrences has a Draft button beside it.
+  for (const el of nameOccurrences(root, playerName)) {
+    const row = el.closest?.("tr, [role='row']");
+    if (!row) continue;
+    for (const candidate of row.querySelectorAll(CLICKABLE_SELECTOR)) {
+      if (isInsideOwnOverlay(candidate)) continue;
+      const text = (candidate.textContent || "").trim();
+      const label = candidate.getAttribute("aria-label") || "";
+      if (/^draft$/i.test(text) || /^draft\b/i.test(label)) return candidate;
+    }
   }
   return null;
 }
