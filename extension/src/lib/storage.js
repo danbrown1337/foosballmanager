@@ -124,8 +124,21 @@ export const Storage = {
   async setAutoDraftFullyAutomatic(enabled) {
     return set(KEYS.autoDraftFullyAutomatic, enabled);
   },
+  /* Stored phrases ADD to the defaults rather than replacing them.
+   *
+   * A list saved by an older version silently lacks anything added since —
+   * and the failure is invisible, because a turn that is never detected looks
+   * exactly like a turn that never came. That is what happened: a saved list
+   * from before "your turn" existed meant the room's actual banner matched
+   * nothing, and auto-draft sat out every pick without a word.
+   *
+   * Wrongly matching text is handled elsewhere, by rejecting phrases that
+   * describe a future pick, so the cost of a superfluous phrase is low and
+   * the cost of a missing one is a lost pick. */
   async getTurnPhrases() {
-    return get(KEYS.turnPhrases, DEFAULT_TURN_PHRASES);
+    const stored = await get(KEYS.turnPhrases, null);
+    if (!stored?.length) return DEFAULT_TURN_PHRASES;
+    return [...new Set([...DEFAULT_TURN_PHRASES, ...stored])];
   },
   async setTurnPhrases(phrases) {
     return set(KEYS.turnPhrases, phrases);

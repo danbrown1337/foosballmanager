@@ -300,7 +300,10 @@ async function main() {
     updateAutoStatus();
   });
   Storage.getAutoDraftFullyAutomatic().then((full) => { autoFullBox.checked = full; });
-  Storage.getTurnPhrases().then((phrases) => { turnPhrases = phrases; });
+  Storage.getTurnPhrases().then((phrases) => {
+    turnPhrases = phrases;
+    addLog(`Watching for ${phrases.length} turn phrases.`);
+  });
   Storage.getConfirmPhrases().then((phrases) => { confirmPhrases = phrases; });
 
   function inferDraftedFromPoll(previous, current, fallbackMode) {
