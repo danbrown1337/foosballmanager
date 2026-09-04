@@ -666,9 +666,25 @@ async function main() {
       if (el) return { el, searchBox, searched: true, filtered: true };
       if (!filtered && countNames() < before) filtered = true;
     }
-    /* The search narrowed the list but we still couldn't identify him: that
-     * means the row is there and something about it didn't confirm, not that
-     * he's drafted. Only a page without his name at all is evidence. */
+    /* The room has narrowed the list itself. If exactly one row carries this
+     * player's abbreviation, that row is him — the team check that
+     * findPlayerClickTarget insists on exists to tell two candidates apart,
+     * and there is only one. It was rejecting rows whose team disagreed with
+     * our imported pool, which is how a filtered list still produced
+     * "couldn't confirm Ray Davis". */
+    const forms = [name, `${name.trim()[0]}. ${surnameOf(name)}`];
+    const rows = [...document.querySelectorAll("tbody tr")].filter((tr) =>
+      forms.some((f) => new RegExp(`(?<!\\w)${f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?!\\w)`, "i")
+        .test(tr.innerText || ""))
+    );
+    if (rows.length === 1) {
+      const only = rows[0].querySelector("td:nth-child(2)") || rows[0];
+      return { el: only, searchBox, searched: true, filtered: false };
+    }
+
+    /* Otherwise: the search narrowed the list but we still couldn't identify
+     * him, which means something about the row didn't confirm — not that he's
+     * drafted. Only a page without his name at all is evidence. */
     const gone = filtered && !nameAppears(name, document.body.innerText);
     return { el: null, searchBox, searched: true, filtered: gone };
   }
