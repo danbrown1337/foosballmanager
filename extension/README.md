@@ -49,23 +49,52 @@ popup and the on-page panel both carry a "PRACTICE SETTINGS — not your
 league" banner, above the collapse, so a mock configuration can't quietly
 survive into your real draft.
 
+## Requirement: leave the room's Players tab open
+
+Everything this extension clicks — the queue star, the Draft button — exists
+only in the room's **Players** list. With Board, Picks or Results showing
+instead there is nothing to act on, and a filter typed into the player search
+narrows the list to a handful of rows, which has the same effect. The panel
+says so when it notices, rather than reporting a missing player.
+
+## Keeping Yahoo's queue filled
+
+Yahoo drafts from your queue when your clock runs out, server-side, so a
+maintained queue picks for you even if the tab is asleep or throttled. With
+**Keep Yahoo's queue filled** ticked, the panel stars its top few
+recommendations between picks — never during your turn — and refreshes the
+board first if it has gone stale.
+
+It reads the queue back as well: Yahoo removes a player from it when someone
+drafts him, so a name that disappears without you drafting it is a pick that
+was made. That is more reliable than watching the page for picks, and it
+costs nothing.
+
 ## Auto-draft (experimental, opt-in, off by default)
 
 Turn it on from the floating panel on the draft room page itself. Two
 levels, both starting off:
 
-1. **Auto-draft when it's my turn** — watches the page's text for an
-   "it's your turn" phrase. When it finds one, it locates the recommended
-   player on the page (same text-search strategy as everything else here —
-   see `lib/domActions.js`) and clicks it, then **stops**. Selecting a
-   player is easy to undo — nothing has been submitted to Yahoo yet — so
-   that click is the safe part to automate by default. The actual "confirm
-   this pick" click is not undoable, and stays yours.
+**This room has no confirmation step.** The Draft button on a player's row
+submits the pick the moment it is pressed — verified in a live draft. So the
+two levels are not "select, then confirm"; they are "show me the pick" and
+"make it".
+
+1. **Auto-draft when it's my turn** — watches for the room's turn banner,
+   works out which recommendation the room can actually produce, and
+   highlights that player's Draft button for you to press. Nothing is
+   submitted.
 2. **Fully automatic** (a sub-toggle, only shown once auto-draft is on) —
-   also finds and clicks Yahoo's own Confirm/Draft button, with a short
-   randomized pause before each click. Nothing stops you from turning this
-   on immediately, but it means an unattended click actually submits a
-   pick — **test it against a Yahoo mock draft first.**
+   presses it, after a short randomized pause. There is nothing in between,
+   because the room offers nothing in between. **Test it against a Yahoo mock
+   draft first.**
+
+Turn detection is fussier than it looks. The room's status bar reads
+"You're up in 11 Picks" during everyone else's picks, and the player list
+carries a "YOUR TURN - 22ND PICK" divider marking where your next pick falls
+— both contain a turn phrase and both mean it is not your turn. Text that
+describes a future pick is rejected, and the panel logs the banner it acted
+on so a wrong one can be seen rather than guessed at.
 
 Both toggles and the recommended player always come from the same trusted
 engine already verified pick-for-pick against the CLI (see golden-master,

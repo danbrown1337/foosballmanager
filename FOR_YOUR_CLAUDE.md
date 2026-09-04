@@ -83,6 +83,17 @@ Two things that are easy to get wrong and expensive on draft day:
   Most leagues start one. Confirm the number rather than accepting the
   default.
 
+## Step 2b — two things that break it, both invisible
+
+Tell them both, because the panel can only report them after the fact:
+
+- **The room's Players tab must stay open.** The queue star and the Draft
+  button exist only in that list. With Board or Results showing there is
+  nothing to click at all.
+- **Nothing typed in the room's player search.** A filter narrows the list to
+  a few rows, and everything the panel looks for afterwards is missing from
+  it.
+
 ## Step 3 — explain what they'll see, before draft day
 
 Have them open the extension's popup once so it isn't new to them mid-draft:
@@ -92,12 +103,13 @@ the page, with buttons to mark players as taken.
 
 ## Step 4 — auto-draft, and the honest caveat
 
-`extension/README.md` documents two opt-in toggles, both off by default:
-auto-draft (finds and clicks the recommended player, then stops) and fully
-automatic (also clicks Yahoo's confirm button).
+`extension/README.md` documents two opt-in toggles, both off by default. In a
+Yahoo draft room there is **no confirmation step** — the Draft button on a
+player's row submits the pick immediately — so auto-draft on its own
+highlights that button for them to press, and fully automatic presses it.
 
-**Tell them plainly: nobody who built this has seen Yahoo's real draft room
-markup.** Turn detection works by searching the page's text for phrases like
+**Tell them plainly: this was built against a real Yahoo draft room, but only
+one league's.** Turn detection works by searching the page's text for phrases like
 "you're on the clock," and the confirm-button lookup works the same way.
 Both phrase lists are editable in the extension's settings precisely because
 the real room may word things differently.
