@@ -1,7 +1,7 @@
 {
   "name": "fantasy-manager-extension",
   "private": true,
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "Dev tooling for the Fantasy Manager Chrome extension. The extension itself has no dependencies and is loaded unpacked — this file exists only so `node` treats the test files as ES modules and so the optional load check can install its browser driver.",
   "type": "module",
   "scripts": {
