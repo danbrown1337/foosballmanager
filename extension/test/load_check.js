@@ -179,6 +179,33 @@ async function main() {
     for (const e of roomErrors) console.error(`  ERROR: ${e}`);
   }
 
+  // Regression: reloading the extension orphans the content script already
+  // running in an open page — every chrome.runtime call from it throws
+  // "Extension context invalidated" from then on, permanently. The panel used
+  // to swallow that silently and keep displaying its last recommendation with
+  // a live-looking draft button, which is exactly what "the extension does
+  // nothing" looks like from the outside. It has to say so and stop.
+  if (extId) {
+    await workers[0].evaluate(() => chrome.runtime.reload()).catch(() => {});
+    await roomPage.waitForTimeout(7000);
+    const dead = await roomPage
+      .evaluate(() => ({
+        // Explicit null check: a missing element must read as "not shown",
+        // not as !undefined === true.
+        shown: document.getElementById("fm-dead")
+          ? !document.getElementById("fm-dead").hidden
+          : false,
+        takeDisabled: document.getElementById("fm-take")?.disabled,
+      }))
+      .catch(() => ({ shown: false, takeDisabled: undefined }));
+    console.log("\n--- after an extension reload (orphaned content script) ---");
+    console.log(`  disconnected notice shown: ${dead.shown}, draft button disabled: ${dead.takeDisabled}`);
+    if (!dead.shown || dead.takeDisabled !== true) {
+      console.error("FAIL: a dead extension context left the panel looking live.");
+      failed = true;
+    }
+  }
+
   await context.close();
 
   if (failed) {
