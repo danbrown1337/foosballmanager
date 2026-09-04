@@ -1,4 +1,5 @@
-import { Storage, DEFAULT_CONFIG, MOCK_STARTERS } from "../lib/storage.js";
+import { Storage, DEFAULT_CONFIG } from "../lib/storage.js";
+import { setPracticeMode } from "../lib/snapshot.js";
 import { parseLeaguePage } from "../lib/textMatch.js";
 
 const POSITIONS = ["QB", "RB", "WR", "TE", "FLEX", "K", "DEF"];
@@ -50,20 +51,8 @@ async function renderPractice() {
 }
 
 document.getElementById("practiceToggle").addEventListener("click", async () => {
-  const practice = await Storage.getPractice();
-  if (practice.active) {
-    // Restore verbatim rather than recomputing: whatever was there before is
-    // the only thing that's certainly right.
-    if (practice.savedConfig) await Storage.setConfig(practice.savedConfig);
-    await Storage.setPractice({ active: false, savedConfig: null });
-  } else {
-    const config = await Storage.getConfig();
-    await Storage.setPractice({ active: true, savedConfig: config });
-    await Storage.setConfig({
-      ...config,
-      roster: { ...config.roster, starters: { ...MOCK_STARTERS } },
-    });
-  }
+  const { active } = await Storage.getPractice();
+  await setPracticeMode(!active);
   await loadForm();
 });
 

@@ -7,7 +7,7 @@
  */
 import { loadPlayers, applyNotes, assignTiers, applyDraftState, scarcityReport } from "../engine/board.js";
 import { autoPick } from "../engine/autopilot.js";
-import { Storage } from "./storage.js";
+import { Storage, MOCK_STARTERS } from "./storage.js";
 
 let cachedAdp = null;
 let cachedNotes = null;
@@ -141,6 +141,26 @@ export async function resetDraft() {
  * TEAM panel is authoritative, and may well have been recorded as a rival's
  * earlier when it first appeared somewhere on the page. The reverse is never
  * applied — nothing here can take a player off your roster. */
+/* Practice mode lives here rather than in the options page so the panel can
+ * offer it too: the moment you find out the room starts a kicker your league
+ * doesn't is while you're sitting in that room, not in a settings tab. */
+export async function setPracticeMode(active) {
+  const practice = await Storage.getPractice();
+  if (active && !practice.active) {
+    const config = await Storage.getConfig();
+    await Storage.setPractice({ active: true, savedConfig: config });
+    await Storage.setConfig({
+      ...config,
+      roster: { ...config.roster, starters: { ...MOCK_STARTERS } },
+    });
+  } else if (!active && practice.active) {
+    // Restore verbatim; the stored copy is the only certainly-correct one.
+    if (practice.savedConfig) await Storage.setConfig(practice.savedConfig);
+    await Storage.setPractice({ active: false, savedConfig: null });
+  }
+  return buildSnapshot();
+}
+
 export async function importPicks(names, by = "rival") {
   if (by !== "mine" && by !== "rival") throw new Error("Pick must be 'mine' or 'rival'.");
   const state = await Storage.getDraftState();

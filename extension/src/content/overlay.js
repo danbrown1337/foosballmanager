@@ -104,6 +104,8 @@ function buildPanel() {
       #fm-dead b { color: #fecaca; }
       #fm-reload { width: 100%; margin-top: 6px; padding: 6px; border: none; border-radius: 6px;
                    background: #b91c1c; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+      #fm-practice-row { display: flex; align-items: center; gap: 6px; font-size: 11px;
+                         color: #9aa1ab; cursor: pointer; margin-bottom: 6px; }
       #fm-auto { border-top: 1px solid #2a2f38; margin-top: 8px; padding-top: 8px; font-size: 11px; }
       #fm-auto label { display: flex; align-items: center; gap: 6px; color: #9aa1ab; margin-bottom: 4px; cursor: pointer; }
       #fm-auto label.sub { padding-left: 16px; }
@@ -140,6 +142,9 @@ function buildPanel() {
         can no longer see the draft or record a pick.
         <button id="fm-reload">Reload this page to reconnect</button>
       </div>
+      <label id="fm-practice-row">
+        <input type="checkbox" id="fm-practice-toggle"> Practice mode — use this room's roster
+      </label>
       <div id="fm-auto">
         <label><input type="checkbox" id="fm-auto-enable"> Auto-draft when it's my turn (experimental)</label>
         <label class="sub" id="fm-auto-full-row" hidden>
@@ -193,6 +198,7 @@ async function main() {
     // Context already gone; handleDeadContext will say so.
   }
   const shapeBox = root.querySelector("#fm-shape");
+  const practiceToggle = root.querySelector("#fm-practice-toggle");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -332,6 +338,7 @@ async function main() {
     // Shown outside the collapsible body: a mock-settings warning is useless
     // if it's hidden behind the panel being collapsed.
     practiceBox.hidden = !snapshot.practice;
+    practiceToggle.checked = !!snapshot.practice;
     const rec = snapshot.recommendation;
     currentRecName = rec ? rec.name : null;
     recName.textContent = rec ? `${rec.name} — ${rec.pos}, ${rec.team}` : "Board is empty";
@@ -396,6 +403,29 @@ async function main() {
       `THIS ROOM STARTS ${missing.join(" AND ")} — your settings don't, so none will ever be recommended. Turn on practice mode in Settings.`;
     shapeBox.hidden = false;
   }
+
+  /* Switching this from the panel is the whole point: the room tells you its
+   * roster shape while you're sitting in it, and the settings tab is the last
+   * place anyone wants to go with a pick clock running. Same swap the options
+   * page performs, so the two cannot drift. */
+  practiceToggle.addEventListener("change", async () => {
+    try {
+      /* Flip whatever is actually stored, not what this box happens to show.
+       * The panel only re-renders every few seconds, so a click can land on a
+       * stale checkbox — and sending its displayed value would then apply the
+       * opposite of what was intended. */
+      const current = await sendMessage({ type: "GET_SNAPSHOT" });
+      const snapshot = await sendMessage({ type: "SET_PRACTICE", active: !current.practice });
+      render(snapshot);
+      addLog(snapshot.practice
+        ? "Practice mode on — using this room's roster, your league's settings are saved."
+        : "Practice mode off — your league's settings are back.");
+    } catch (err) {
+      if (isContextGone(err)) return handleDeadContext();
+      showError(String(err.message || err));
+      practiceToggle.checked = !practiceToggle.checked; // put the box back
+    }
+  });
 
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;
