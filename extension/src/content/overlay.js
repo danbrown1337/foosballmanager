@@ -779,6 +779,14 @@ async function main() {
     }
 
     if (!boardNameSet) return noteQueueIdle("queue: waiting — the board hasn't loaded yet");
+
+    /* The star column and the Draft buttons exist only in the room's Players
+     * list. With another tab showing — Board, Picks, Results — there is
+     * nothing to click, and the panel was reporting that as a missing star on
+     * a particular player's row, which points at the wrong thing entirely. */
+    if (document.querySelectorAll('[data-icon*="star" i]').length < 5) {
+      return noteQueueIdle("queue: open the room's Players tab — nothing to star while it's hidden");
+    }
     const inRoom = findQueueNames(text, boardNameSet, boardPlayers);
     if (inRoom === null) {
       noteQueueIdle("queue: can't see the queue panel — open the Queue tab in the left column");
@@ -1153,7 +1161,11 @@ async function main() {
       if (resolved.snapshot) render(resolved.snapshot);
 
       if (!playerEl) {
-        addLog(`Your turn — couldn't find "${currentRecName || "a recommendation"}" in this room, draft it manually.`);
+        const listHidden = document.querySelectorAll('[data-icon*="star" i]').length < 5 &&
+          !document.querySelector("button[class]:not([disabled])");
+        addLog(listHidden
+          ? `Your turn — the Players list isn't open, so ${currentRecName || "the pick"} can't be drafted from here.`
+          : `Your turn — couldn't find "${currentRecName || "a recommendation"}" in this room, draft it manually.`);
         await clearSearch();
         return;
       }
