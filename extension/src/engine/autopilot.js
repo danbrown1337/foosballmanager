@@ -17,6 +17,11 @@ export const RISK_MULTIPLIERS = {
 // draft progresses.
 export const STRATEGY_TAPER_PICKS = 60;
 
+/* In ADP points: enough to break a tie between similar players, not enough to
+ * pass over a clearly better one. A bye clash costs you one week; reaching for
+ * a worse player costs you the season. */
+export const DEFAULT_BYE_PENALTY = 6.0;
+
 function strategyBias(pos, strategy, picksMade) {
   if (strategy === "best_player_available" || picksMade >= STRATEGY_TAPER_PICKS) return 0.0;
   const taper = 1 - picksMade / STRATEGY_TAPER_PICKS;
@@ -58,6 +63,20 @@ function minBy(list, keyFn) {
   return best;
 }
 
+/* A roster is played weekly, not drafted once. Two starting RBs on the same
+ * bye means a week with no RBs, and ADP knows nothing about that — it ranks
+ * players in isolation. So a candidate is penalised for each player already
+ * rostered at his position who shares his bye.
+ *
+ * Only when byes are actually known: fixtures without team bye data get no
+ * penalty, so this cannot silently change the engine where it can't see. */
+export function byePenalty(player, mine, config) {
+  const weight = config.autopilot?.bye_penalty ?? DEFAULT_BYE_PENALTY;
+  if (!weight || !player.bye) return 0;
+  const clashes = mine.filter((p) => p.pos === player.pos && p.bye === player.bye).length;
+  return clashes * weight;
+}
+
 /**
  * @returns {{player, score, reason, needOverride}|null}
  */
@@ -68,6 +87,9 @@ export function autoPick(players, config) {
 
   const picksMade = players.filter((p) => p.draftedBy).length;
   const scores = scorePlayers(players, config, picksMade);
+  // Applied to every path below — a forced need pick should still prefer the
+  // candidate who doesn't leave that position empty on the same week.
+  for (const p of avail) scores[p.name] += byePenalty(p, mine, config);
 
   const starters = config.roster.starters;
   const benchCap = (config.autopilot || {}).max_bench_per_pos ?? 3;

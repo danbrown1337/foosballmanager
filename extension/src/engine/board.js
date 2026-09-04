@@ -164,3 +164,11 @@ export function scarcityReport(players, config) {
   }
   return lines;
 }
+
+/* Bye weeks, from the team map. A player with no known team keeps bye null,
+ * and every rule below treats null as "no information" rather than "no
+ * clash" — guessing here would quietly build the thing it's meant to avoid. */
+export function applyByes(players, byeWeeks) {
+  for (const p of players) p.bye = byeWeeks[p.team] ?? null;
+  return players;
+}

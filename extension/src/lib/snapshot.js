@@ -5,26 +5,29 @@
  * information even though they're two different front ends on two
  * different platforms.
  */
-import { loadPlayers, applyNotes, assignTiers, applyDraftState, scarcityReport } from "../engine/board.js";
+import { loadPlayers, applyNotes, assignTiers, applyDraftState, applyByes, scarcityReport } from "../engine/board.js";
 import { autoPick, topPicks } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
 
 let cachedAdp = null;
 let cachedNotes = null;
+let cachedByes = null;
 
 async function loadStaticData() {
-  if (cachedAdp && cachedNotes) return { adp: cachedAdp, notes: cachedNotes };
-  const [adpRes, notesRes] = await Promise.all([
+  if (cachedAdp && cachedNotes && cachedByes) return { adp: cachedAdp, notes: cachedNotes, byes: cachedByes };
+  const [adpRes, notesRes, byeRes] = await Promise.all([
     fetch(chrome.runtime.getURL("data/adp_2026_ppr.json")),
     fetch(chrome.runtime.getURL("data/player_notes_2026.json")),
+    fetch(chrome.runtime.getURL("data/bye_weeks.json")),
   ]);
   cachedAdp = await adpRes.json();
   cachedNotes = await notesRes.json();
-  return { adp: cachedAdp, notes: cachedNotes };
+  cachedByes = await byeRes.json();
+  return { adp: cachedAdp, notes: cachedNotes, byes: cachedByes };
 }
 
 export async function buildSnapshot() {
-  const [{ adp, notes }, config, draftState, practice] = await Promise.all([
+  const [{ adp, notes, byes }, config, draftState, practice] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
     Storage.getDraftState(),
@@ -33,6 +36,7 @@ export async function buildSnapshot() {
 
   const players = loadPlayers(adp);
   applyNotes(players, notes);
+  applyByes(players, byes);
   assignTiers(players);
   applyDraftState(players, draftState);
 
@@ -41,7 +45,7 @@ export async function buildSnapshot() {
 
   return {
     board: [...players].sort((a, b) => a.adp - b.adp).map((p) => ({
-      name: p.name, pos: p.pos, team: p.team, adp: p.adp, tier: p.tier,
+      name: p.name, pos: p.pos, team: p.team, adp: p.adp, tier: p.tier, bye: p.bye,
       draftedBy: p.draftedBy, noteTag: p.noteTag, note: p.note,
     })),
     mine: mine.map((p) => ({ name: p.name, pos: p.pos, team: p.team })),
@@ -164,13 +168,14 @@ export async function setPracticeMode(active) {
 /* The shortlist the draft room's queue should hold. Built from the same live
  * state as buildSnapshot, so it reflects every pick recorded so far. */
 export async function shortlist(n = 5) {
-  const [{ adp, notes }, config, draftState] = await Promise.all([
+  const [{ adp, notes, byes }, config, draftState] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
     Storage.getDraftState(),
   ]);
   const players = loadPlayers(adp);
   applyNotes(players, notes);
+  applyByes(players, byes);
   assignTiers(players);
   applyDraftState(players, draftState);
   return topPicks(players, config, n);
