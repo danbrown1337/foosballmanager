@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { findBoardNames, diffDrafted, findMyTeamNames, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
+import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
 
 const BOARD = new Set([
   "Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.", "A.J. Brown",
@@ -225,5 +225,65 @@ Best available by adjusted value.`;
 
   test("no roster panel on the page means nothing is claimed", () => {
     assert.equal(findMyTeamNames("Just a league homepage. Bijan Robinson", board).size, 0);
+  });
+});
+
+describe("findBoardNames — disambiguating by position and team", () => {
+  const board = new Set(["Bijan Robinson", "Brian Robinson Jr.", "Jordan Love", "Julian Love"]);
+  const players = [
+    { name: "Bijan Robinson", pos: "RB", team: "ATL" },
+    { name: "Brian Robinson Jr.", pos: "RB", team: "WAS" },
+    { name: "Jordan Love", pos: "QB", team: "GB" },
+    { name: "Julian Love", pos: "S", team: "SEA" },
+  ];
+
+  test("team settles two players who share a position", () => {
+    // Both are RBs, so only the team tells them apart.
+    const found = findBoardNames("B. Robinson RB Atl Bye 5", board, players);
+    assert.equal(found.has("Bijan Robinson"), true);
+    assert.equal(found.has("Brian Robinson Jr."), false);
+  });
+
+  test("the pick feed's format resolves too", () => {
+    const found = findBoardNames("Last: B. ROBINSON (RB \u00b7 Was)", board, players);
+    assert.equal(found.has("Brian Robinson Jr."), true);
+    assert.equal(found.has("Bijan Robinson"), false);
+  });
+
+  test("position settles them when no team is shown", () => {
+    assert.equal(findBoardNames("J. Love QB", board, players).has("Jordan Love"), true);
+  });
+
+  test("still declines when neither position nor team narrows it", () => {
+    assert.equal(findBoardNames("B. Robinson", board, players).size, 0);
+  });
+
+  test("without player metadata it behaves as before", () => {
+    assert.equal(findBoardNames("B. Robinson RB Atl", board).size, 0);
+  });
+});
+
+describe("findRosterSlots", () => {
+  const page = `YOUR TEAM (13/15)
+QB
+T. Lawrence
+QB
+Jax
+Bye 7
+WR
+T. Higgins
+K
+DEF
+BN`;
+
+  test("reads the slots the room shows", () => {
+    const slots = findRosterSlots(page);
+    assert.equal(slots.has("K"), true);
+    assert.equal(slots.has("DEF"), true);
+    assert.equal(slots.has("QB"), true);
+  });
+
+  test("no roster panel means no claims about the league's shape", () => {
+    assert.equal(findRosterSlots("A league homepage").size, 0);
   });
 });

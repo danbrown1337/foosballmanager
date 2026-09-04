@@ -44,7 +44,7 @@ function abbrevKey(name) {
 /** Which known player names appear in this page's text. Word-boundary
  * guards (JS regex lookaround, same as Python's) keep "Josh Allen" from
  * matching inside "Josh Allenson". */
-export function findBoardNames(text, boardNames) {
+export function findBoardNames(text, boardNames, players = null, ambiguous = null) {
   const found = new Set();
   for (const name of boardNames) {
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -63,12 +63,66 @@ export function findBoardNames(text, boardNames) {
   // Surnames may be title case or upper case depending on where in the room
   // they appear, and apostrophes/hyphens are part of the name (Ja'Marr, Smith-Njigba).
   const abbrevRe = /(?<!\w)([A-Za-z])\.\s*([A-Za-z][A-Za-z'\u2019-]+)(?!\w)/g;
+  const meta = players ? new Map(players.map((p) => [p.name, p])) : null;
   for (const m of text.matchAll(abbrevRe)) {
     const key = `${m[1]} ${m[2]}`.toLowerCase();
     const candidates = byAbbrev.get(key);
-    if (candidates && candidates.length === 1) found.add(candidates[0]);
+    if (!candidates) continue;
+    if (candidates.length === 1) {
+      found.add(candidates[0]);
+      continue;
+    }
+    /* The room prints a position and team beside every name — "(RB \u00b7 LV)"
+     * in the pick feed, "RB Det Bye 6" on the roster — which is enough to tell
+     * two players with the same initial and surname apart. Without it B.
+     * Robinson stays permanently unmatched, and an undetected pick means the
+     * board goes on recommending a player who left the pool in round one.
+     *
+     * Team first: Bijan and Brian Robinson are both RBs, so position alone
+     * settles nothing. Still refuses to guess when neither narrows to one. */
+    if (!meta) continue;
+    const context = text.slice(m.index, m.index + 60);
+    const hit = (value) => value && new RegExp(`(?<!\\w)${value}(?!\\w)`, "i").test(context);
+    const byTeam = candidates.filter((name) => hit(meta.get(name)?.team));
+    if (byTeam.length === 1) {
+      found.add(byTeam[0]);
+      continue;
+    }
+    const byPos = candidates.filter((name) => hit(meta.get(name)?.pos));
+    if (byPos.length === 1) found.add(byPos[0]);
+    else if (ambiguous) ambiguous.add(`${m[1]}. ${m[2]}`);
   }
   return found;
+}
+
+/* Abbreviations on the page that match more than one board player and can't
+ * be narrowed by position or team — two players genuinely listed alike, as
+ * Bijan and Brian Robinson are in the current ADP file (both RB ATL).
+ * Declining to guess is right, but a pick silently never recorded leaves the
+ * board recommending someone already gone, which is what this surfaces so it
+ * can be marked by hand. */
+export function findAmbiguousAbbrevs(text, boardNames, players) {
+  const ambiguous = new Set();
+  findBoardNames(text, boardNames, players, ambiguous);
+  return ambiguous;
+}
+
+/* Which roster slots the room itself shows, read off the YOUR TEAM panel:
+ * the labels are the league's actual starter construction. Used to catch the
+ * case that silently cost a kicker in testing — a room that starts a K while
+ * the configured league has none, where the engine treats every kicker as
+ * unrostable and the unfilled-starter guardrail reads the same config and so
+ * never warns either. */
+export function findRosterSlots(text) {
+  const start = text.search(/YOUR TEAM/i);
+  if (start === -1) return new Set();
+  const section = text.slice(start, start + 1500);
+  const slots = new Set();
+  for (const line of section.split("\n")) {
+    const label = line.trim().toUpperCase();
+    if (["QB", "RB", "WR", "TE", "K", "DEF", "BN", "IR"].includes(label)) slots.add(label);
+  }
+  return slots;
 }
 
 /* The draft room states your roster outright, in a panel headed "YOUR TEAM
@@ -80,7 +134,7 @@ export function findBoardNames(text, boardNames) {
  * The window is bounded and known overlay text is stripped: our own panel
  * prints the recommended player's FULL name, and matching that inside this
  * slice would mark a player you don't own as yours. */
-export function findMyTeamNames(text, boardNames) {
+export function findMyTeamNames(text, boardNames, players = null) {
   const start = text.search(/YOUR TEAM/i);
   if (start === -1) return new Set();
   let section = text.slice(start, start + 1500);
@@ -88,7 +142,7 @@ export function findMyTeamNames(text, boardNames) {
     const i = section.indexOf(marker);
     if (i > -1) section = section.slice(0, i);
   }
-  return findBoardNames(section, boardNames);
+  return findBoardNames(section, boardNames, players);
 }
 
 /** Newly drafted players between two polls.
