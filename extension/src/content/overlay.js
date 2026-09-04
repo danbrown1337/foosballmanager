@@ -88,6 +88,9 @@ function buildPanel() {
                   background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                   cursor: pointer; margin-bottom: 8px; }
       #fm-reset.armed { border-color: #b91c1c; color: #fca5a5; }
+      #fm-rebuild { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
+                    background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
+                    cursor: pointer; margin-bottom: 8px; }
       #fm-verify { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
                    background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                    cursor: pointer; margin-bottom: 8px; }
@@ -136,6 +139,7 @@ function buildPanel() {
       <button id="fm-sync">Sync picks already made</button>
       <button id="fm-reset">New draft — clear picks</button>
       <button id="fm-verify">Check this pick is still available</button>
+      <button id="fm-rebuild">Rebuild board from Yahoo's list</button>
       <div id="fm-log"></div>
       <div id="fm-status">
         watching page (opponent picks + auto-draft) —
@@ -221,6 +225,7 @@ async function main() {
   const resetBtn = root.querySelector("#fm-reset");
   const verifyBtn = root.querySelector("#fm-verify");
   const queueBox = root.querySelector("#fm-queue-enable");
+  const rebuildBtn = root.querySelector("#fm-rebuild");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -685,6 +690,66 @@ async function main() {
       await closeSearch(searchBox);
     }
   }
+
+  /* The list Yahoo shows is the available players. Sweeping it and treating
+   * the rest as drafted replaces every inference in this file with Yahoo's
+   * own state — and repairs a board that has drifted, which nothing else here
+   * can do: detection only ever adds picks, so once a player is wrongly
+   * marked drafted he never comes back. */
+  const MIN_ROWS_TO_TRUST = 60;
+  rebuildBtn.addEventListener("click", async () => {
+    if (rebuildBtn.disabled) return;
+    rebuildBtn.disabled = true;
+    const label = rebuildBtn.textContent;
+    rebuildBtn.textContent = "Reading Yahoo's list…";
+    try {
+      const searchBox = findPlayerSearchBox(document.body);
+      if (searchBox && searchBox.value) {
+        addLog("Clear the player search first — a filtered list isn't the whole board.");
+        return;
+      }
+      const scroller = findListScroller(document.body);
+      if (!scroller) {
+        addLog("Couldn't find the player list to read — open the Players tab.");
+        return;
+      }
+      if (!boardNameSet) {
+        const snap = await sendMessage({ type: "GET_SNAPSHOT" });
+        boardNameSet = new Set(snap.board.map((p) => p.name));
+        boardPlayers = snap.board;
+      }
+
+      const seen = new Set();
+      detectionSuspended = true;
+      // Only the list itself: the page also shows the last pick and your own
+      // roster, and neither is a list of who's available.
+      await sweepList(() => {
+        for (const name of findBoardNames(scroller.innerText, boardNameSet, boardPlayers)) {
+          seen.add(name);
+        }
+      });
+      detectionSuspended = false;
+      previousBoardNames = null;
+
+      if (seen.size < MIN_ROWS_TO_TRUST) {
+        addLog(`Only read ${seen.size} players — too few to trust, so nothing changed. Is the list filtered?`);
+        return;
+      }
+      const result = await sendMessage({ type: "REPAIR_BOARD", names: [...seen] });
+      addLog(`Rebuilt from Yahoo: ${result.seen} still available, ${result.markedDrafted} marked drafted, ${result.freed} put back.`);
+      await refresh();
+    } catch (err) {
+      if (detectionSuspended) {
+        detectionSuspended = false;
+        previousBoardNames = null;
+      }
+      if (isContextGone(err)) return handleDeadContext();
+      showError(String(err.message || err));
+    } finally {
+      rebuildBtn.disabled = false;
+      rebuildBtn.textContent = label;
+    }
+  });
 
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;

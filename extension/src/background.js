@@ -10,6 +10,7 @@ import {
   importPicks,
   setPracticeMode,
   shortlist,
+  repairBoard,
   markPick,
   undoPick,
   autopickCommit,
@@ -46,6 +47,9 @@ async function handle(message, sender) {
 
     case "GET_SHORTLIST":
       return shortlist(message.n || 5);
+
+    case "REPAIR_BOARD":
+      return repairBoard(message.names);
 
     case "MARK_PICK":
       return markPick(message.name, message.by);
