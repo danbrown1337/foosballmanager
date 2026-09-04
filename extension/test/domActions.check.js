@@ -61,6 +61,22 @@ const PAGE_HTML = `<!doctype html><html><body>
   <input id="playerSearch" type="text" placeholder="Search for a player">
   <ul id="virtual"></ul>
 
+  <!-- The real draft room's layout, confirmed live: each player is a table
+       row whose FIRST cell holds the queue star and whose second holds the
+       name. Anything scoped to the name's own cell cannot reach the star. -->
+  <table id="board-table"><tbody>
+    <tr id="row-kelce">
+      <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
+      <td><span>T. Kelce</span> <span>TE</span> <span>KC</span> <span>Bye 5</span></td>
+      <td>21.0</td>
+    </tr>
+    <tr id="row-queued">
+      <td><button class="star-btn"><svg data-icon="star-filled"></svg></button></td>
+      <td><span>P. Nacua</span> <span>WR</span> <span>LAR</span> <span>Bye 11</span></td>
+      <td>5.0</td>
+    </tr>
+  </tbody></table>
+
   <nav><a href="#">Mock Draft Lobby</a></nav>
 
   <script>
@@ -111,7 +127,7 @@ const PROBE_CONTENT_SRC = `
 
 const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
-  findPlayerSearchBox, setInputValue, surnameOf } from "../src/lib/domActions.js";
+  findPlayerSearchBox, setInputValue, surnameOf, findQueueStar } from "../src/lib/domActions.js";
 
 export async function run(document) {
   const results = {};
@@ -184,6 +200,16 @@ export async function run(document) {
 
   // The overlay's own search box must never be mistaken for the room's.
   results.searchNotOurs = !document.getElementById("fantasy-manager-overlay").contains(searchBox);
+
+  // The queue star lives in a sibling cell of the row, not in the name's cell.
+  const star = findQueueStar(document.body, "Travis Kelce", { player: { pos: "TE", team: "KC" } });
+  results.starClass = star ? star.className : null;
+  results.starInRightRow = star ? star.closest("tr").id : null;
+
+  // A filled star is the remove control: clicking it would take the player
+  // back out of the queue, so it must never be returned.
+  const queuedStar = findQueueStar(document.body, "Puka Nacua", { player: { pos: "WR", team: "LAR" } });
+  results.filledStarRefused = queuedStar === null;
 
   return results;
 }
@@ -281,6 +307,9 @@ async function main() {
       ["finds the row once the search filters to it", result.foundAfterSearch === "virtual-row"],
       ["clearing the search puts the page back", result.clearedAfterwards === true],
       ["never picks up our own overlay's inputs", result.searchNotOurs === true],
+      ["finds the queue star in the row's other cell", result.starClass === "star-btn"],
+      ["and it's the star on that player's row", result.starInRightRow === "row-kelce"],
+      ["refuses a filled star, which would un-queue the player", result.filledStarRefused === true],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);
