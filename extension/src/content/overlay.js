@@ -673,7 +673,13 @@ async function main() {
     return { el: null, searchBox, searched: true, filtered: gone };
   }
 
-  async function closeSearch(searchBox) {
+  async function closeSearch(box) {
+    /* Find the box ourselves when the caller has none. A lookup that didn't
+     * need to search returns null, and assigning that over the previous
+     * handle lost the only reference to a filter still sitting in the room —
+     * so it stayed, and every later lookup searched a list narrowed to
+     * somebody else. */
+    const searchBox = box || (searchWeTyped ? findPlayerSearchBox(document.body) : null);
     if (!searchBox) return;
     searchWeTyped = null;
     setInputValue(searchBox, "");
@@ -713,7 +719,7 @@ async function main() {
       const meta = (boardPlayers || []).find((p) => p.name === candidate.name) || null;
       await closeSearch(searchBox);
       const located = await locatePlayer(candidate.name, meta);
-      searchBox = located.searchBox;
+      searchBox = located.searchBox || searchBox; // never lose the handle
       if (located.el) {
         return { snapshot, name: candidate.name, el: located.el, searchBox, skipped, exhausted: false };
       }
@@ -843,7 +849,7 @@ async function main() {
         const meta = (boardPlayers || []).find((p) => p.name === pick.name) || null;
         await closeSearch(searchBox);
         const located = await locatePlayer(pick.name, meta);
-        searchBox = located.searchBox;
+        searchBox = located.searchBox || searchBox; // never lose the handle
         if (!located.el) {
           if (!searchBox && !located.filtered) {
             noteQueueIdle("queue: no search box on this page, so players can't be found to queue");
