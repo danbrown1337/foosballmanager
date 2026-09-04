@@ -7,6 +7,7 @@
  */
 import {
   buildSnapshot,
+  importPicks,
   markPick,
   undoPick,
   autopickCommit,
@@ -30,6 +31,13 @@ async function handle(message, sender) {
   switch (message.type) {
     case "GET_SNAPSHOT":
       return buildSnapshot();
+
+    case "IMPORT_PICKS": {
+      // Explicit attribution, unlike DETECTED_PICKS which is always "rival".
+      const result = await importPicks(message.names, message.by);
+      if (result.changed) await setBadge("\u2022");
+      return result;
+    }
 
     case "MARK_PICK":
       return markPick(message.name, message.by);

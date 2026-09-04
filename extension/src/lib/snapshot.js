@@ -132,6 +132,30 @@ export async function resetDraft() {
  * "rival" — the user's own picks are always marked deliberately, in the
  * popup or via autopickCommit, never inferred from what disappeared off a
  * page (that would misattribute your own pick to a rival). */
+/* Bulk import from what the page already shows, for the case detection alone
+ * can never cover: a panel opened (or reloaded) mid-draft has no idea about
+ * the picks made before it started watching, and only ever sees changes from
+ * that moment on. Left unfixed it recommends players who went in round one.
+ *
+ * "mine" outranks an existing "rival": a name found in the room's own YOUR
+ * TEAM panel is authoritative, and may well have been recorded as a rival's
+ * earlier when it first appeared somewhere on the page. The reverse is never
+ * applied — nothing here can take a player off your roster. */
+export async function importPicks(names, by = "rival") {
+  if (by !== "mine" && by !== "rival") throw new Error("Pick must be 'mine' or 'rival'.");
+  const state = await Storage.getDraftState();
+  let changed = false;
+  for (const name of names) {
+    const current = state.drafted[name];
+    if (current === undefined || (by === "mine" && current === "rival")) {
+      state.drafted[name] = by;
+      changed = true;
+    }
+  }
+  if (changed) await Storage.setDraftState(state);
+  return { changed, count: names.length };
+}
+
 export async function recordDetectedPicks(names, by = "rival") {
   const state = await Storage.getDraftState();
   let changed = false;

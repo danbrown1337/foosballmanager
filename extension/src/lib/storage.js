@@ -98,7 +98,10 @@ export const Storage = {
   // across page loads so a draft spanning many page visits doesn't need
   // re-selecting it every time.
   async getPollMode() {
-    return get(KEYS.pollMode, "appear");
+    // "auto" tolerates both room layouts (a picks feed where names appear,
+    // a player pool where they disappear). Defaulting to one of them meant
+    // the tolerant path only ran if you knew to pick it from the dropdown.
+    return get(KEYS.pollMode, "auto");
   },
   async setPollMode(mode) {
     return set(KEYS.pollMode, mode);
