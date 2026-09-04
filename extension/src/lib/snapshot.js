@@ -6,7 +6,7 @@
  * different platforms.
  */
 import { loadPlayers, applyNotes, assignTiers, applyDraftState, scarcityReport } from "../engine/board.js";
-import { autoPick } from "../engine/autopilot.js";
+import { autoPick, topPicks } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
 
 let cachedAdp = null;
@@ -159,6 +159,21 @@ export async function setPracticeMode(active) {
     await Storage.setPractice({ active: false, savedConfig: null });
   }
   return buildSnapshot();
+}
+
+/* The shortlist the draft room's queue should hold. Built from the same live
+ * state as buildSnapshot, so it reflects every pick recorded so far. */
+export async function shortlist(n = 5) {
+  const [{ adp, notes }, config, draftState] = await Promise.all([
+    loadStaticData(),
+    Storage.getConfig(),
+    Storage.getDraftState(),
+  ]);
+  const players = loadPlayers(adp);
+  applyNotes(players, notes);
+  assignTiers(players);
+  applyDraftState(players, draftState);
+  return topPicks(players, config, n);
 }
 
 export async function importPicks(names, by = "rival") {

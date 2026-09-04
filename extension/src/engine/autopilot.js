@@ -176,3 +176,39 @@ export function autoPick(players, config) {
   if (best.note) bits.push(`${best.noteTag}: ${best.note}`);
   return { player: best, score: scores[best.name], reason: bits.join(" "), needOverride: false };
 }
+
+/* An ordered shortlist for the draft room's own queue, by greedy rollout:
+ * take the pick, treat that player as gone, ask again.
+ *
+ * "Gone", deliberately — not "mine". A queue is a fallback chain for one
+ * pick ("if he's sniped, then who?"), not a plan to acquire all five. Marking
+ * them as ours would fill imaginary roster slots and skew every subsequent
+ * answer toward positions we hadn't actually drafted.
+ *
+ * Nothing here is persisted: draftedBy is mutated on the working copy and put
+ * back, so callers can run this against live state without disturbing it.
+ */
+export function topPicks(players, config, n = 5) {
+  const chosen = [];
+  const touched = [];
+  try {
+    for (let i = 0; i < n; i++) {
+      const decision = autoPick(players, config);
+      if (!decision) break;
+      const player = decision.player;
+      chosen.push({
+        name: player.name,
+        pos: player.pos,
+        team: player.team,
+        tier: player.tier,
+        reason: decision.reason,
+        needOverride: decision.needOverride,
+      });
+      player.draftedBy = "rival";
+      touched.push(player);
+    }
+  } finally {
+    for (const player of touched) player.draftedBy = null;
+  }
+  return chosen;
+}
