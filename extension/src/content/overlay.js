@@ -641,52 +641,35 @@ async function main() {
     let el = findPlayerClickTarget(document.body, name, { player: meta });
     if (el) return { el, searchBox: null, searched: false, filtered: false };
 
-    if (missingFromFullList(name)) {
-      // The whole list is on screen and he isn't in it.
-      return { el: null, searchBox: null, searched: false, filtered: true };
-    }
-
-    const searchBox = findPlayerSearchBox(document.body);
-    if (!searchBox) return { el: null, searchBox: null, searched: false, filtered: false };
-
-    /* Not finding someone is only evidence they're drafted if the search
-     * actually ran. Straight after a board sweep the list is still
-     * re-rendering, and a search that hasn't taken effect looks exactly like
-     * a player who isn't there — which marked Davante Adams and D'Andre Swift
-     * drafted seconds after the same sweep counted both as available. So
-     * check the list actually narrowed before drawing any conclusion. */
-    const before = countNames();
+    /* Scroll the list to find him rather than typing in the room's search box.
+     *
+     * Searching cost five seconds a miss, left filters behind that narrowed
+     * every later lookup, and changed what the user was looking at mid-draft.
+     * Scrolling touches nothing: the rows are already there, just not all
+     * rendered at once.
+     *
+     * It also gives a better answer about absence. A completed sweep has seen
+     * the whole list, so "not found" means not in it — provided the sweep
+     * really did cover the board, which is what the name count checks. A
+     * filtered list would otherwise make everyone outside the filter look
+     * drafted. */
+    let found = null;
+    const seen = new Set();
     detectionSuspended = true;
-    searchWeTyped = surnameOf(name);
-    setInputValue(searchBox, searchWeTyped);
-    let filtered = false;
-    for (let waited = 0; waited < 5000; waited += 250) {
-      await wait(250);
-      el = findPlayerClickTarget(document.body, name, { player: meta });
-      if (el) return { el, searchBox, searched: true, filtered: true };
-      if (!filtered && countNames() < before) filtered = true;
-    }
-    /* The room has narrowed the list itself. If exactly one row carries this
-     * player's abbreviation, that row is him — the team check that
-     * findPlayerClickTarget insists on exists to tell two candidates apart,
-     * and there is only one. It was rejecting rows whose team disagreed with
-     * our imported pool, which is how a filtered list still produced
-     * "couldn't confirm Ray Davis". */
-    const forms = [name, `${name.trim()[0]}. ${surnameOf(name)}`];
-    const rows = [...document.querySelectorAll("tbody tr")].filter((tr) =>
-      forms.some((f) => new RegExp(`(?<!\\w)${f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?!\\w)`, "i")
-        .test(tr.innerText || ""))
-    );
-    if (rows.length === 1) {
-      const only = rows[0].querySelector("td:nth-child(2)") || rows[0];
-      return { el: only, searchBox, searched: true, filtered: false };
+    try {
+      await sweepList((text) => {
+        if (!found) found = findPlayerClickTarget(document.body, name, { player: meta });
+        if (boardNameSet) {
+          for (const n of findBoardNames(text, boardNameSet, boardPlayers)) seen.add(n);
+        }
+      });
+    } finally {
+      detectionSuspended = false;
+      previousBoardNames = null;
     }
 
-    /* Otherwise: the search narrowed the list but we still couldn't identify
-     * him, which means something about the row didn't confirm — not that he's
-     * drafted. Only a page without his name at all is evidence. */
-    const gone = filtered && !nameAppears(name, document.body.innerText);
-    return { el: null, searchBox, searched: true, filtered: gone };
+    const sawWholeBoard = seen.size >= LIST_COMPLETE_ROWS;
+    return { el: found, searchBox: null, searched: true, filtered: !found && sawWholeBoard };
   }
 
   async function closeSearch(box) {
@@ -886,10 +869,6 @@ async function main() {
         const located = await locatePlayer(pick.name, meta);
         searchBox = located.searchBox || searchBox; // never lose the handle
         if (!located.el) {
-          if (!searchBox && !located.filtered) {
-            noteQueueIdle("queue: no search box on this page, so players can't be found to queue");
-            break;
-          }
           if (!located.filtered) {
             // Couldn't confirm him either way: don't touch the board, and try
             // the next name rather than ending the cycle.
