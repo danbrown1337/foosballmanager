@@ -40,6 +40,7 @@ for (const btn of document.querySelectorAll(".tab")) {
 // --- draft tab -------------------------------------------------------------
 
 function renderDraft() {
+  document.getElementById("practiceBanner").hidden = !STATE.practice;
   const rec = STATE.recommendation;
   document.getElementById("recName").textContent = rec ? `${rec.name} — ${rec.pos}, ${rec.team} (Tier ${rec.tier})` : "Board is empty";
   document.getElementById("recWhy").textContent = rec ? rec.reason : "";
