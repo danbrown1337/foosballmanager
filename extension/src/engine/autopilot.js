@@ -86,14 +86,31 @@ function minBy(list, keyFn) {
  *
  * Only when byes are actually known: fixtures without team bye data get no
  * penalty, so this cannot silently change the engine where it can't see. */
+/* Positions a W/R/T flex can start. The flex absorbs exactly one spare across
+ * all of them — not one each, which is how a roster ended up with three tight
+ * ends: each looked like it was filling the same empty flex. */
+const FLEX_ELIGIBLE = new Set(["RB", "WR", "TE"]);
+
 export function surplusPenalty(player, mine, config) {
   const starters = config.roster?.starters || {};
   const need = starters[player.pos] || 0;
   const have = mine.filter((p) => p.pos === player.pos).length;
   if (have < need) return 0; // still filling the position
-  const surplus = have - need + 1; // this player would be the nth spare
+
+  let surplus = have - need + 1; // this player would be the nth spare
+  if (FLEX_ELIGIBLE.has(player.pos) && (starters.FLEX || 0) > 0) {
+    const spares = Object.keys(starters)
+      .filter((pos) => FLEX_ELIGIBLE.has(pos))
+      .reduce((sum, pos) => sum + Math.max(0, mine.filter((p) => p.pos === pos).length - (starters[pos] || 0)), 0);
+    if (spares < (starters.FLEX || 0)) surplus -= 1; // this one starts in the flex
+  }
+  if (surplus <= 0) return 0;
+
   const weight = config.autopilot?.surplus_penalty?.[player.pos] ?? SURPLUS_PENALTY[player.pos] ?? 5;
-  return surplus * weight;
+  /* Squared, so a second spare is a nudge and a third is a wall. A linear
+   * charge of 8 points for a second tight end was cleared by any player
+   * ranked a little higher, and then so was the third. */
+  return surplus * surplus * weight;
 }
 
 export function byePenalty(player, mine, config) {
@@ -108,7 +125,12 @@ export function byePenalty(player, mine, config) {
  */
 export function autoPick(players, config) {
   const mine = players.filter((p) => p.draftedBy === "mine");
-  const avail = players.filter((p) => !p.draftedBy && !UNAVAILABLE.has(p.status));
+  /* Undrafted anywhere means undrafted here: a player Yahoo shows with no ADP
+   * at all is waiver material, and the board's fallback ordering would
+   * otherwise present him as an ordinary late pick. */
+  const avail = players.filter(
+    (p) => !p.draftedBy && !UNAVAILABLE.has(p.status) && !p.undrafted
+  );
   if (avail.length === 0) return null;
 
   const picksMade = players.filter((p) => p.draftedBy).length;

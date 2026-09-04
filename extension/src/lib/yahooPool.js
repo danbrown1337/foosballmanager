@@ -35,6 +35,10 @@ function columnIndex(doc, label, fallback) {
 export function parsePoolPage(html, DomParser = DOMParser) {
   const doc = new DomParser().parseFromString(html, "text/html");
   const byeCol = columnIndex(doc, "bye", 5);
+  /* Yahoo prints "-" for a player with no average draft position: nobody in
+   * any league drafts him. Our board otherwise invents an ADP from list
+   * order, which makes such a player look ordinary — one was queued. */
+  const adpCol = columnIndex(doc, "adp", -1);
   const players = [];
   for (const tr of doc.querySelectorAll("table tbody tr")) {
     const container = tr.querySelector(".ysf-player-name");
@@ -61,7 +65,9 @@ export function parsePoolPage(html, DomParser = DOMParser) {
     const cells = [...tr.children].map((td) => (td.textContent || "").trim());
     const byeValue = Number(cells[byeCol]);
     const bye = Number.isInteger(byeValue) && byeValue >= 1 && byeValue <= 18 ? byeValue : null;
-    players.push({ name: link.textContent.trim(), team, pos, bye, status });
+    const adpRaw = adpCol >= 0 ? cells[adpCol] : "";
+    const adp = /^\d+(\.\d+)?$/.test(adpRaw) ? Number(adpRaw) : null;
+    players.push({ name: link.textContent.trim(), team, pos, bye, status, adp });
   }
   return players;
 }
@@ -75,8 +81,22 @@ export function leagueIdFromUrl(url) {
  * is testable without a browser, and so the caller decides how requests are
  * made from its own context. */
 export async function fetchPool(leagueId, { get, pages = 10, perPage = 25 } = {}) {
+  /* Kickers and defences need asking for by name.
+   *
+   * The players page defaults to an Offense filter, so an import of the
+   * default view contains no K and no DEF at all — and then nothing can
+   * recommend one, the endgame reservation finds no candidate to reserve, and
+   * a draft finishes with both slots empty. That happened twice before anyone
+   * noticed the pool was the reason.
+   */
   const counts = Array.from({ length: pages }, (_, i) => i * perPage);
-  const htmls = await Promise.all(counts.map((c) => get(`/f1/${leagueId}/players?count=${c}`)));
+  const urls = counts.map((c) => `/f1/${leagueId}/players?count=${c}`);
+  for (const pos of ["K", "DEF"]) {
+    for (const c of [0, perPage]) {
+      urls.push(`/f1/${leagueId}/players?pos=${pos}&count=${c}`);
+    }
+  }
+  const htmls = await Promise.all(urls.map((u) => get(u)));
   /* Rank is position in the list, not a column: the pages are requested in
    * the league's own sort order, so row order is the ranking. */
   const byName = new Map();

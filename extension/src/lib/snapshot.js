@@ -24,7 +24,9 @@ function playersFromPool(pool) {
     name: p.name,
     team: p.team,
     pos: p.pos,
-    adp: p.rank,
+    // Yahoo's own ADP where it has one; list order otherwise, which is only a
+    // stand-in for ordering and says nothing about whether he gets drafted.
+    adp: p.adp ?? p.rank,
   }));
 }
 
@@ -52,7 +54,11 @@ async function buildPlayers(adp, notes, byes) {
     // Injury designations come only from the imported pool; the bundled file
     // has none, and a player who cannot play must not look draftable.
     const statusByName = new Map(pool.players.map((p) => [p.name, p.status ?? null]));
-    for (const p of players) p.status = statusByName.get(p.name) ?? null;
+    const noAdp = new Set(pool.players.filter((p) => p.adp == null).map((p) => p.name));
+    for (const p of players) {
+      p.status = statusByName.get(p.name) ?? null;
+      p.undrafted = noAdp.has(p.name);
+    }
     // Per-player byes from the league page beat a team lookup: a player who
     // changed team mid-season is right here and wrong in a static map.
     const byeByName = new Map(pool.players.map((p) => [p.name, p.bye ?? null]));
