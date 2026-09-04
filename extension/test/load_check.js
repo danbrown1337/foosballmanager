@@ -20,7 +20,7 @@
 import { chromium } from "playwright";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -167,6 +167,22 @@ async function main() {
   const overlayText = await roomPage
     .evaluate(() => document.getElementById("fantasy-manager-overlay")?.innerText || "")
     .catch(() => "");
+  // The panel must report the build it is actually running: a reloaded
+  // extension leaves stale content scripts in open pages, and until this was
+  // shown there was no way to tell a current panel from an old one by looking.
+  const manifestVersion = JSON.parse(
+    readFileSync(join(EXT_PATH, "manifest.json"), "utf8")
+  ).version;
+  const shownVersion = await roomPage
+    .evaluate(() => document.getElementById("fm-ver")?.textContent || "")
+    .catch(() => "");
+  console.log(`\n--- version ---`);
+  console.log(`  manifest ${manifestVersion}, panel shows "${shownVersion}"`);
+  if (shownVersion !== `v${manifestVersion}`) {
+    console.error("FAIL: panel does not report the running version.");
+    failed = true;
+  }
+
   console.log("\n--- content script on football.fantasysports.yahoo.com ---");
   if (!overlayText) {
     console.error("FAIL: overlay panel never injected on a matching URL.");
