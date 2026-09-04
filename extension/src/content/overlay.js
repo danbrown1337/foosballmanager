@@ -171,14 +171,15 @@ function buildPanel() {
 async function main() {
   let diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
-    setInputValue, surnameOf;
+    setInputValue, surnameOf, findListScroller;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
-     DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf } =
+     DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
+     findListScroller } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
@@ -540,27 +541,29 @@ async function main() {
    * produce the player, he is gone — record that and ask the engine for its
    * next choice, rather than reporting failure and stopping. */
   async function resolveAvailableRecommendation(maxSkips = 4) {
+    let skipped = 0;
     let searchBox = null;
     for (let skips = 0; skips <= maxSkips; skips++) {
       const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
       const name = snapshot.recommendation?.name;
-      if (!name) return { snapshot, name: null, el: null, searchBox };
+      if (!name) return { snapshot, name: null, el: null, searchBox, skipped, exhausted: false };
 
       const meta = (boardPlayers || []).find((p) => p.name === name) || null;
       await closeSearch(searchBox);
       const located = await locatePlayer(name, meta);
       searchBox = located.searchBox;
-      if (located.el) return { snapshot, name, el: located.el, searchBox };
+      if (located.el) return { snapshot, name, el: located.el, searchBox, skipped, exhausted: false };
 
       if (!searchBox) {
         // No search box on this page: absence proves nothing, so change
         // nothing. Marking a player drafted on that basis would be a guess.
-        return { snapshot, name, el: null, searchBox };
+        return { snapshot, name, el: null, searchBox, skipped, exhausted: false };
       }
       addLog(`${name} isn't in this room any more — marking drafted and taking the next name.`);
       await sendMessage({ type: "IMPORT_PICKS", names: [name], by: "rival" });
+      skipped++;
     }
-    return { snapshot: null, name: null, el: null, searchBox };
+    return { snapshot: null, name: null, el: null, searchBox, skipped, exhausted: true };
   }
 
   /* On demand, without waiting for a turn: the recommendation is worth
@@ -572,10 +575,20 @@ async function main() {
     const label = verifyBtn.textContent;
     verifyBtn.textContent = "Checking the room…";
     try {
-      const resolved = await resolveAvailableRecommendation();
+      // More attempts here than at a turn: this runs off the clock, and when
+      // the board is well behind, a handful of skips isn't enough to reach a
+      // player who is genuinely still there.
+      const resolved = await resolveAvailableRecommendation(10);
       await closeSearch(resolved.searchBox);
-      if (resolved.name && resolved.el) addLog(`${resolved.name} is still available.`);
-      else if (!resolved.name) addLog("No recommendation to check yet.");
+      if (resolved.el) {
+        addLog(resolved.skipped > 0
+          ? `${resolved.name} is available — skipped ${resolved.skipped} already drafted.`
+          : `${resolved.name} is still available.`);
+      } else if (resolved.exhausted) {
+        addLog(`Skipped ${resolved.skipped} drafted players and still couldn't find one in the room — try Sync from the Results view.`);
+      } else {
+        addLog("No recommendation to check yet.");
+      }
       const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
       render(snapshot);
     } catch (err) {
@@ -606,6 +619,28 @@ async function main() {
    * someone drafted in round one. This sweeps up whatever the page shows
    * right now, which is why the room's own Results/Picks view is worth
    * opening first. */
+  /* Walk the whole scrolling list, not the dozen rows on screen. Everything
+   * seen is collected; nothing is inferred from absence, so a sweep that
+   * misses rows records less rather than something false. */
+  async function sweepList(collect) {
+    const scroller = findListScroller(document.body);
+    collect(document.body.innerText);
+    if (!scroller) return { scrolled: false, steps: 0 };
+
+    const startTop = scroller.scrollTop;
+    const step = Math.max(200, scroller.clientHeight - 60);
+    let steps = 0;
+    for (let top = 0; top <= scroller.scrollHeight && steps < 40; top += step, steps++) {
+      scroller.scrollTop = top;
+      await wait(160); // let the list render the rows it just revealed
+      collect(document.body.innerText);
+      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) break;
+    }
+    scroller.scrollTop = startTop;
+    await wait(120);
+    return { scrolled: true, steps };
+  }
+
   syncBtn.addEventListener("click", async () => {
     try {
       const text = document.body.innerText;
@@ -615,13 +650,19 @@ async function main() {
         boardPlayers = snapshot.board;
       }
       const mineNames = findMyTeamNames(text, boardNameSet, boardPlayers);
-      const rivals = [...findBoardNames(text, boardNameSet, boardPlayers)]
-        .filter((n) => !mineNames.has(n));
+      const seen = new Set();
+      detectionSuspended = true; // scrolling changes the page under the detector
+      const swept = await sweepList((pageText) => {
+        for (const name of findBoardNames(pageText, boardNameSet, boardPlayers)) seen.add(name);
+      });
+      detectionSuspended = false;
+
+      const rivals = [...seen].filter((n) => !mineNames.has(n));
       await importMyTeam(text);
       if (rivals.length > 0) {
         await sendMessage({ type: "IMPORT_PICKS", names: rivals, by: "rival" });
       }
-      addLog(`Synced ${rivals.length} pick(s) from this page.`);
+      addLog(`Synced ${rivals.length} pick(s)${swept.scrolled ? ` across ${swept.steps} screens` : " (list didn't scroll)"}.`);
       syncBtn.classList.remove("stale");
       previousBoardNames = null; // this page is the new baseline
       await refresh();

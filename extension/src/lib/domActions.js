@@ -150,6 +150,34 @@ export function setInputValue(input, value) {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+/* The player list scrolls inside its own container and renders only what's
+ * visible, so a single read of the page sees a window of maybe fifteen rows
+ * out of two hundred. Finding that container is what makes it possible to
+ * walk the whole list instead of sampling it. Chosen by content rather than
+ * by class name: the scrollable element holding the most player-shaped text. */
+export function findListScroller(root) {
+  const doc = root.ownerDocument || root;
+  /* No leading word-boundary here, deliberately: adjacent rows concatenate in
+   * textContent ("...RB DETB. Robinson"), and a boundary would score a list of
+   * sixty players as one. This only ranks candidate containers — the strict
+   * matcher still does the real work. */
+  const nameLike = /[A-Za-z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/g;
+  let best = null;
+  let bestScore = 0;
+  for (const el of doc.querySelectorAll("div, ul, section, main, table, tbody")) {
+    if (isInsideOwnOverlay(el)) continue;
+    if (el.scrollHeight <= el.clientHeight + 100) continue;
+    const overflow = doc.defaultView.getComputedStyle(el).overflowY;
+    if (overflow !== "auto" && overflow !== "scroll") continue;
+    const score = ((el.textContent || "").match(nameLike) || []).length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = el;
+    }
+  }
+  return bestScore >= 3 ? best : null;
+}
+
 /** Find a "confirm/submit" style button near the top of the page — used
  * after selecting a player, when a draft room shows a confirmation step.
  * Matches short, exact-ish button text against configured phrases rather
