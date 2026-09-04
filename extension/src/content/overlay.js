@@ -784,6 +784,10 @@ async function main() {
     let searchBox = null;
     let added = 0;
     let attempts = 0;
+    /* Candidates this cycle has already failed to confirm. One player the
+     * room won't confirm used to end the cycle, so a single awkward name
+     * blocked the queue entirely. */
+    const tried = new Set();
     roomBusy = true;
     try {
       while (added < 2 && attempts < 8) {
@@ -792,7 +796,9 @@ async function main() {
           noteQueueIdle(`queue: checking — ${inRoom.size} in the room's queue`);
         }
         const wanted = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
-        const pick = wanted.find((p) => !inRoom.has(p.name) && !queuedByUs.has(p.name));
+        const pick = wanted.find(
+          (p) => !inRoom.has(p.name) && !queuedByUs.has(p.name) && !tried.has(p.name)
+        );
         if (!pick) {
           if (attempts === 1) noteQueueIdle(wanted.length === 0
             ? "queue: board has no available players — rebuild it from Yahoo's list"
@@ -810,8 +816,11 @@ async function main() {
             break;
           }
           if (!located.filtered) {
-            noteQueueIdle("queue: the room's search isn't responding — leaving the board alone");
-            break;
+            // Couldn't confirm him either way: don't touch the board, and try
+            // the next name rather than ending the cycle.
+            tried.add(pick.name);
+            noteQueueIdle(`queue: couldn't confirm ${pick.name} in the room — trying the next name`);
+            continue;
           }
           // The room can't produce him: he's drafted. Same reasoning the
           // recommendation resolver uses. Doesn't count against the budget.
@@ -821,8 +830,9 @@ async function main() {
         }
         const star = findQueueStar(document.body, pick.name, { player: meta });
         if (!star) {
-          noteQueueIdle(`queue: found ${pick.name} but no star on his row`);
-          break;
+          tried.add(pick.name);
+          noteQueueIdle(`queue: found ${pick.name} but no star on his row — trying the next name`);
+          continue;
         }
         clickElement(star);
         await wait(600);
