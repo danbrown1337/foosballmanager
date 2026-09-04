@@ -90,6 +90,11 @@ function buildPanel() {
       #fm-mode { font-size: 10px; background: #1e222a; color: #9aa1ab; border: 1px solid #2a2f38;
                  border-radius: 4px; padding: 1px 2px; }
       #fm-err { color: #fca5a5; font-size: 11px; margin-top: 6px; }
+      #fm-dead { border-top: 1px solid #2a2f38; margin-top: 8px; padding-top: 8px;
+                 color: #fca5a5; font-size: 11px; }
+      #fm-dead b { color: #fecaca; }
+      #fm-reload { width: 100%; margin-top: 6px; padding: 6px; border: none; border-radius: 6px;
+                   background: #b91c1c; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
       #fm-auto { border-top: 1px solid #2a2f38; margin-top: 8px; padding-top: 8px; font-size: 11px; }
       #fm-auto label { display: flex; align-items: center; gap: 6px; color: #9aa1ab; margin-bottom: 4px; cursor: pointer; }
       #fm-auto label.sub { padding-left: 16px; }
@@ -116,6 +121,12 @@ function buildPanel() {
           </select>
       </div>
       <div id="fm-err" hidden></div>
+      <div id="fm-dead" hidden>
+        <b>Disconnected — this panel is out of date.</b>
+        The extension was reloaded or updated while this page was open, so it
+        can no longer see the draft or record a pick.
+        <button id="fm-reload">Reload this page to reconnect</button>
+      </div>
       <div id="fm-auto">
         <label><input type="checkbox" id="fm-auto-enable"> Auto-draft when it's my turn (experimental)</label>
         <label class="sub" id="fm-auto-full-row" hidden>
@@ -155,8 +166,12 @@ async function main() {
   const autoFullBox = root.querySelector("#fm-auto-full");
   const autoStatus = root.querySelector("#fm-auto-status");
   const autoWarn = root.querySelector("#fm-auto-warn");
+  const deadBox = root.querySelector("#fm-dead");
+  const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
+  let contextGone = false;
+  let timers = [];
   let previousBoardNames = null;
   let boardNameSet = null;
   let currentRecName = null;
@@ -171,6 +186,8 @@ async function main() {
     body.classList.toggle("collapsed");
     root.querySelector("#fm-collapse-icon").textContent = body.classList.contains("collapsed") ? "+" : "–";
   });
+
+  root.querySelector("#fm-reload").addEventListener("click", () => location.reload());
 
   Storage.getPollMode().then((mode) => { modeSelect.value = mode; });
   modeSelect.addEventListener("change", () => {
@@ -249,6 +266,37 @@ async function main() {
     errBox.textContent = message || "";
   }
 
+  /* Chrome tears the runtime connection out from under a content script when
+   * the extension is reloaded or updated, leaving this script running in a
+   * page it can no longer talk to. Every chrome.runtime call throws from then
+   * on, and only a page reload brings it back. */
+  function isContextGone(err) {
+    const msg = String((err && err.message) || err || "");
+    return msg.includes("Extension context invalidated") ||
+           msg.includes("Receiving end does not exist") ||
+           msg.includes("message port closed");
+  }
+
+  /* A disconnected panel still showing its last recommendation is worse than
+   * no panel at all: mid-draft it looks authoritative while being unable to
+   * see a single pick. Say so plainly, stop everything that could act on
+   * stale data, and offer the one thing that fixes it. */
+  function handleDeadContext() {
+    if (contextGone) return;
+    contextGone = true;
+    polling = false;
+    for (const t of timers) clearInterval(t);
+    timers = [];
+    takeBtn.disabled = true;
+    autoEnableBox.disabled = true;
+    autoFullBox.disabled = true;
+    recWhy.textContent = "Anything above is stale — it stopped updating when the extension reloaded.";
+    recFlag.hidden = true;
+    statusBox.hidden = true;
+    showError(null);
+    deadBox.hidden = false;
+  }
+
   function render(snapshot) {
     const rec = snapshot.recommendation;
     currentRecName = rec ? rec.name : null;
@@ -266,6 +314,7 @@ async function main() {
       showError(null);
       return snapshot;
     } catch (err) {
+      if (isContextGone(err)) return handleDeadContext(), null;
       showError(String(err.message || err));
       return null;
     }
@@ -316,9 +365,12 @@ async function main() {
       }
       previousBoardNames = found;
     } catch (err) {
-      // Silent on poll errors (e.g. extension context invalidated after an
-      // update) — the panel just stops updating rather than spamming errors
-      // on a page the user isn't actively drafting on.
+      // A dead context is permanent and needs saying — silently retrying it
+      // every few seconds is what made a reloaded extension look like a
+      // working one that simply never noticed a pick.
+      if (isContextGone(err)) return handleDeadContext();
+      // Other poll errors stay silent: the panel just stops updating rather
+      // than spamming errors on a page the user isn't actively drafting on.
     }
   }
 
@@ -397,15 +449,18 @@ async function main() {
         addLog(`Selected ${currentRecName} but couldn't find a Confirm/Draft button — finish the pick manually.`);
       }
     } catch (err) {
-      // Same policy as pollPage(): stay silent on poll errors rather than
-      // spamming the panel on a page you aren't actively drafting on.
+      if (isContextGone(err)) return handleDeadContext();
+      // Same policy as pollPage(): stay silent on other poll errors rather
+      // than spamming the panel on a page you aren't actively drafting on.
     }
   }
 
   refresh();
-  setInterval(refresh, POLL_INTERVAL_MS * 2);
-  setInterval(pollPage, POLL_INTERVAL_MS);
-  setInterval(pollForTurn, POLL_INTERVAL_MS);
+  timers = [
+    setInterval(refresh, POLL_INTERVAL_MS * 2),
+    setInterval(pollPage, POLL_INTERVAL_MS),
+    setInterval(pollForTurn, POLL_INTERVAL_MS),
+  ];
 }
 
 if (document.readyState === "loading") {
