@@ -648,6 +648,24 @@ async function main() {
     if (roomBusy) return; // a board update is driving the search box
     lastQueueRunAt = Date.now();
 
+    /* Refresh the board first if it's been a few minutes: a shortlist built
+     * from a stale board is a list of players who are already gone, and the
+     * cycle below would spend itself discovering that one name at a time. */
+    if (Date.now() - lastBoardUpdateAt > 180000) {
+      roomBusy = true;
+      try {
+        const out = await updateBoardFromRoom({ verify: false });
+        if (out.ok) {
+          addLog(`Board refreshed: ${out.result.seen} available, ${out.result.markedDrafted} newly drafted, ${out.result.freed} put back.`);
+        } else {
+          noteQueueIdle(`queue: couldn't refresh the board — ${out.reason}`);
+        }
+      } finally {
+        roomBusy = false;
+      }
+      return; // let the next cycle queue against the fresh board
+    }
+
     const inRoom = findQueueNames(text, boardNameSet, boardPlayers);
     if (inRoom === null) {
       noteQueueIdle("queue: can't see the queue panel — open the Queue tab in the left column");
@@ -738,6 +756,51 @@ async function main() {
    * Read the list, set the board to match it, then confirm the recommendation
    * that comes out is a player the room can still produce. */
   const MIN_ROWS_TO_TRUST = 60;
+  /* The sweep is the only thing that makes the board true, and leaving it to
+   * a button meant it was pressed once at the start and never again — so the
+   * shortlist went stale within a round or two and queue maintenance spent
+   * every cycle marking drafted players instead of queueing anyone. Run it on
+   * a timer as well, between picks, where it costs nothing. */
+  let lastBoardUpdateAt = 0;
+  async function updateBoardFromRoom({ verify }) {
+    const searchBox = findPlayerSearchBox(document.body);
+    if (searchBox && searchBox.value) {
+      setInputValue(searchBox, "");
+      await wait(700);
+    }
+    const scroller = findListScroller(document.body);
+    if (!scroller) return { ok: false, reason: "no player list on this page" };
+    if (!boardNameSet) {
+      const snap = await sendMessage({ type: "GET_SNAPSHOT" });
+      boardNameSet = new Set(snap.board.map((p) => p.name));
+      boardPlayers = snap.board;
+    }
+
+    const seen = new Set();
+    detectionSuspended = true;
+    try {
+      await sweepList(() => {
+        for (const name of findBoardNames(scroller.innerText, boardNameSet, boardPlayers)) {
+          seen.add(name);
+        }
+      });
+    } finally {
+      detectionSuspended = false;
+      previousBoardNames = null;
+    }
+
+    if (seen.size < MIN_ROWS_TO_TRUST) {
+      return { ok: false, reason: `only ${seen.size} players read — too few to trust` };
+    }
+    const result = await sendMessage({ type: "REPAIR_BOARD", names: [...seen] });
+    lastBoardUpdateAt = Date.now();
+
+    if (!verify) return { ok: true, result };
+    const resolved = await resolveAvailableRecommendation(10);
+    await closeSearch(resolved.searchBox);
+    return { ok: true, result, resolved };
+  }
+
   updateBtn.addEventListener("click", async () => {
     if (updateBtn.disabled) return;
     updateBtn.disabled = true;
@@ -746,59 +809,21 @@ async function main() {
     roomBusy = true;
     try {
       if (wasBusy) {
-        // Queue maintenance is mid-search; its filter isn't the whole board.
         addLog("Queue maintenance is using the search — try again in a few seconds.");
         return;
       }
-      const searchBox = findPlayerSearchBox(document.body);
-      if (searchBox && searchBox.value) {
-        // Clear it rather than refusing: a leftover filter is usually our own,
-        // and telling someone to fix our mess is not a guard, it's a bug.
-        setInputValue(searchBox, "");
-        await wait(700);
-        addLog("Cleared the player search so the whole list could be read.");
-      }
-      const scroller = findListScroller(document.body);
-      if (!scroller) {
-        addLog("Couldn't find the player list — open the Players tab and try again.");
+      updateBtn.textContent = "Reading Yahoo's list\u2026";
+      const out = await updateBoardFromRoom({ verify: true });
+      if (!out.ok) {
+        addLog(`Board not updated: ${out.reason}.`);
         return;
       }
-      if (!boardNameSet) {
-        const snap = await sendMessage({ type: "GET_SNAPSHOT" });
-        boardNameSet = new Set(snap.board.map((p) => p.name));
-        boardPlayers = snap.board;
-      }
-
-      updateBtn.textContent = "Reading Yahoo's list…";
-      const seen = new Set();
-      detectionSuspended = true;
-      // The list element only: the page also shows the last pick and your own
-      // roster, and neither is a list of who is available.
-      await sweepList(() => {
-        for (const name of findBoardNames(scroller.innerText, boardNameSet, boardPlayers)) {
-          seen.add(name);
-        }
-      });
-      detectionSuspended = false;
-      previousBoardNames = null;
-
-      if (seen.size < MIN_ROWS_TO_TRUST) {
-        addLog(`Only read ${seen.size} players — too few to trust, so nothing changed. Is the list filtered?`);
-        return;
-      }
-      const result = await sendMessage({ type: "REPAIR_BOARD", names: [...seen] });
-      addLog(`Board updated: ${result.seen} available, ${result.markedDrafted} newly drafted, ${result.freed} put back.`);
+      addLog(`Board updated: ${out.result.seen} available, ${out.result.markedDrafted} newly drafted, ${out.result.freed} put back.`);
       updateBtn.classList.remove("stale");
-
-      updateBtn.textContent = "Checking the pick…";
-      const resolved = await resolveAvailableRecommendation(10);
-      await closeSearch(resolved.searchBox);
-      if (resolved.el) {
-        addLog(resolved.skipped > 0
-          ? `Recommending ${resolved.name} — skipped ${resolved.skipped} already gone.`
-          : `Recommending ${resolved.name}.`);
-      } else if (resolved.exhausted) {
-        addLog("Couldn't find any of the top picks in this room — the list may be filtered.");
+      if (out.resolved?.el) {
+        addLog(out.resolved.skipped > 0
+          ? `Recommending ${out.resolved.name} — skipped ${out.resolved.skipped} already gone.`
+          : `Recommending ${out.resolved.name}.`);
       }
       await refresh();
     } catch (err) {
