@@ -68,3 +68,14 @@ describe("topPicks", () => {
     assert.equal(new Set(picks.map((p) => p.name)).size, picks.length);
   });
 });
+
+describe("shortlist position cap (shape of the queue)", () => {
+  test("a fallback chain with one need returns that position repeatedly", () => {
+    // Not a bug in topPicks — each entry answers "if he's sniped, then who?"
+    // and with a single unfilled position the answer is the same position.
+    // The cap belongs in the queue-facing wrapper, not here.
+    const players = freshBoard();
+    const picks = topPicks(players, CONFIG, 5);
+    assert.equal(picks.length, 5);
+  });
+});

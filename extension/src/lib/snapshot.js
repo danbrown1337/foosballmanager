@@ -206,7 +206,27 @@ export async function shortlist(n = 5) {
   ]);
   const players = await buildPlayers(adp, notes, byes);
   applyDraftState(players, draftState);
-  return topPicks(players, config, n);
+
+  /* At most two per position.
+   *
+   * The shortlist is a fallback chain — each entry answers "if he's sniped,
+   * then who?" — so with one real need it correctly returns five players at
+   * that position. But Yahoo drafts from this queue, and if two of your turns
+   * pass before it refreshes it takes two of them. A roster arrived at three
+   * tight ends that way. Two deep at a position is enough to survive a snipe;
+   * beyond that it stops being insurance and starts being a plan nobody made.
+   */
+  const PER_POSITION = 2;
+  const picks = topPicks(players, config, n * 3);
+  const counts = {};
+  const out = [];
+  for (const pick of picks) {
+    counts[pick.pos] = (counts[pick.pos] || 0) + 1;
+    if (counts[pick.pos] > PER_POSITION) continue;
+    out.push(pick);
+    if (out.length === n) break;
+  }
+  return out;
 }
 
 /* Rebuild the drafted list from what the room still offers.
