@@ -65,6 +65,12 @@ const PAGE_HTML = `<!doctype html><html><body>
        row whose FIRST cell holds the queue star and whose second holds the
        name. Anything scoped to the name's own cell cannot reach the star. -->
   <div id="pick-feed">Last: D. ACHANE (RB · Mia)</div>
+  <div id="queue-panel">Autodraft will pick from queue
+    <div class="q-entry"><button class="q-remove"><svg data-icon="star-filled"></svg></button>
+      <span>J. Hurts</span> <span>QB</span> <span>Phi</span></div>
+    <div class="q-entry"><button class="q-remove"><svg data-icon="star-filled"></svg></button>
+      <span>M. Lloyd</span> <span>RB</span> <span>GB</span></div>
+  </div>
   <table id="board-table"><tbody>
     <tr id="row-kelce">
       <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
@@ -134,7 +140,7 @@ const PROBE_CONTENT_SRC = `
 const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
   findPlayerSearchBox, setInputValue, surnameOf, findQueueStar,
-  findDraftButton } from "../src/lib/domActions.js";
+  findDraftButton, findQueueRemove } from "../src/lib/domActions.js";
 import { parsePoolPage } from "../src/lib/yahooPool.js";
 
 export async function run(document) {
@@ -259,6 +265,23 @@ export async function run(document) {
   // lookup has to keep going to the row that has the button.
   results.draftPastFeed = findDraftButton(document.body, "De'Von Achane", { player: { pos: "RB", team: "Mia" } })?.className;
 
+  // Removing from the queue: the only handle is in the queue panel, since a
+  // queued player has no row in the available list any more.
+  // Diagnostics for the lookup itself, so a null answer says where it failed.
+  const qp = [...document.querySelectorAll("div, section, aside")].find((el) =>
+    /Autodraft will pick from queue/i.test(el.textContent || "") && (el.textContent || "").length < 2000);
+  results.qPanelFound = !!qp;
+  results.qPanelId = qp ? (qp.id || qp.className || qp.tagName) : null;
+  results.qEntryTexts = qp
+    ? [...qp.querySelectorAll("li, div, tr")].map((e) => (e.textContent || "").replace(/\s+/g, " ").trim().slice(0, 30))
+    : null;
+  const removeHurts = findQueueRemove(document.body, "Jalen Hurts");
+  results.removeClass = removeHurts ? removeHurts.className : null;
+  results.removeIsRightEntry = removeHurts
+    ? /Hurts/.test(removeHurts.closest(".q-entry")?.textContent || "")
+    : false;
+  results.removeMissing = findQueueRemove(document.body, "Travis Kelce") === null;
+
   return results;
 }
 `;
@@ -370,6 +393,9 @@ async function main() {
         result.draftBtnClass === "draft-btn" && result.draftBtnRow === "row-draftable"],
       ["returns nothing when that row has no Draft button", result.noDraftBtn === true],
       ["looks past the pick feed to the row with the button", result.draftPastFeed === "draft-btn"],
+      ["finds the remove control in the queue panel", result.removeClass === "q-remove"],
+      ["and it belongs to that player's entry", result.removeIsRightEntry === true],
+      ["returns nothing for a player who isn't queued", result.removeMissing === true],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);

@@ -261,6 +261,33 @@ export function findDraftButton(root, playerName, { player = null } = {}) {
   return null;
 }
 
+/* The control that takes a player back out of the room's queue.
+ *
+ * Queued players are pulled out of the available list, so their row — and its
+ * star — is gone; the only handle left is in the queue panel itself, where
+ * each entry carries a filled star. Everything else here refuses to click a
+ * filled star precisely because it removes; this is the one place that is the
+ * intent. */
+export function findQueueRemove(root, playerName) {
+  const doc = root.ownerDocument || root;
+  const panel = [...doc.querySelectorAll("div, section, aside")].find((el) => {
+    const text = el.textContent || "";
+    return /Autodraft will pick from queue/i.test(text) && text.length < 2000;
+  });
+  if (!panel) return null;
+
+  const forms = [playerName, ...abbrevForms(playerName)];
+  const res = forms.map((f) => new RegExp(`(?<!\\w)${escapeRegExp(f)}(?!\\w)`, "i"));
+  for (const el of panel.querySelectorAll("li, div, tr")) {
+    const text = el.textContent || "";
+    if (text.length > 120) continue; // a whole panel, not one entry
+    if (!res.some((re) => re.test(text))) continue;
+    const star = el.querySelector('[data-icon*="star" i]');
+    if (star) return star.closest(CLICKABLE_SELECTOR) || star.parentElement;
+  }
+  return null;
+}
+
 /* The player list scrolls inside its own container and renders only what's
  * visible, so a single read of the page sees a window of maybe fifteen rows
  * out of two hundred. Finding that container is what makes it possible to
