@@ -107,6 +107,20 @@ export function findAmbiguousAbbrevs(text, boardNames, players) {
   return ambiguous;
 }
 
+/* What the room's own queue currently holds. Returns null when the queue
+ * panel isn't on screen at all — a distinction that matters: an empty set
+ * means "the room says the queue is empty", while null means "we can't see
+ * it", and only the first is evidence a queued player was drafted. */
+export function findQueueNames(text, boardNames, players = null) {
+  const start = text.search(/Autodraft will pick from queue/i);
+  if (start === -1) return null;
+  let section = text.slice(start, start + 1200);
+  const end = section.search(/(?<!\w)(Players|Board|Results|Standings)(?!\w)/);
+  if (end > -1) section = section.slice(0, end);
+  if (/your queue is empty/i.test(section)) return new Set();
+  return findBoardNames(section, boardNames, players);
+}
+
 /* Which roster slots the room itself shows, read off the YOUR TEAM panel:
  * the labels are the league's actual starter construction. Used to catch the
  * case that silently cost a kicker in testing — a room that starts a K while

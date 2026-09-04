@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
+import { findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findQueueNames, parseRosterText, parseLeaguePage, normalizePosition, looksLikeAPlayer } from "../src/lib/textMatch.js";
 
 const BOARD = new Set([
   "Jahmyr Gibbs", "Josh Allen", "Marvin Harrison Jr.", "A.J. Brown",
@@ -296,5 +296,55 @@ describe("findRosterTotal", () => {
 
   test("returns null when the room shows no roster panel", () => {
     assert.equal(findRosterTotal("Mock Draft Lobby"), null);
+  });
+});
+
+describe("findQueueNames", () => {
+  const board = new Set(["Jahmyr Gibbs", "Tee Higgins", "Puka Nacua"]);
+  const players = [
+    { name: "Jahmyr Gibbs", pos: "RB", team: "DET" },
+    { name: "Tee Higgins", pos: "WR", team: "CIN" },
+    { name: "Puka Nacua", pos: "WR", team: "LAR" },
+  ];
+
+  test("reads the players the room has queued", () => {
+    const page = `Queue
+Picks
+Autodraft will pick from queue
+Autodraft
+J. Gibbs RB \u00b7 Det
+T. Higgins WR \u00b7 Cin
+Players
+Board
+Results
+P. Nacua WR \u00b7 LAR`;
+    const queued = findQueueNames(page, board, players);
+    assert.deepEqual([...queued].sort(), ["Jahmyr Gibbs", "Tee Higgins"]);
+  });
+
+  test("stops at the players list, so the board isn't read as the queue", () => {
+    const page = `Autodraft will pick from queue
+Autodraft
+J. Gibbs RB \u00b7 Det
+Players
+P. Nacua WR \u00b7 LAR
+T. Higgins WR \u00b7 Cin`;
+    assert.deepEqual([...findQueueNames(page, board, players)], ["Jahmyr Gibbs"]);
+  });
+
+  test("an empty queue is an empty set, not nothing", () => {
+    const page = `Autodraft will pick from queue
+Autodraft
+Your queue is empty.
+Click the star next to a player to add them.`;
+    const queued = findQueueNames(page, board, players);
+    assert.notEqual(queued, null);
+    assert.equal(queued.size, 0);
+  });
+
+  test("no queue panel on screen returns null, which is not the same as empty", () => {
+    // Only an empty queue is evidence a queued player was drafted; not being
+    // able to see the panel is evidence of nothing.
+    assert.equal(findQueueNames("Players Board Results", board, players), null);
   });
 });

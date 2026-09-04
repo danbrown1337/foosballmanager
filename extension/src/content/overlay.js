@@ -111,6 +111,8 @@ function buildPanel() {
       #fm-dead b { color: #fecaca; }
       #fm-reload { width: 100%; margin-top: 6px; padding: 6px; border: none; border-radius: 6px;
                    background: #b91c1c; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+      #fm-queue-row { display: flex; align-items: center; gap: 6px; font-size: 11px;
+                      color: #9aa1ab; cursor: pointer; margin-bottom: 6px; }
       #fm-practice-row { display: flex; align-items: center; gap: 6px; font-size: 11px;
                          color: #9aa1ab; cursor: pointer; margin-bottom: 6px; }
       #fm-auto { border-top: 1px solid #2a2f38; margin-top: 8px; padding-top: 8px; font-size: 11px; }
@@ -151,6 +153,9 @@ function buildPanel() {
         can no longer see the draft or record a pick.
         <button id="fm-reload">Reload this page to reconnect</button>
       </div>
+      <label id="fm-queue-row">
+        <input type="checkbox" id="fm-queue-enable"> Keep Yahoo's queue filled (drafts even if this tab sleeps)
+      </label>
       <label id="fm-practice-row">
         <input type="checkbox" id="fm-practice-toggle"> Practice mode — use this room's roster
       </label>
@@ -169,17 +174,18 @@ function buildPanel() {
 }
 
 async function main() {
-  let diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
+  let diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
+    findQueueNames, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
-    setInputValue, surnameOf, findListScroller;
+    setInputValue, surnameOf, findListScroller, findQueueStar;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
-     findAmbiguousAbbrevs } =
+     findAmbiguousAbbrevs, findQueueNames } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
-     findListScroller } =
+     findListScroller, findQueueStar } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
@@ -214,6 +220,7 @@ async function main() {
   const practiceToggle = root.querySelector("#fm-practice-toggle");
   const resetBtn = root.querySelector("#fm-reset");
   const verifyBtn = root.querySelector("#fm-verify");
+  const queueBox = root.querySelector("#fm-queue-enable");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -228,6 +235,14 @@ async function main() {
    * the board from the page text, and the pick detector would read that as
    * every one of those players being drafted at once. */
   let detectionSuspended = false;
+  const QUEUE_DEPTH = 5;
+  let queueEnabled = false;
+  let lastQueueRunAt = 0;
+  /* What we put in the room's queue. Yahoo removes a player from the queue
+   * when someone drafts him, so anything that leaves this set without us
+   * drafting him is a pick we never saw — the cheapest, most reliable pick
+   * detector available, and it costs nothing to read. */
+  const queuedByUs = new Set();
   const reportedAmbiguous = new Set();
   let currentRecName = null;
   let turnPhrases = [];
@@ -604,6 +619,73 @@ async function main() {
     }
   });
 
+  Storage.getQueueEnabled().then((on) => { queueEnabled = on; queueBox.checked = on; });
+  queueBox.addEventListener("change", async () => {
+    queueEnabled = queueBox.checked;
+    await Storage.setQueueEnabled(queueEnabled);
+    addLog(queueEnabled
+      ? `Keeping Yahoo's queue ${QUEUE_DEPTH} deep — it drafts for you even if this tab is asleep.`
+      : "Leaving Yahoo's queue alone.");
+    if (queueEnabled) lastQueueRunAt = 0;
+  });
+
+  /* Maintain the room's queue between picks. Everything fiddly — searching,
+   * scrolling, clicking — happens here, off the clock, where a failure costs
+   * a retry instead of a pick. */
+  async function maintainQueue(text) {
+    if (!queueEnabled || detectionSuspended) return;
+    if (Date.now() - lastQueueRunAt < 15000) return;
+    if (isMyTurn(text, turnPhrases)) return; // never fight the clock
+    lastQueueRunAt = Date.now();
+
+    const inRoom = findQueueNames(text, boardNameSet, boardPlayers);
+    if (inRoom === null) return; // queue panel not visible; nothing can be concluded
+
+    // Anything we queued that the room no longer lists was drafted by someone.
+    const vanished = [...queuedByUs].filter((name) => !inRoom.has(name));
+    if (vanished.length > 0) {
+      for (const name of vanished) queuedByUs.delete(name);
+      const { changed } = await sendMessage({ type: "IMPORT_PICKS", names: vanished, by: "rival" });
+      if (changed) addLog(`Gone from the queue, so drafted: ${vanished.join(", ")}`);
+    }
+
+    const wanted = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
+    const missing = wanted.filter((p) => !inRoom.has(p.name));
+    if (missing.length === 0) return;
+
+    // Two per cycle: this shares the page with a live draft, and a long
+    // scripted burst of searching and clicking is its own hazard.
+    let searchBox = null;
+    try {
+      for (const pick of missing.slice(0, 2)) {
+        const meta = (boardPlayers || []).find((p) => p.name === pick.name) || null;
+        await closeSearch(searchBox);
+        const located = await locatePlayer(pick.name, meta);
+        searchBox = located.searchBox;
+        if (!located.el) {
+          // The room can't produce him: he's drafted. Same reasoning the
+          // recommendation resolver uses.
+          if (searchBox) {
+            await sendMessage({ type: "IMPORT_PICKS", names: [pick.name], by: "rival" });
+            addLog(`${pick.name} isn't in the room — marking drafted.`);
+          }
+          continue;
+        }
+        const star = findQueueStar(document.body, pick.name, { player: meta });
+        if (!star) {
+          addLog(`Found ${pick.name} but not a queue control on his row — queueing needs a look at this room.`);
+          break;
+        }
+        clickElement(star);
+        await wait(600);
+        queuedByUs.add(pick.name);
+        addLog(`Queued ${pick.name}.`);
+      }
+    } finally {
+      await closeSearch(searchBox);
+    }
+  }
+
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;
     const mine = [...findMyTeamNames(text, boardNameSet, boardPlayers)];
@@ -697,6 +779,7 @@ async function main() {
       const text = document.body.innerText;
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
+      await maintainQueue(text);
       const found = findBoardNames(text, boardNameSet, boardPlayers);
 
       // Say it once per name: a pick this can't attribute is a hole in the

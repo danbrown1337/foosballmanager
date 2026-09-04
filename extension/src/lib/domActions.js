@@ -150,6 +150,58 @@ export function setInputValue(input, value) {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+/* The control that adds a player to the room's queue — the star beside their
+ * row. Nobody here has seen Yahoo's markup for it, so this tries the things
+ * it could plausibly be, most explicit first, and returns null rather than
+ * clicking something it can't identify. A wrong click in a draft room is
+ * worse than not queueing.
+ *
+ * The row is bounded the same way abbreviated names are confirmed: stop
+ * climbing before an ancestor that holds another player, or the "star" found
+ * would belong to a neighbour. */
+export function findQueueStar(root, playerName, { player = null, maxAncestorDepth = 6 } = {}) {
+  const nameEl = findPlayerClickTarget(root, playerName, { player });
+  if (!nameEl) return null;
+
+  const forms = [playerName, ...abbrevForms(playerName)];
+  const containsAnotherPlayer = (el) => {
+    const text = el.textContent || "";
+    return forms.some((form) => {
+      const re = new RegExp(`(?<!\\w)${escapeRegExp(form)}(?!\\w)`, "ig");
+      return (text.match(re) || []).length > 1;
+    });
+  };
+
+  let row = nameEl;
+  for (let d = 0; d < maxAncestorDepth && row.parentElement; d++) {
+    const parent = row.parentElement;
+    if (containsAnotherPlayer(parent) || (parent.textContent || "").length > 400) break;
+    row = parent;
+  }
+
+  const candidates = [...row.querySelectorAll(CLICKABLE_SELECTOR)].filter(
+    (el) => !isInsideOwnOverlay(el)
+  );
+
+  // 1. Says what it is.
+  for (const el of candidates) {
+    const label = `${el.getAttribute("aria-label") || ""} ${el.getAttribute("title") || ""}`;
+    if (/queue|watch ?list/i.test(label)) return el;
+  }
+  // 2. Looks like a star.
+  for (const el of candidates) {
+    if (el.querySelector('svg[data-icon*="star" i], [class*="star" i]')) return el;
+    if (/star/i.test(el.className || "")) return el;
+  }
+  // 3. A control in the row that isn't the player's own name — the star sits
+  //    in its own leading column, so it holds no name text.
+  for (const el of candidates) {
+    const text = (el.textContent || "").trim();
+    if (!text && el !== nameEl && !el.contains(nameEl)) return el;
+  }
+  return null;
+}
+
 /* The player list scrolls inside its own container and renders only what's
  * visible, so a single read of the page sees a window of maybe fifteen rows
  * out of two hundred. Finding that container is what makes it possible to
