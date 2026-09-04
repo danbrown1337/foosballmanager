@@ -656,10 +656,26 @@ async function main() {
     let found = null;
     let sawName = false;
     const seen = new Set();
+    /* One row carrying his abbreviation is him. findPlayerClickTarget also
+     * demands the row show his team, which is there to separate two players
+     * with the same abbreviation — and when only one row on screen carries
+     * it, there is nothing to separate. That check was rejecting real rows
+     * wherever our imported pool's team disagreed with the room's, leaving
+     * the panel to report "couldn't confirm Chase Brown" indefinitely. */
+    const abbrev = `${name.trim()[0]}. ${surnameOf(name)}`;
+    const abbrevRe = new RegExp(
+      `(?<!\\w)${abbrev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?!\\w)`, "i"
+    );
+    const onlyRowFor = () => {
+      const rows = [...document.querySelectorAll("tbody tr")].filter((tr) =>
+        abbrevRe.test(tr.innerText || "")
+      );
+      return rows.length === 1 ? rows[0].querySelector("td:nth-child(2)") || rows[0] : null;
+    };
     detectionSuspended = true;
     try {
       await sweepList((text) => {
-        if (!found) found = findPlayerClickTarget(document.body, name, { player: meta });
+        if (!found) found = findPlayerClickTarget(document.body, name, { player: meta }) || onlyRowFor();
         // Identifying him and merely seeing his name are different questions.
         // The click target insists the row shows his team, which fails when
         // our pool disagrees with the room — and without this, that turned
