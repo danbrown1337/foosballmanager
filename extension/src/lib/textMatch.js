@@ -121,6 +121,22 @@ export function findQueueNames(text, boardNames, players = null) {
   return findBoardNames(section, boardNames, players);
 }
 
+/* The page text with the queue panel cut out.
+ *
+ * Queueing a player writes his name into that panel, and the pick detector
+ * reads the page — so a name appearing there was being recorded as drafted.
+ * The extension queueing someone therefore marked him gone the moment it
+ * succeeded, removing him from its own shortlist and corrupting the board.
+ * Confirmed live: starring J. Tyson produced "Detected: Jordyn Tyson" on the
+ * next poll. */
+export function withoutQueuePanel(text) {
+  const start = text.search(/Autodraft will pick from queue/i);
+  if (start === -1) return text;
+  const rest = text.slice(start);
+  const end = rest.search(/(?<!\w)(Players|Board|Results|Standings)(?!\w)/);
+  return end === -1 ? text.slice(0, start) : text.slice(0, start) + rest.slice(end);
+}
+
 /* Which roster slots the room itself shows, read off the YOUR TEAM panel:
  * the labels are the league's actual starter construction. Used to catch the
  * case that silently cost a kicker in testing — a room that starts a K while

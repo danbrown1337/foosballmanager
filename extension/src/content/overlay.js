@@ -171,11 +171,11 @@ function buildPanel() {
 
 async function main() {
   let diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
-    findQueueNames, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
+    findQueueNames, withoutQueuePanel, Storage, isMyTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
-     findAmbiguousAbbrevs, findQueueNames } =
+     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ isMyTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
@@ -878,11 +878,13 @@ async function main() {
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
       await maintainQueue(text);
-      const found = findBoardNames(text, boardNameSet, boardPlayers);
+      // Not the queue panel: a name we queued is not a name that was drafted.
+      const detectText = withoutQueuePanel(text);
+      const found = findBoardNames(detectText, boardNameSet, boardPlayers);
 
       // Say it once per name: a pick this can't attribute is a hole in the
       // board, and the fix is one manual click in the popup.
-      for (const abbrev of findAmbiguousAbbrevs(text, boardNameSet, boardPlayers)) {
+      for (const abbrev of findAmbiguousAbbrevs(detectText, boardNameSet, boardPlayers)) {
         if (reportedAmbiguous.has(abbrev)) continue;
         reportedAmbiguous.add(abbrev);
         addLog(`"${abbrev}" matches two players — mark it by hand if it was drafted.`);
