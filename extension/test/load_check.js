@@ -361,6 +361,23 @@ async function main() {
     failed = true;
   }
 
+  /* The list's own "YOUR TURN - 22ND PICK" divider must not read as a turn —
+   * it is permanent, and treating it as one blocked queue maintenance for an
+   * entire live draft. The fixture has that divider inside the scroller and no
+   * banner anywhere else, so the panel must take no turn action at all. */
+  await roomPage.waitForTimeout(9000);
+  const turnClaims = await roomPage.evaluate(() =>
+    [...document.querySelectorAll("#fm-log div")]
+      .map((d) => d.textContent)
+      .filter((s) => /^Your turn|it's your turn/i.test(s))
+  );
+  console.log(`\n--- turn detection ---`);
+  console.log(`  turn claims with only the list divider present: ${turnClaims.length}`);
+  if (turnClaims.length > 0) {
+    console.error(`FAIL: read the ranking divider as a turn — ${turnClaims[0]}`);
+    failed = true;
+  }
+
   // Regression: reloading the extension orphans the content script already
   // running in an open page — every chrome.runtime call from it throws
   // "Extension context invalidated" from then on, permanently. The panel used
