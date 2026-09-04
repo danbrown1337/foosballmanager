@@ -50,9 +50,11 @@ const SWEEP_NAMES = ADP.slice(0, 100).map((p) => {
  * merely reads innerText once cannot pass. */
 const FAKE_ROOM = `<html><body>
   <h1>Mock Draft Room</h1>
-  <p>You're on the clock!</p>
+  <!-- No turn banner here: the only "your turn" text on this page is the
+       ranking divider inside the list below, which must not count as one. -->
   <div>Ja'Marr Chase</div><div>Bijan Robinson</div><div>CeeDee Lamb</div>
   <div id="scroller" style="height:120px;overflow-y:auto">
+    <div class="ys-divider">YOUR TURN - 22ND PICK</div>
     <div id="spacer" style="height:2000px;position:relative">
       <ul id="window" style="margin:0;position:absolute;left:0;right:0"></ul>
     </div>

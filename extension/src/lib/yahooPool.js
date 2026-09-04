@@ -16,8 +16,20 @@
 
 const TEAM_POS = /^\s*([A-Za-z.]{2,4})\s*-\s*([A-Z]{1,3}(?:,[A-Z]{1,3})*)\s*$/;
 
+/* Which column holds what, from the table's own header row. Guessing by value
+ * doesn't work — games played is 16 or 17, indistinguishable from a bye week —
+ * and fixed positions shift when a row carries a note or an injury tag, which
+ * is how a passing-yards figure (2055) became a player's rank. */
+function columnIndex(doc, label, fallback) {
+  const rows = [...doc.querySelectorAll("table thead tr")];
+  const cells = rows.length ? [...rows[rows.length - 1].children] : [];
+  const i = cells.findIndex((th) => (th.textContent || "").trim().toLowerCase() === label);
+  return i >= 0 ? i : fallback;
+}
+
 export function parsePoolPage(html, DomParser = DOMParser) {
   const doc = new DomParser().parseFromString(html, "text/html");
+  const byeCol = columnIndex(doc, "bye", 5);
   const players = [];
   for (const tr of doc.querySelectorAll("table tbody tr")) {
     const container = tr.querySelector(".ysf-player-name");
@@ -34,15 +46,15 @@ export function parsePoolPage(html, DomParser = DOMParser) {
         break;
       }
     }
+    /* Cell positions are not stable — a player note, an injury tag or a
+     * roster-status column shifts them — so a passing-yards figure was being
+     * read as a rank, and 2055 turned up as a player's ADP. Take only values
+     * that can be recognised for what they are: a bye is a week number, and
+     * ranking comes from the order the list is already sorted in. */
     const cells = [...tr.children].map((td) => (td.textContent || "").trim());
-    players.push({
-      name: link.textContent.trim(),
-      team,
-      pos,
-      bye: Number(cells[5]) || null,
-      proj: Number(cells[6]) || null,
-      rank: Number(cells[7]) || null,
-    });
+    const byeValue = Number(cells[byeCol]);
+    const bye = Number.isInteger(byeValue) && byeValue >= 1 && byeValue <= 18 ? byeValue : null;
+    players.push({ name: link.textContent.trim(), team, pos, bye });
   }
   return players;
 }
@@ -58,11 +70,13 @@ export function leagueIdFromUrl(url) {
 export async function fetchPool(leagueId, { get, pages = 10, perPage = 25 } = {}) {
   const counts = Array.from({ length: pages }, (_, i) => i * perPage);
   const htmls = await Promise.all(counts.map((c) => get(`/f1/${leagueId}/players?count=${c}`)));
+  /* Rank is position in the list, not a column: the pages are requested in
+   * the league's own sort order, so row order is the ranking. */
   const byName = new Map();
   for (const html of htmls) {
     for (const p of parsePoolPage(html)) {
-      if (p.name && !byName.has(p.name)) byName.set(p.name, p);
+      if (p.name && !byName.has(p.name)) byName.set(p.name, { ...p, rank: byName.size + 1 });
     }
   }
-  return [...byName.values()].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
+  return [...byName.values()];
 }
