@@ -159,43 +159,43 @@ export function setInputValue(input, value) {
  * The row is bounded the same way abbreviated names are confirmed: stop
  * climbing before an ancestor that holds another player, or the "star" found
  * would belong to a neighbour. */
-export function findQueueStar(root, playerName, { player = null, maxAncestorDepth = 6 } = {}) {
+export function findQueueStar(root, playerName, { player = null } = {}) {
   const nameEl = findPlayerClickTarget(root, playerName, { player });
   if (!nameEl) return null;
 
-  const forms = [playerName, ...abbrevForms(playerName)];
-  const containsAnotherPlayer = (el) => {
-    const text = el.textContent || "";
-    return forms.some((form) => {
-      const re = new RegExp(`(?<!\\w)${escapeRegExp(form)}(?!\\w)`, "ig");
-      return (text.match(re) || []).length > 1;
-    });
-  };
+  /* Yahoo lays each player out as a table row: the star sits in the row's
+   * first cell and the name in the second, so anything scoped to the name's
+   * own cell — as this was — can never reach it. Climb to the row.
+   *
+   * Confirmed against a live draft room, 2026-09-04:
+   *   TD #1: svg[data-icon="star-unfilled"], one clickable
+   *   TD #2: "B. Bowers TE LV Bye 13"
+   */
+  const row = nameEl.closest?.("tr, [role='row']");
+  const scope = row || nameEl.parentElement;
+  if (!scope) return null;
 
-  let row = nameEl;
-  for (let d = 0; d < maxAncestorDepth && row.parentElement; d++) {
-    const parent = row.parentElement;
-    if (containsAnotherPlayer(parent) || (parent.textContent || "").length > 400) break;
-    row = parent;
+  const star = scope.querySelector('[data-icon*="star" i]');
+  if (star) {
+    // "star-unfilled" means not queued; a filled star is the remove control,
+    // and clicking it would take the player back out of the queue.
+    const icon = star.getAttribute("data-icon") || "";
+    if (!/unfilled/i.test(icon) && /filled/i.test(icon)) return null;
+    return star.closest(CLICKABLE_SELECTOR) || star.parentElement || null;
   }
 
-  const candidates = [...row.querySelectorAll(CLICKABLE_SELECTOR)].filter(
+  // Fallbacks for a layout that isn't the one above: something that says what
+  // it is, then a control in the row carrying no text of its own. Returns null
+  // rather than clicking anything it cannot identify.
+  const candidates = [...scope.querySelectorAll(CLICKABLE_SELECTOR)].filter(
     (el) => !isInsideOwnOverlay(el)
   );
-
-  // 1. Says what it is.
   for (const el of candidates) {
     const label = `${el.getAttribute("aria-label") || ""} ${el.getAttribute("title") || ""}`;
     if (/queue|watch ?list/i.test(label)) return el;
   }
-  // 2. Looks like a star.
   for (const el of candidates) {
-    if (el.querySelector('svg[data-icon*="star" i], [class*="star" i]')) return el;
-    if (/star/i.test(el.className || "")) return el;
-  }
-  // 3. A control in the row that isn't the player's own name — the star sits
-  //    in its own leading column, so it holds no name text.
-  for (const el of candidates) {
+    if (/star/i.test(el.getAttribute("class") || "")) return el;
     const text = (el.textContent || "").trim();
     if (!text && el !== nameEl && !el.contains(nameEl)) return el;
   }
