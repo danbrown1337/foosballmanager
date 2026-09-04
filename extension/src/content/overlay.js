@@ -783,23 +783,9 @@ async function main() {
     if (roomBusy) return noteQueueIdle("queue: waiting — a board update is using the search");
     lastQueueRunAt = Date.now();
 
-    /* Refresh the board first if it's been a few minutes: a shortlist built
-     * from a stale board is a list of players who are already gone, and the
-     * cycle below would spend itself discovering that one name at a time. */
-    if (Date.now() - lastBoardUpdateAt > 180000) {
-      noteQueueIdle("queue: refreshing the board first");
-      roomBusy = true;
-      try {
-        const out = await updateBoardFromRoom({ verify: false });
-        if (out.ok) {
-          addLog(`Board refreshed: ${out.result.seen} available, ${out.result.markedDrafted} newly drafted, ${out.result.freed} put back.`);
-        } else {
-          noteQueueIdle(`queue: couldn't refresh the board — ${out.reason}`);
-        }
-      } finally {
-        roomBusy = false;
-      }
-      return; // let the next cycle queue against the fresh board
+    if (Date.now() - lastBoardUpdateAt > BOARD_REFRESH_MS) {
+      noteQueueIdle("queue: waiting for the board refresh to finish");
+      return;
     }
 
     if (!boardNameSet) return noteQueueIdle("queue: waiting — the board hasn't loaded yet");
@@ -1092,6 +1078,31 @@ async function main() {
     return { scrolled: true, steps };
   }
 
+  /* Keep the board current regardless of what else is enabled. Detection
+   * only ever sees a pick if the name happens to be rendered when it looks,
+   * so a board left to it alone drifts within a round or two — and every
+   * recommendation after that is about players who are gone. This is the
+   * only thing that reads the room's actual state, so it shouldn't have been
+   * conditional on the queue being switched on. */
+  const BOARD_REFRESH_MS = 120000;
+  async function maybeRefreshBoard() {
+    if (roomBusy || detectionSuspended) return;
+    if (Date.now() - lastBoardUpdateAt < BOARD_REFRESH_MS) return;
+    if (turnBannerPresent()) return; // never scroll the list during your pick
+    roomBusy = true;
+    try {
+      const out = await updateBoardFromRoom({ verify: false });
+      if (out.ok) {
+        addLog(`Board refreshed: ${out.result.seen} available, ${out.result.markedDrafted} newly drafted, ${out.result.freed} put back.`);
+      }
+    } catch (err) {
+      if (isContextGone(err)) return handleDeadContext();
+      addLog(`Board refresh failed: ${String(err.message || err)}`);
+    } finally {
+      roomBusy = false;
+    }
+  }
+
   async function pollPage() {
     if (!polling || detectionSuspended) return;
 
@@ -1129,6 +1140,7 @@ async function main() {
       const text = document.body.innerText;
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
+      await maybeRefreshBoard();
       await maintainQueue(text);
       // Not the queue panel: a name we queued is not a name that was drafted.
       const detectText = withoutQueuePanel(text);
