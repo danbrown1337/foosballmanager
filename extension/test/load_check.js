@@ -227,57 +227,37 @@ async function main() {
     for (const e of roomErrors) console.error(`  ERROR: ${e}`);
   }
 
-  // Sync must walk the whole scrolling list. Reading only what is on screen
-  // was catching a fraction of the picks, which left the board recommending
-  // players drafted rounds earlier.
-  await roomPage.click("#fm-sync");
-  await roomPage.waitForTimeout(9000);
-  const syncLine = await roomPage.evaluate(() =>
-    [...document.querySelectorAll("#fm-log div")].map((d) => d.textContent).find((s) => /Synced/.test(s))
-  );
-  const syncedCount = Number((syncLine || "").match(/Synced (\d+)/)?.[1] || 0);
-  console.log(`\n--- sync sweep ---`);
-  console.log(`  ${syncLine}`);
-  // A single read sees at most a screenful, so anything approaching the full
-  // list proves the sweep scrolled and collected as it went.
-  if (syncedCount < 70 || !/across \d+ screens/.test(syncLine || "")) {
-    console.error(`FAIL: swept only ${syncedCount} of 100 rows — "${syncLine}"`);
-    failed = true;
-  }
+  /* One control now: read Yahoo's list, set the board to match, confirm the
+   * recommendation. The decisive assertion is repair — a board holding players
+   * as drafted who are in fact available cannot recover any other way, since
+   * detection only ever adds picks. So mark two available players "Taken" in
+   * the popup first, and require the update to put them back. */
+  const takenNames = await popupPage.evaluate(() => {
+    const btns = [...document.querySelectorAll("#rows button[data-rival]")].slice(0, 2);
+    btns.forEach((b) => b.click());
+    return btns.map((b) => decodeURIComponent(b.getAttribute("data-rival")));
+  });
+  await popupPage.waitForTimeout(800);
 
-  // Rebuild from the room's available list. The decisive part is repair: a
-  // board that has wrongly marked players drafted cannot recover any other
-  // way, since detection only ever adds picks.
-  await roomPage.click("#fm-rebuild");
-  await roomPage.waitForTimeout(11000);
-  const rebuildLine = await roomPage.evaluate(() =>
-    [...document.querySelectorAll("#fm-log div")].map((d) => d.textContent).find((s) => /Rebuilt from Yahoo/.test(s))
+  await roomPage.click("#fm-update");
+  await roomPage.waitForTimeout(16000);
+  const updateLine = await roomPage.evaluate(() =>
+    [...document.querySelectorAll("#fm-log div")].map((d) => d.textContent).find((s) => /Board updated/.test(s))
   );
-  const stillAvailable = Number((rebuildLine || "").match(/(\d+) still available/)?.[1] || 0);
-  const putBack = Number((rebuildLine || "").match(/(\d+) put back/)?.[1] || -1);
-  console.log(`\n--- rebuild from the room's list ---`);
-  console.log(`  ${rebuildLine}`);
-  // The sync above marked those same players drafted; the rebuild must undo
-  // that, which is the whole point of it.
-  if (stillAvailable < 70 || putBack <= 0) {
-    console.error(`FAIL: rebuild didn't repair the board — "${rebuildLine}"`);
-    failed = true;
-  }
-
-  // Every helper the panel imports must actually be bound: these are
-  // destructured from dynamic imports, so a name added to the declaration but
-  // missed in the assignment stays undefined and fails only when a draft is
-  // live. Clicking the verify button exercises that whole path.
-  await roomPage.click("#fm-verify");
-  await roomPage.waitForTimeout(4000);
-  const verifyErr = await roomPage.evaluate(() => {
+  const available = Number((updateLine || "").match(/(\d+) available/)?.[1] || 0);
+  const putBack = Number((updateLine || "").match(/(\d+) put back/)?.[1] || 0);
+  const updateErr = await roomPage.evaluate(() => {
     const e = document.getElementById("fm-err");
     return e && !e.hidden ? e.textContent : null;
   });
-  console.log(`\n--- verify button ---`);
-  console.log(`  error box: ${verifyErr || "empty"}`);
-  if (verifyErr) {
-    console.error("FAIL: verifying the recommendation raised an error.");
+  console.log(`\n--- update board from Yahoo ---`);
+  console.log(`  marked taken first: ${takenNames.join(", ") || "(none)"}`);
+  console.log(`  ${updateLine}`);
+  console.log(`  error box: ${updateErr || "empty"}`);
+  // Anything approaching the full list proves it scrolled rather than reading
+  // the one screenful the room renders.
+  if (available < 70 || putBack < 1 || updateErr) {
+    console.error(`FAIL: update didn't sweep and repair — "${updateLine}"`);
     failed = true;
   }
 

@@ -83,18 +83,12 @@ function buildPanel() {
                  background: #1d4ed8; color: #fff; font-weight: 600; cursor: pointer;
                  font: inherit; margin-bottom: 8px; }
       #fm-take:disabled { opacity: .5; cursor: default; }
-      #fm-sync.stale { border-color: #f59e0b; color: #fbbf24; }
+      #fm-update.stale { border-color: #f59e0b; color: #fbbf24; }
       #fm-reset { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
                   background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                   cursor: pointer; margin-bottom: 8px; }
       #fm-reset.armed { border-color: #b91c1c; color: #fca5a5; }
-      #fm-rebuild { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
-                    background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
-                    cursor: pointer; margin-bottom: 8px; }
-      #fm-verify { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
-                   background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
-                   cursor: pointer; margin-bottom: 8px; }
-      #fm-sync { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
+      #fm-update { width: 100%; padding: 6px; border: 1px solid #2a2f38; border-radius: 6px;
                  background: #1e222a; color: #9aa1ab; font: inherit; font-size: 11px;
                  cursor: pointer; margin-bottom: 8px; }
       #fm-log { font-size: 11px; color: #9aa1ab; max-height: 70px; overflow-y: auto;
@@ -136,10 +130,8 @@ function buildPanel() {
       <div id="fm-rec-name">Loading…</div>
       <div id="fm-rec-why"></div>
       <button id="fm-take" disabled>I drafted this player</button>
-      <button id="fm-sync">Sync picks already made</button>
+      <button id="fm-update">Update board from Yahoo</button>
       <button id="fm-reset">New draft — clear picks</button>
-      <button id="fm-verify">Check this pick is still available</button>
-      <button id="fm-rebuild">Rebuild board from Yahoo's list</button>
       <div id="fm-log"></div>
       <div id="fm-status">
         watching page (opponent picks + auto-draft) —
@@ -210,7 +202,7 @@ async function main() {
   const autoWarn = root.querySelector("#fm-auto-warn");
   const deadBox = root.querySelector("#fm-dead");
   const practiceBox = root.querySelector("#fm-practice");
-  const syncBtn = root.querySelector("#fm-sync");
+  const updateBtn = root.querySelector("#fm-update");
   /* Which build is actually running. Reloading the extension without
    * reloading the page leaves an old content script in place, and a stale
    * panel is indistinguishable from a current one until something it should
@@ -223,9 +215,7 @@ async function main() {
   const shapeBox = root.querySelector("#fm-shape");
   const practiceToggle = root.querySelector("#fm-practice-toggle");
   const resetBtn = root.querySelector("#fm-reset");
-  const verifyBtn = root.querySelector("#fm-verify");
   const queueBox = root.querySelector("#fm-queue-enable");
-  const rebuildBtn = root.querySelector("#fm-rebuild");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -514,7 +504,7 @@ async function main() {
       turnActive = false;
       turnHandled = false;
       turnConfidence = 0;
-      syncBtn.classList.remove("stale");
+      updateBtn.classList.remove("stale");
       render(snapshot);
       addLog("Board cleared — starting from an empty draft.");
     } catch (err) {
@@ -585,44 +575,6 @@ async function main() {
     }
     return { snapshot: null, name: null, el: null, searchBox, skipped, exhausted: true };
   }
-
-  /* On demand, without waiting for a turn: the recommendation is worth
-   * nothing if the player went three rounds ago, and off-screen picks are
-   * invisible until something goes looking. */
-  verifyBtn.addEventListener("click", async () => {
-    if (verifyBtn.disabled) return;
-    verifyBtn.disabled = true;
-    const label = verifyBtn.textContent;
-    verifyBtn.textContent = "Checking the room…";
-    try {
-      // More attempts here than at a turn: this runs off the clock, and when
-      // the board is well behind, a handful of skips isn't enough to reach a
-      // player who is genuinely still there.
-      const resolved = await resolveAvailableRecommendation(10);
-      await closeSearch(resolved.searchBox);
-      if (resolved.el) {
-        addLog(resolved.skipped > 0
-          ? `${resolved.name} is available — skipped ${resolved.skipped} already drafted.`
-          : `${resolved.name} is still available.`);
-      } else if (resolved.exhausted) {
-        addLog(`Skipped ${resolved.skipped} drafted players and still couldn't find one in the room — try Sync from the Results view.`);
-      } else {
-        addLog("No recommendation to check yet.");
-      }
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
-      render(snapshot);
-    } catch (err) {
-      if (detectionSuspended) {
-        detectionSuspended = false;
-        previousBoardNames = null;
-      }
-      if (isContextGone(err)) return handleDeadContext();
-      showError(String(err.message || err));
-    } finally {
-      verifyBtn.disabled = false;
-      verifyBtn.textContent = label;
-    }
-  });
 
   Storage.getQueueEnabled().then((on) => { queueEnabled = on; queueBox.checked = on; });
   queueBox.addEventListener("change", async () => {
@@ -721,12 +673,20 @@ async function main() {
    * own state — and repairs a board that has drifted, which nothing else here
    * can do: detection only ever adds picks, so once a player is wrongly
    * marked drafted he never comes back. */
+
+  /* One action rather than three. Sync, rebuild and verify were three ways of
+   * answering "what does this room actually know", and the differences between
+   * them were ours, not the user's — with the worst of it being that Sync read
+   * the same list as picks rather than as availability, and so could mark a
+   * hundred available players drafted.
+   *
+   * Read the list, set the board to match it, then confirm the recommendation
+   * that comes out is a player the room can still produce. */
   const MIN_ROWS_TO_TRUST = 60;
-  rebuildBtn.addEventListener("click", async () => {
-    if (rebuildBtn.disabled) return;
-    rebuildBtn.disabled = true;
-    const label = rebuildBtn.textContent;
-    rebuildBtn.textContent = "Reading Yahoo's list…";
+  updateBtn.addEventListener("click", async () => {
+    if (updateBtn.disabled) return;
+    updateBtn.disabled = true;
+    const label = updateBtn.textContent;
     try {
       const searchBox = findPlayerSearchBox(document.body);
       if (searchBox && searchBox.value) {
@@ -735,7 +695,7 @@ async function main() {
       }
       const scroller = findListScroller(document.body);
       if (!scroller) {
-        addLog("Couldn't find the player list to read — open the Players tab.");
+        addLog("Couldn't find the player list — open the Players tab and try again.");
         return;
       }
       if (!boardNameSet) {
@@ -744,10 +704,11 @@ async function main() {
         boardPlayers = snap.board;
       }
 
+      updateBtn.textContent = "Reading Yahoo's list…";
       const seen = new Set();
       detectionSuspended = true;
-      // Only the list itself: the page also shows the last pick and your own
-      // roster, and neither is a list of who's available.
+      // The list element only: the page also shows the last pick and your own
+      // roster, and neither is a list of who is available.
       await sweepList(() => {
         for (const name of findBoardNames(scroller.innerText, boardNameSet, boardPlayers)) {
           seen.add(name);
@@ -761,7 +722,19 @@ async function main() {
         return;
       }
       const result = await sendMessage({ type: "REPAIR_BOARD", names: [...seen] });
-      addLog(`Rebuilt from Yahoo: ${result.seen} still available, ${result.markedDrafted} marked drafted, ${result.freed} put back.`);
+      addLog(`Board updated: ${result.seen} available, ${result.markedDrafted} newly drafted, ${result.freed} put back.`);
+      updateBtn.classList.remove("stale");
+
+      updateBtn.textContent = "Checking the pick…";
+      const resolved = await resolveAvailableRecommendation(10);
+      await closeSearch(resolved.searchBox);
+      if (resolved.el) {
+        addLog(resolved.skipped > 0
+          ? `Recommending ${resolved.name} — skipped ${resolved.skipped} already gone.`
+          : `Recommending ${resolved.name}.`);
+      } else if (resolved.exhausted) {
+        addLog("Couldn't find any of the top picks in this room — the list may be filtered.");
+      }
       await refresh();
     } catch (err) {
       if (detectionSuspended) {
@@ -771,8 +744,8 @@ async function main() {
       if (isContextGone(err)) return handleDeadContext();
       showError(String(err.message || err));
     } finally {
-      rebuildBtn.disabled = false;
-      rebuildBtn.textContent = label;
+      updateBtn.disabled = false;
+      updateBtn.textContent = label;
     }
   });
 
@@ -813,37 +786,6 @@ async function main() {
     return { scrolled: true, steps };
   }
 
-  syncBtn.addEventListener("click", async () => {
-    try {
-      const text = document.body.innerText;
-      if (!boardNameSet) {
-        const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
-        boardNameSet = new Set(snapshot.board.map((p) => p.name));
-        boardPlayers = snapshot.board;
-      }
-      const mineNames = findMyTeamNames(text, boardNameSet, boardPlayers);
-      const seen = new Set();
-      detectionSuspended = true; // scrolling changes the page under the detector
-      const swept = await sweepList((pageText) => {
-        for (const name of findBoardNames(pageText, boardNameSet, boardPlayers)) seen.add(name);
-      });
-      detectionSuspended = false;
-
-      const rivals = [...seen].filter((n) => !mineNames.has(n));
-      await importMyTeam(text);
-      if (rivals.length > 0) {
-        await sendMessage({ type: "IMPORT_PICKS", names: rivals, by: "rival" });
-      }
-      addLog(`Synced ${rivals.length} pick(s)${swept.scrolled ? ` across ${swept.steps} screens` : " (list didn't scroll)"}.`);
-      syncBtn.classList.remove("stale");
-      previousBoardNames = null; // this page is the new baseline
-      await refresh();
-    } catch (err) {
-      if (isContextGone(err)) return handleDeadContext();
-      showError(String(err.message || err));
-    }
-  });
-
   async function pollPage() {
     if (!polling || detectionSuspended) return;
 
@@ -857,7 +799,7 @@ async function main() {
     lastPollAt = now;
     if (gap > POLL_INTERVAL_MS * 3) {
       addLog(`Stopped watching for ${Math.round(gap / 1000)}s (tab was in the background?) — picks may have been missed. Re-sync.`);
-      syncBtn.classList.add("stale");
+      updateBtn.classList.add("stale");
     }
 
     try {
