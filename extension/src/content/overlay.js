@@ -570,7 +570,8 @@ async function main() {
         return;
       }
 
-      const playerEl = findPlayerClickTarget(document.body, currentRecName);
+      const recRowMeta = (boardPlayers || []).find((p) => p.name === currentRecName) || null;
+      const playerEl = findPlayerClickTarget(document.body, currentRecName, { player: recRowMeta });
       if (!playerEl) {
         addLog(`Your turn detected but couldn't find "${currentRecName}" on the page — draft it manually.`);
         turnHandled = true;
@@ -598,7 +599,11 @@ async function main() {
         clickElement(confirmEl);
         addLog(`Auto-drafted ${currentRecName}.`);
       } else {
-        addLog(`Selected ${currentRecName} but couldn't find a Confirm/Draft button — finish the pick manually.`);
+        const offered = [...document.querySelectorAll("button,[role=button]")]
+          .map((el) => (el.textContent || "").trim())
+          .filter((s) => s && s.length <= 24)
+          .slice(0, 6);
+        addLog(`Selected ${currentRecName} but no Confirm/Draft button matched — finish manually. Buttons here: ${offered.join(" | ") || "none"}`);
       }
     } catch (err) {
       if (isContextGone(err)) return handleDeadContext();
