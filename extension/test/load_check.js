@@ -34,10 +34,42 @@ const IS_BRANDED_CHROME = /google-chrome|chrome-stable|Google Chrome/i.test(CHRO
 // A synthetic draft room. The content script is text-driven and never reads
 // Yahoo's DOM structure, so a plain page with a turn phrase and a few board
 // names exercises the same paths the real room would — no account, no network.
+const ADP = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "data", "adp_2026_ppr.json"), "utf8")
+);
+// Abbreviated exactly as the room writes them, with position and team so the
+// matcher can settle any that share an initial and surname.
+const SWEEP_NAMES = ADP.slice(0, 60).map((p) => {
+  const [first, ...rest] = p.name.split(" ");
+  return `${first[0]}. ${rest.join(" ")} ${p.pos} \u00b7 ${p.team}`;
+});
+
+/* Virtualised for real: rows are created only for the current scroll offset
+ * and destroyed as they leave, exactly as the draft room does it. A single
+ * read of this page can never see more than a screenful, so a sweep that
+ * merely reads innerText once cannot pass. */
 const FAKE_ROOM = `<html><body>
   <h1>Mock Draft Room</h1>
   <p>You're on the clock!</p>
   <div>Ja'Marr Chase</div><div>Bijan Robinson</div><div>CeeDee Lamb</div>
+  <div id="scroller" style="height:120px;overflow-y:auto">
+    <div id="spacer" style="height:1200px;position:relative">
+      <ul id="window" style="margin:0;position:absolute;left:0;right:0"></ul>
+    </div>
+  </div>
+  <script>
+    const ROWS = ${JSON.stringify(SWEEP_NAMES)};
+    const sc = document.getElementById("scroller");
+    const win = document.getElementById("window");
+    function renderWindow() {
+      const start = Math.max(0, Math.floor(sc.scrollTop / 20));
+      win.style.top = (start * 20) + "px";
+      win.innerHTML = ROWS.slice(start, start + 7)
+        .map((r) => '<li style="height:20px">' + r + "</li>").join("");
+    }
+    sc.addEventListener("scroll", renderWindow);
+    renderWindow();
+  </script>
 </body></html>`;
 
 async function main() {
@@ -193,6 +225,24 @@ async function main() {
   if (roomErrors.length > 0) {
     failed = true;
     for (const e of roomErrors) console.error(`  ERROR: ${e}`);
+  }
+
+  // Sync must walk the whole scrolling list. Reading only what is on screen
+  // was catching a fraction of the picks, which left the board recommending
+  // players drafted rounds earlier.
+  await roomPage.click("#fm-sync");
+  await roomPage.waitForTimeout(9000);
+  const syncLine = await roomPage.evaluate(() =>
+    [...document.querySelectorAll("#fm-log div")].map((d) => d.textContent).find((s) => /Synced/.test(s))
+  );
+  const syncedCount = Number((syncLine || "").match(/Synced (\d+)/)?.[1] || 0);
+  console.log(`\n--- sync sweep ---`);
+  console.log(`  ${syncLine}`);
+  // A single read sees at most a screenful, so anything approaching the full
+  // list proves the sweep scrolled and collected as it went.
+  if (syncedCount < 40 || !/across \d+ screens/.test(syncLine || "")) {
+    console.error(`FAIL: swept only ${syncedCount} of 60 rows — "${syncLine}"`);
+    failed = true;
   }
 
   // Every helper the panel imports must actually be bound: these are
