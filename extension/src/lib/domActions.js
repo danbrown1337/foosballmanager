@@ -261,6 +261,27 @@ export function findDraftButton(root, playerName, { player = null } = {}) {
   return null;
 }
 
+/* Is this player shown as unavailable on the page itself?
+ *
+ * Designations come from the imported pool, and a board imported before that
+ * existed — or never imported at all — carries none. The room prints the tag
+ * on the row regardless, so read it there too: an NA player reached the queue
+ * of a live draft because the board it came from had no statuses in it. */
+const OUT_TAGS = /(?<!\w)(IR|IR-R|PUP-R|NFI-R|SUSP|NA)(?!\w)/i;
+
+export function looksUnavailableOnPage(root, playerName) {
+  const doc = root.ownerDocument || root;
+  const forms = [playerName, ...abbrevForms(playerName)];
+  const res = forms.map((f) => new RegExp(`(?<!\\w)${escapeRegExp(f)}(?!\\w)`, "i"));
+  for (const row of doc.querySelectorAll("tr, [role='row']")) {
+    const text = row.textContent || "";
+    if (text.length > 400) continue;
+    if (!res.some((re) => re.test(text))) continue;
+    return OUT_TAGS.test(text);
+  }
+  return false;
+}
+
 /* The control that takes a player back out of the room's queue.
  *
  * Queued players are pulled out of the available list, so their row — and its

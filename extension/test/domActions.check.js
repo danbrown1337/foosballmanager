@@ -82,6 +82,11 @@ const PAGE_HTML = `<!doctype html><html><body>
       <td><span>D. Achane</span> <span>RB</span> <span>Mia</span> <span>Bye 6</span></td>
       <td>15.3</td>
     </tr>
+    <tr id="row-inactive">
+      <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
+      <td><span>J. Reed</span> <span>NA</span> <span>WR</span> <span>Car</span></td>
+      <td>-</td>
+    </tr>
     <tr id="row-queued">
       <td><button class="star-btn"><svg data-icon="star-filled"></svg></button></td>
       <td><span>P. Nacua</span> <span>WR</span> <span>LAR</span> <span>Bye 11</span></td>
@@ -140,7 +145,7 @@ const PROBE_CONTENT_SRC = `
 const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
   findPlayerSearchBox, setInputValue, surnameOf, findQueueStar,
-  findDraftButton, findQueueRemove } from "../src/lib/domActions.js";
+  findDraftButton, findQueueRemove, looksUnavailableOnPage } from "../src/lib/domActions.js";
 import { parsePoolPage } from "../src/lib/yahooPool.js";
 
 export async function run(document) {
@@ -294,6 +299,11 @@ export async function run(document) {
     : false;
   results.removeMissing = findQueueRemove(document.body, "Travis Kelce") === null;
 
+  // The room prints the designation on the row; trust it even when our board
+  // has no status data at all.
+  results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
+  results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
+
   return results;
 }
 `;
@@ -411,6 +421,8 @@ async function main() {
       ["finds the remove control in the queue panel", result.removeClass === "q-remove"],
       ["and it belongs to that player's entry", result.removeIsRightEntry === true],
       ["returns nothing for a player who isn't queued", result.removeMissing === true],
+      ["reads an out designation off the row itself", result.naOnPage === true],
+      ["and doesn't flag a healthy player", result.fitOnPage === false],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);

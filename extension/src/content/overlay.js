@@ -179,7 +179,7 @@ async function main() {
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
-    findQueueRemove;
+    findQueueRemove, looksUnavailableOnPage;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn } =
@@ -189,7 +189,8 @@ async function main() {
   ({ isMyTurn, looksLikeAFutureTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
-     findListScroller, findQueueStar, findDraftButton, findQueueRemove } =
+     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
+     looksUnavailableOnPage } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
@@ -917,6 +918,12 @@ async function main() {
           // recommendation resolver uses. Doesn't count against the budget.
           await sendMessage({ type: "IMPORT_PICKS", names: [pick.name], by: "rival" });
           addLog(`${pick.name} isn't in the room — marking drafted.`);
+          continue;
+        }
+        if (looksUnavailableOnPage(document.body, pick.name)) {
+          // The room says he isn't playing, whatever our board thinks.
+          tried.add(pick.name);
+          noteQueueIdle(`queue: ${pick.name} is listed out — skipping him`);
           continue;
         }
         const star = findQueueStar(document.body, pick.name, { player: meta });
