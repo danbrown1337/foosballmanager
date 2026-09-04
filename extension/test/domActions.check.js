@@ -211,7 +211,9 @@ export async function run(document) {
     '<a href="/nfl/players/1">' + name + '</a>' +
     '<span class="Fz-xxs">' + team + ' - ' + pos + '</span></div></td>' +
     '<td>FA</td><td>17</td><td>' + bye + '</td><td>' + proj + '</td><td>' + rank + '</td></tr>';
-  const poolHtml = '<table><tbody>' +
+  const poolHead = '<thead><tr><th></th><th></th><th>Offense</th><th>Roster Status</th>' +
+    '<th>GP*</th><th>Bye</th><th>Proj</th><th>Rank</th></tr></thead>';
+  const poolHtml = '<table>' + poolHead + '<tbody>' +
     poolRow("Amon-Ra St. Brown", "Det", "WR", 6, 324, 7) +
     poolRow("A.J. Brown", "Phi", "WR", 9, 220.3, 23) +
     poolRow("Bijan Robinson", "Atl", "RB", 11, 370.8, 2) +
@@ -220,6 +222,12 @@ export async function run(document) {
   const pool = parsePoolPage(poolHtml);
   results.poolCount = pool.length;
   results.poolHyphenated = pool.find((p) => p.name === "Amon-Ra St. Brown") || null;
+  // A stat cell must never be mistaken for a bye week.
+  const statRow = '<tr><td></td><td></td><td><div class="ysf-player-name">' +
+    '<a href="/nfl/players/9">Jalen Hurts</a><span class="Fz-xxs">Phi - QB</span></div></td>' +
+    '<td>FA</td><td>16</td><td>9</td><td>307.04</td><td>2055</td><td>3425</td></tr>';
+  const statPool = parsePoolPage('<table>' + poolHead + '<tbody>' + statRow + '</tbody></table>');
+  results.statBye = statPool[0]?.bye;
   results.poolInitials = pool.find((p) => p.name === "A.J. Brown") || null;
   results.poolRobinsons = pool.filter((p) => /Robinson/.test(p.name)).map((p) => p.name + "/" + p.team);
 
@@ -338,7 +346,8 @@ async function main() {
       ["handles initials with periods", result.poolInitials?.team === "PHI"],
       ["separates the two Robinsons by their real teams",
         JSON.stringify(result.poolRobinsons) === JSON.stringify(["Bijan Robinson/ATL", "Brian Robinson/SF"])],
-      ["carries bye week and rank", result.poolHyphenated?.bye === 6 && result.poolHyphenated?.rank === 7],
+      ["carries the bye week", result.poolHyphenated?.bye === 6],
+      ["never reads a stat column as a bye week", result.statBye === 9],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);

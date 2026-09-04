@@ -532,6 +532,23 @@ async function main() {
    * the caller must clear it. Polls for the row rather than waiting a fixed
    * interval, because a fixed wait turns a slow search into a false "not
    * there", and a false "not there" now means marking a player drafted. */
+  /* The page text with the player list and queue panel removed, for deciding
+   * whether it is actually your turn.
+   *
+   * The list carries a divider row reading "YOUR TURN - 22ND PICK", marking
+   * where your next pick lands in the rankings. It is there permanently, and
+   * the turn phrases match it — so the panel believed it was your turn for an
+   * entire draft, which blocked queue maintenance on every cycle and produced
+   * turn actions between other managers' picks. The real banner lives outside
+   * the list. */
+  function textForTurn() {
+    let text = document.body.innerText;
+    const scroller = findListScroller(document.body);
+    const listText = scroller?.innerText || "";
+    if (listText.length > 40) text = text.split(listText).join(" ");
+    return withoutQueuePanel(text);
+  }
+
   const countNames = () =>
     (document.body.innerText.match(/(?<!\w)[A-Z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/g) || []).length;
 
@@ -682,7 +699,9 @@ async function main() {
      * so each one says its own name, once a minute. */
     if (detectionSuspended) return noteQueueIdle("queue: waiting — the page is being swept");
     if (Date.now() - lastQueueRunAt < 15000) return;
-    if (isMyTurn(text, turnPhrases)) return noteQueueIdle("queue: waiting — it's your turn");
+    if (isMyTurn(textForTurn(), turnPhrases)) {
+      return noteQueueIdle("queue: waiting — it's your turn");
+    }
     if (roomBusy) return noteQueueIdle("queue: waiting — a board update is using the search");
     lastQueueRunAt = Date.now();
 
@@ -1040,8 +1059,7 @@ async function main() {
     // unattended, not two controls that could be confused for each other.
     if (!autoEnableBox.checked || !polling) return;
     try {
-      const text = document.body.innerText;
-      const active = isMyTurn(text, turnPhrases);
+      const active = isMyTurn(textForTurn(), turnPhrases);
 
       if (!active) {
         turnActive = false;
