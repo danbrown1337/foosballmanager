@@ -404,3 +404,27 @@ describe("draft position", () => {
     assert.deepEqual(teamCountBounds({ round: 2, pick: 15 }), { min: 8, max: 14 });
   });
 });
+
+describe("defences", () => {
+  const board = new Set(["Houston Defense", "Seattle Defense", "Jahmyr Gibbs"]);
+  const players = [
+    { name: "Houston Defense", pos: "DEF", team: "HOU" },
+    { name: "Seattle Defense", pos: "DEF", team: "SEA" },
+    { name: "Jahmyr Gibbs", pos: "RB", team: "DET" },
+  ];
+
+  test("matches a defence the room calls by its nickname", () => {
+    // The bundled board says "Houston Defense"; the room says "Texans".
+    // Nothing in the two strings overlaps, so this has to go through the team.
+    const found = findBoardNames("DEF Texans DEF Hou Bye 8", board, players);
+    assert.equal(found.has("Houston Defense"), true);
+  });
+
+  test("doesn't match a different team's defence", () => {
+    assert.equal(findBoardNames("Texans DEF Hou", board, players).has("Seattle Defense"), false);
+  });
+
+  test("leaves ordinary players to the usual matching", () => {
+    assert.equal(findBoardNames("J. Gibbs RB Det", board, players).has("Jahmyr Gibbs"), true);
+  });
+});

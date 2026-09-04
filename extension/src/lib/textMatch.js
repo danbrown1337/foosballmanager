@@ -30,6 +30,31 @@ import { normalizePos } from "../engine/board.js";
  * resolve to nothing rather than to a guess: a missed pick leaves the board
  * one name stale, while a wrong one credits a rival with a player who is
  * still sitting there to be drafted. */
+/* Defences are named three different ways for the same team: the bundled
+ * board says "Houston Defense", Yahoo's list says "Texans", and a draft room
+ * row says "Texans DEF Hou". None of them share a surname, so the
+ * initial-and-surname matching every other player relies on cannot connect
+ * them — a rostered defence went unrecognised, and the engine went on
+ * recommending another one.
+ *
+ * Matching on the team instead: a defence is identified by its team, and both
+ * the nickname and the abbreviation appear on the row. */
+const TEAM_NICKNAMES = {
+  ARI: "Cardinals", ATL: "Falcons", BAL: "Ravens", BUF: "Bills", CAR: "Panthers",
+  CHI: "Bears", CIN: "Bengals", CLE: "Browns", DAL: "Cowboys", DEN: "Broncos",
+  DET: "Lions", GB: "Packers", HOU: "Texans", IND: "Colts", JAX: "Jaguars",
+  KC: "Chiefs", LV: "Raiders", LAC: "Chargers", LAR: "Rams", MIA: "Dolphins",
+  MIN: "Vikings", NE: "Patriots", NO: "Saints", NYG: "Giants", NYJ: "Jets",
+  PHI: "Eagles", PIT: "Steelers", SF: "49ers", SEA: "Seahawks", TB: "Buccaneers",
+  TEN: "Titans", WAS: "Commanders",
+};
+
+export function defenceAliases(player) {
+  const team = (player?.team || "").toUpperCase();
+  const nickname = TEAM_NICKNAMES[team];
+  return nickname ? [nickname] : [];
+}
+
 function abbrevKey(name) {
   const parts = name.trim().split(/\s+/);
   if (parts.length < 2) return null;
@@ -50,6 +75,19 @@ export function findBoardNames(text, boardNames, players = null, ambiguous = nul
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const re = new RegExp(`(?<!\\w)${escaped}(?!\\w)`);
     if (re.test(text)) found.add(name);
+  }
+
+  /* Defences first, by team nickname: they have no surname to abbreviate. */
+  if (players) {
+    for (const player of players) {
+      if (player.pos !== "DEF" || !boardNames.has(player.name)) continue;
+      for (const alias of defenceAliases(player)) {
+        if (new RegExp(`(?<!\\w)${alias}(?!\\w)`, "i").test(text)) {
+          found.add(player.name);
+          break;
+        }
+      }
+    }
   }
 
   // Second pass: initial-plus-surname, as the draft room actually writes it.

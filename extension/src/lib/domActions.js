@@ -17,6 +17,19 @@
  * DOM — a real page in a browser test, or a synthetic fixture.
  */
 
+/* Kept alongside textMatch's copy deliberately: this module is loaded on its
+ * own by the click paths, and a defence that cannot be found is a slot that
+ * cannot be filled. */
+const DEFENCE_NICKNAMES = {
+  ARI: "Cardinals", ATL: "Falcons", BAL: "Ravens", BUF: "Bills", CAR: "Panthers",
+  CHI: "Bears", CIN: "Bengals", CLE: "Browns", DAL: "Cowboys", DEN: "Broncos",
+  DET: "Lions", GB: "Packers", HOU: "Texans", IND: "Colts", JAX: "Jaguars",
+  KC: "Chiefs", LV: "Raiders", LAC: "Chargers", LAR: "Rams", MIA: "Dolphins",
+  MIN: "Vikings", NE: "Patriots", NO: "Saints", NYG: "Giants", NYJ: "Jets",
+  PHI: "Eagles", PIT: "Steelers", SF: "49ers", SEA: "Seahawks", TB: "Buccaneers",
+  TEN: "Titans", WAS: "Commanders",
+};
+
 const CLICKABLE_SELECTOR = 'button, a, [role="button"], input[type="submit"], [onclick]';
 
 function escapeRegExp(s) {
@@ -61,6 +74,12 @@ function abbrevForms(name) {
 
 export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, player = null } = {}) {
   const doc = root.ownerDocument || root;
+  /* A defence's row says "Texans", never "Houston Defense", so the name we
+   * hold cannot be found on the page at all. Search for the nickname instead;
+   * the team already identifies it uniquely. */
+  if (player?.pos === "DEF" && player.team && DEFENCE_NICKNAMES[player.team.toUpperCase()]) {
+    playerName = DEFENCE_NICKNAMES[player.team.toUpperCase()];
+  }
   const re = new RegExp(`(?<!\\w)${escapeRegExp(playerName)}(?!\\w)`);
   const abbrevRes = abbrevForms(playerName).map(
     (form) => new RegExp(`(?<!\\w)${escapeRegExp(form)}(?!\\w)`, "i")
