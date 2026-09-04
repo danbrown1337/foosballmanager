@@ -179,7 +179,7 @@ async function main() {
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
-    findQueueRemove, looksUnavailableOnPage;
+    findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn } =
@@ -190,7 +190,7 @@ async function main() {
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-     looksUnavailableOnPage } =
+     looksUnavailableOnPage, rowShowsNoAdp } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   const root = buildPanel();
@@ -918,6 +918,12 @@ async function main() {
           // recommendation resolver uses. Doesn't count against the budget.
           await sendMessage({ type: "IMPORT_PICKS", names: [pick.name], by: "rival" });
           addLog(`${pick.name} isn't in the room — marking drafted.`);
+          continue;
+        }
+        if (rowShowsNoAdp(document.body, pick.name)) {
+          // Nobody in the league drafts him; a queued pick would be wasted.
+          tried.add(pick.name);
+          noteQueueIdle(`queue: ${pick.name} has no ADP in this room — skipping him`);
           continue;
         }
         if (looksUnavailableOnPage(document.body, pick.name)) {

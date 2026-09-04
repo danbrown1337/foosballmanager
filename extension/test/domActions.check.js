@@ -71,7 +71,7 @@ const PAGE_HTML = `<!doctype html><html><body>
     <div class="q-entry"><button class="q-remove"><svg data-icon="star-filled"></svg></button>
       <span>M. Lloyd</span> <span>RB</span> <span>GB</span></div>
   </div>
-  <table id="board-table"><tbody>
+  <table id="board-table"><thead><tr><th></th><th>Player</th><th>ADP</th></tr></thead><tbody>
     <tr id="row-kelce">
       <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
       <td><span>T. Kelce</span> <span>TE</span> <span>KC</span> <span>Bye 5</span></td>
@@ -145,7 +145,8 @@ const PROBE_CONTENT_SRC = `
 const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
   findPlayerSearchBox, setInputValue, surnameOf, findQueueStar,
-  findDraftButton, findQueueRemove, looksUnavailableOnPage } from "../src/lib/domActions.js";
+  findDraftButton, findQueueRemove, looksUnavailableOnPage,
+  rowShowsNoAdp } from "../src/lib/domActions.js";
 import { parsePoolPage } from "../src/lib/yahooPool.js";
 
 export async function run(document) {
@@ -301,6 +302,10 @@ export async function run(document) {
 
   // The room prints the designation on the row; trust it even when our board
   // has no status data at all.
+  // The inactive row's ADP cell is "-", the draftable ones carry numbers.
+  results.noAdpRow = rowShowsNoAdp(document.body, "Jayden Reed");
+  results.hasAdpRow = rowShowsNoAdp(document.body, "De'Von Achane");
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
 
@@ -422,6 +427,8 @@ async function main() {
       ["and it belongs to that player's entry", result.removeIsRightEntry === true],
       ["returns nothing for a player who isn't queued", result.removeMissing === true],
       ["reads an out designation off the row itself", result.naOnPage === true],
+      ["spots a row whose ADP column is a dash", result.noAdpRow === true],
+      ["and leaves a row with a real ADP alone", result.hasAdpRow === false],
       ["and doesn't flag a healthy player", result.fitOnPage === false],
     ];
     for (const [label, ok] of checks) {
