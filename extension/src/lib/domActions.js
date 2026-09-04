@@ -282,6 +282,34 @@ export function looksUnavailableOnPage(root, playerName) {
   return false;
 }
 
+/* Does the room show this player with no average draft position?
+ *
+ * The draft room has an ADP column even though the league player list does
+ * not, so this is the one place the number can be read reliably. Yahoo prints
+ * "-" for a player nobody drafts anywhere; queueing one spends a pick on a
+ * name that never appears on another roster in the league. */
+export function rowShowsNoAdp(root, playerName) {
+  const doc = root.ownerDocument || root;
+  const forms = [playerName, ...abbrevForms(playerName)];
+  const res = forms.map((f) => new RegExp(`(?<!\\w)${escapeRegExp(f)}(?!\\w)`, "i"));
+
+  for (const table of doc.querySelectorAll("table")) {
+    const headerRows = [...table.querySelectorAll("thead tr")];
+    const headers = headerRows.length ? [...headerRows[headerRows.length - 1].children] : [];
+    const adpCol = headers.findIndex((th) => /^adp$/i.test((th.textContent || "").trim()));
+    if (adpCol < 0) continue;
+
+    for (const row of table.querySelectorAll("tbody tr")) {
+      const text = row.textContent || "";
+      if (text.length > 400) continue;
+      if (!res.some((re) => re.test(text))) continue;
+      const cell = (row.children[adpCol]?.textContent || "").trim();
+      return cell === "-" || cell === "" || cell === "\u2014";
+    }
+  }
+  return false;
+}
+
 /* The control that takes a player back out of the room's queue.
  *
  * Queued players are pulled out of the available list, so their row — and its
