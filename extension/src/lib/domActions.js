@@ -202,6 +202,28 @@ export function findQueueStar(root, playerName, { player = null } = {}) {
   return null;
 }
 
+/* The room's own Draft button on a player's row.
+ *
+ * When it is your turn the list's first column becomes a Draft button per
+ * row, and pressing it submits the pick immediately — there is no confirm
+ * step in this room. So this is the irreversible control, and it is found the
+ * same careful way as the queue star: scoped to that player's row, and null
+ * rather than a guess. */
+export function findDraftButton(root, playerName, { player = null } = {}) {
+  const nameEl = findPlayerClickTarget(root, playerName, { player });
+  if (!nameEl) return null;
+  const row = nameEl.closest?.("tr, [role='row']");
+  if (!row) return null;
+
+  for (const el of row.querySelectorAll(CLICKABLE_SELECTOR)) {
+    if (isInsideOwnOverlay(el)) continue;
+    const text = (el.textContent || "").trim();
+    const label = el.getAttribute("aria-label") || "";
+    if (/^draft$/i.test(text) || /^draft\b/i.test(label)) return el;
+  }
+  return null;
+}
+
 /* The player list scrolls inside its own container and renders only what's
  * visible, so a single read of the page sees a window of maybe fifteen rows
  * out of two hundred. Finding that container is what makes it possible to
