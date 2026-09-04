@@ -64,6 +64,7 @@ const PAGE_HTML = `<!doctype html><html><body>
   <!-- The real draft room's layout, confirmed live: each player is a table
        row whose FIRST cell holds the queue star and whose second holds the
        name. Anything scoped to the name's own cell cannot reach the star. -->
+  <div id="pick-feed">Last: D. ACHANE (RB · Mia)</div>
   <table id="board-table"><tbody>
     <tr id="row-kelce">
       <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
@@ -254,6 +255,9 @@ export async function run(document) {
   results.draftBtnRow = draftBtn ? draftBtn.closest("tr").id : null;
   // A row without one must yield nothing rather than the nearest button.
   results.noDraftBtn = findDraftButton(document.body, "Travis Kelce", { player: { pos: "TE", team: "KC" } }) === null;
+  // Achane's name appears in the pick feed first, with no row around it. The
+  // lookup has to keep going to the row that has the button.
+  results.draftPastFeed = findDraftButton(document.body, "De'Von Achane", { player: { pos: "RB", team: "Mia" } })?.className;
 
   return results;
 }
@@ -365,6 +369,7 @@ async function main() {
       ["finds the room's Draft button on the right row",
         result.draftBtnClass === "draft-btn" && result.draftBtnRow === "row-draftable"],
       ["returns nothing when that row has no Draft button", result.noDraftBtn === true],
+      ["looks past the pick feed to the row with the button", result.draftPastFeed === "draft-btn"],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);
