@@ -637,6 +637,13 @@ async function main() {
   /* Maintain the room's queue between picks. Everything fiddly — searching,
    * scrolling, clicking — happens here, off the clock, where a failure costs
    * a retry instead of a pick. */
+  let lastQueueNote = "";
+  function noteQueueIdle(message) {
+    if (lastQueueNote === message) return; // once per reason, not every cycle
+    lastQueueNote = message;
+    addLog(message);
+  }
+
   async function maintainQueue(text) {
     if (!queueEnabled || detectionSuspended) return;
     if (Date.now() - lastQueueRunAt < 15000) return;
@@ -644,7 +651,10 @@ async function main() {
     lastQueueRunAt = Date.now();
 
     const inRoom = findQueueNames(text, boardNameSet, boardPlayers);
-    if (inRoom === null) return; // queue panel not visible; nothing can be concluded
+    if (inRoom === null) {
+      noteQueueIdle("queue: can't see the queue panel — open the Queue tab in the left column");
+      return;
+    }
 
     // Anything we queued that the room no longer lists was drafted by someone.
     const vanished = [...queuedByUs].filter((name) => !inRoom.has(name));
@@ -654,26 +664,40 @@ async function main() {
       if (changed) addLog(`Gone from the queue, so drafted: ${vanished.join(", ")}`);
     }
 
-    const wanted = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
-    const missing = wanted.filter((p) => !inRoom.has(p.name));
-    if (missing.length === 0) return;
-
-    // Two per cycle: this shares the page with a live draft, and a long
-    // scripted burst of searching and clicking is its own hazard.
+    /* Add two per cycle — this shares a page with a live draft, and a long
+     * scripted burst of searching and clicking is its own hazard. But a
+     * player who turns out to be drafted costs nothing to skip, so those
+     * don't consume the budget: against a stale board the whole cycle would
+     * otherwise be spent marking two players gone and queueing nobody, which
+     * is exactly what it did in testing. */
     let searchBox = null;
+    let added = 0;
+    let attempts = 0;
     try {
-      for (const pick of missing.slice(0, 2)) {
+      while (added < 2 && attempts < 8) {
+        attempts++;
+        const wanted = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
+        const pick = wanted.find((p) => !inRoom.has(p.name) && !queuedByUs.has(p.name));
+        if (!pick) {
+          if (attempts === 1) noteQueueIdle(wanted.length === 0
+            ? "queue: board has no available players — rebuild it from Yahoo's list"
+            : "queue: already holds the shortlist");
+          break;
+        }
+
         const meta = (boardPlayers || []).find((p) => p.name === pick.name) || null;
         await closeSearch(searchBox);
         const located = await locatePlayer(pick.name, meta);
         searchBox = located.searchBox;
         if (!located.el) {
-          // The room can't produce him: he's drafted. Same reasoning the
-          // recommendation resolver uses.
-          if (searchBox) {
-            await sendMessage({ type: "IMPORT_PICKS", names: [pick.name], by: "rival" });
-            addLog(`${pick.name} isn't in the room — marking drafted.`);
+          if (!searchBox) {
+            noteQueueIdle("queue: no search box on this page, so players can't be found to queue");
+            break;
           }
+          // The room can't produce him: he's drafted. Same reasoning the
+          // recommendation resolver uses. Doesn't count against the budget.
+          await sendMessage({ type: "IMPORT_PICKS", names: [pick.name], by: "rival" });
+          addLog(`${pick.name} isn't in the room — marking drafted.`);
           continue;
         }
         const star = findQueueStar(document.body, pick.name, { player: meta });
@@ -684,6 +708,7 @@ async function main() {
         clickElement(star);
         await wait(600);
         queuedByUs.add(pick.name);
+        added++;
         addLog(`Queued ${pick.name}.`);
       }
     } finally {
