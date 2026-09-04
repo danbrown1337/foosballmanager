@@ -57,7 +57,8 @@ DEFAULT_BYE_PENALTY = 6.0
 # Designations meaning the player will not play this season. Drafting one
 # spends a roster spot on nobody, so they are removed from consideration
 # entirely — the same treatment a position the league doesn't start gets.
-UNAVAILABLE = {"IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O"}
+# NA is Yahoo's "Not Active".
+UNAVAILABLE = {"IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O", "NA"}
 
 SURPLUS_PENALTY = {"QB": 14, "K": 20, "DEF": 20, "TE": 8, "RB": 3, "WR": 3}
 
