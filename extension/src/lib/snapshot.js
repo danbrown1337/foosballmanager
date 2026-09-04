@@ -221,11 +221,49 @@ export async function shortlist(n = 5) {
    * tight ends that way. Two deep at a position is enough to survive a snipe;
    * beyond that it stops being insurance and starts being a plan nobody made.
    */
+  /* Reserve room for starter slots that are still empty.
+   *
+   * Yahoo drafts from this queue whenever we aren't watching — a backgrounded
+   * tab, a closed Players list, a throttled poll — and a queue with no kicker
+   * in it cannot fill a kicker slot however good the engine's reasoning is.
+   * A live mock ended 15/15 with K and DEF empty and four tight ends for
+   * exactly this reason: the guardrail that forces those picks only affects
+   * recommendations we are awake to act on.
+   *
+   * So once the roster is nearly full, every unfilled starting position gets
+   * an entry, ahead of anything else. */
+  const starters = config.roster?.starters || {};
+  const mine = players.filter((p) => p.draftedBy === "mine");
+  const spots = Object.values(starters).reduce((a, b) => a + b, 0) + (config.roster?.bench || 0);
+  const remaining = spots - mine.length;
+  const unfilled = Object.keys(starters).filter(
+    (pos) => pos !== "FLEX" && mine.filter((p) => p.pos === pos).length < starters[pos]
+  );
+
+  const reserved = [];
+  if (unfilled.length > 0 && remaining <= unfilled.length + 3) {
+    for (const pos of unfilled) {
+      const best = players
+        .filter((p) => !p.draftedBy && p.pos === pos)
+        .sort((a, b) => a.adp - b.adp)[0];
+      if (best) {
+        reserved.push({
+          name: best.name, pos: best.pos, team: best.team, tier: best.tier,
+          reason: `Reserved: ${pos} is still unfilled with ${remaining} pick(s) left.`,
+          needOverride: true,
+        });
+      }
+    }
+  }
+
   const PER_POSITION = 2;
-  const picks = topPicks(players, config, n * 3);
+  const picks = [...reserved, ...topPicks(players, config, n * 3)];
   const counts = {};
   const out = [];
+  const seenNames = new Set();
   for (const pick of picks) {
+    if (seenNames.has(pick.name)) continue;
+    seenNames.add(pick.name);
     counts[pick.pos] = (counts[pick.pos] || 0) + 1;
     if (counts[pick.pos] > PER_POSITION) continue;
     out.push(pick);
