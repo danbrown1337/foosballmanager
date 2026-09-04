@@ -34,6 +34,21 @@ because it's the one action here explicitly requested to be automated;
 everything else stays a line someone decides to cross with eyes open, not
 something that ships by default.
 
+## Practice mode (mock drafts)
+
+Yahoo's mock rooms start one W/R/T flex and a kicker. The league this was
+built for starts two flex and no kicker — and the engine never drafts a
+player it can't start, so a position with no starter slot is capped at zero
+and every kicker is filtered out of the pool entirely. Practising on your
+real settings therefore ends the mock with an empty K slot for Yahoo to
+autopick.
+
+**Settings -> Practice mode** swaps in the mock roster for you and puts your
+league's settings back, verbatim, when you switch it off. While it's on, the
+popup and the on-page panel both carry a "PRACTICE SETTINGS — not your
+league" banner, above the collapse, so a mock configuration can't quietly
+survive into your real draft.
+
 ## Auto-draft (experimental, opt-in, off by default)
 
 Turn it on from the floating panel on the draft room page itself. Two

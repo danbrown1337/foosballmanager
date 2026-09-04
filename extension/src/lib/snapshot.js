@@ -24,10 +24,11 @@ async function loadStaticData() {
 }
 
 export async function buildSnapshot() {
-  const [{ adp, notes }, config, draftState] = await Promise.all([
+  const [{ adp, notes }, config, draftState, practice] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
     Storage.getDraftState(),
+    Storage.getPractice(),
   ]);
 
   const players = loadPlayers(adp);
@@ -49,6 +50,9 @@ export async function buildSnapshot() {
       name: decision.player.name, pos: decision.player.pos, team: decision.player.team,
       tier: decision.player.tier, reason: decision.reason, needOverride: decision.needOverride,
     },
+    // Surfaced so every front end can say, unmissably, that the settings
+    // driving these recommendations are mock settings and not the league's.
+    practice: !!practice.active,
     draftedCount: players.filter((p) => p.draftedBy).length,
     total: players.length,
     config,

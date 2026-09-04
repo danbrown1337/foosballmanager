@@ -90,6 +90,8 @@ function buildPanel() {
       #fm-mode { font-size: 10px; background: #1e222a; color: #9aa1ab; border: 1px solid #2a2f38;
                  border-radius: 4px; padding: 1px 2px; }
       #fm-err { color: #fca5a5; font-size: 11px; margin-top: 6px; }
+      #fm-practice { background: #78350f; color: #fde68a; font-size: 10px; font-weight: 700;
+                     letter-spacing: .04em; padding: 4px 10px; }
       #fm-dead { border-top: 1px solid #2a2f38; margin-top: 8px; padding-top: 8px;
                  color: #fca5a5; font-size: 11px; }
       #fm-dead b { color: #fecaca; }
@@ -105,6 +107,7 @@ function buildPanel() {
       <b>Fantasy Manager</b>
       <span id="fm-collapse-icon">–</span>
     </div>
+    <div id="fm-practice" hidden>PRACTICE SETTINGS — not your league</div>
     <div id="fm-body">
       <div id="fm-rec-flag" hidden></div>
       <div id="fm-rec-name">Loading…</div>
@@ -167,6 +170,7 @@ async function main() {
   const autoStatus = root.querySelector("#fm-auto-status");
   const autoWarn = root.querySelector("#fm-auto-warn");
   const deadBox = root.querySelector("#fm-dead");
+  const practiceBox = root.querySelector("#fm-practice");
   const statusBox = root.querySelector("#fm-status");
 
   let polling = true;
@@ -298,6 +302,9 @@ async function main() {
   }
 
   function render(snapshot) {
+    // Shown outside the collapsible body: a mock-settings warning is useless
+    // if it's hidden behind the panel being collapsed.
+    practiceBox.hidden = !snapshot.practice;
     const rec = snapshot.recommendation;
     currentRecName = rec ? rec.name : null;
     recName.textContent = rec ? `${rec.name} — ${rec.pos}, ${rec.team}` : "Board is empty";

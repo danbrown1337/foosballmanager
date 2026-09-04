@@ -31,11 +31,28 @@
   button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
   .status { font-size: 12px; color: var(--good); margin-left: 10px; }
   p.hint { color: var(--muted); font-size: 12px; }
+  #practiceState { font-size: 12px; font-weight: 650; color: var(--muted); margin-top: 10px; }
+  .card.practice-on { border-color: #f59e0b; border-width: 2px; }
+  .card.practice-on #practiceState { color: #b45309; }
+  @media (prefers-color-scheme: dark) { .card.practice-on #practiceState { color: #fbbf24; } }
   textarea { min-height: 100px; font-family: monospace; }
 </style>
 </head>
 <body>
   <h1>Fantasy Manager — Settings</h1>
+
+  <div class="card" id="practiceCard">
+    <h2>Practice mode (mock drafts)</h2>
+    <p class="hint">
+      Yahoo's mock rooms start one W/R/T flex and a kicker. Your league starts
+      two flex and no kicker, and the engine will never draft a player it can't
+      start — so a mock run on your real settings ends with an empty kicker
+      slot. Turn this on to practise, off to go back. Your league's settings are
+      stored while it's on and restored exactly when you turn it off.
+    </p>
+    <div id="practiceState" class="hint"></div>
+    <button id="practiceToggle" class="primary"></button>
+  </div>
 
   <div class="card">
     <h2>League</h2>

@@ -20,7 +20,16 @@ const KEYS = {
   autoDraftFullyAutomatic: "fm_auto_draft_fully_automatic",
   turnPhrases: "fm_turn_phrases",
   confirmPhrases: "fm_confirm_phrases",
+  practice: "fm_practice",
 };
+
+/* Yahoo's standard mock draft room starts one W/R/T flex and a kicker; the
+ * league this was built for starts two flex and no kicker at all. Practising
+ * in a mock with the real settings loaded means the engine treats every
+ * kicker as unrostable (autopilot.js caps a position with no starter slot at
+ * zero), so it would finish the mock with an empty K slot and let Yahoo
+ * autopick one. Practice mode swaps these in, and puts the real ones back. */
+export const MOCK_STARTERS = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DEF: 1 };
 
 // Matches the confirmed real starter construction: 1 QB, 2 RB, 2 WR, 1 TE,
 // 2 W/R/T flex, 1 DEF — no kicker. Same defaults as config/league.yaml.
@@ -116,6 +125,16 @@ export const Storage = {
   async setTurnPhrases(phrases) {
     return set(KEYS.turnPhrases, phrases);
   },
+  /* Practice mode keeps the real league config alongside the mock one rather
+   * than trying to reconstruct it later — restoring has to be exact, and the
+   * whole point is that forgetting is not survivable on draft day. */
+  async getPractice() {
+    return get(KEYS.practice, { active: false, savedConfig: null });
+  },
+  async setPractice(state) {
+    return set(KEYS.practice, state);
+  },
+
   async getConfirmPhrases() {
     return get(KEYS.confirmPhrases, DEFAULT_CONFIRM_PHRASES);
   },

@@ -179,6 +179,45 @@ async function main() {
     for (const e of roomErrors) console.error(`  ERROR: ${e}`);
   }
 
+  // Practice mode: the mock-settings swap has to reach both the form and the
+  // live panel, and — the part that actually matters on draft day — restore
+  // the real league settings exactly when it's switched back off.
+  await optionsPage.click("#practiceToggle");
+  await optionsPage.waitForTimeout(600);
+  const mockFlex = await optionsPage.inputValue("#s_FLEX");
+  const mockK = await optionsPage.inputValue("#s_K");
+  console.log(`\n--- practice mode on ---`);
+  console.log(`  options now show FLEX=${mockFlex} K=${mockK}`);
+  if (mockFlex !== "1" || mockK !== "1") {
+    console.error("FAIL: practice mode did not apply the Yahoo mock roster.");
+    failed = true;
+  }
+
+  // The panel refreshes on its own timer; wait one full cycle for the banner.
+  await roomPage.waitForTimeout(9000);
+  const bannerShown = await roomPage
+    .evaluate(() => {
+      const el = document.getElementById("fm-practice");
+      return el ? !el.hidden : false;
+    })
+    .catch(() => false);
+  console.log(`  panel warning banner visible: ${bannerShown}`);
+  if (!bannerShown) {
+    console.error("FAIL: panel gave no sign it was running on mock settings.");
+    failed = true;
+  }
+
+  await optionsPage.click("#practiceToggle");
+  await optionsPage.waitForTimeout(600);
+  const backFlex = await optionsPage.inputValue("#s_FLEX");
+  const backK = await optionsPage.inputValue("#s_K");
+  console.log(`--- practice mode off ---`);
+  console.log(`  options restored to FLEX=${backFlex} K="${backK}"`);
+  if (backFlex !== flexVal || backK !== kVal) {
+    console.error(`FAIL: league settings not restored (expected FLEX=${flexVal} K="${kVal}").`);
+    failed = true;
+  }
+
   // Regression: reloading the extension orphans the content script already
   // running in an open page — every chrome.runtime call from it throws
   // "Extension context invalidated" from then on, permanently. The panel used

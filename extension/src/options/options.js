@@ -1,4 +1,4 @@
-import { Storage, DEFAULT_CONFIG } from "../lib/storage.js";
+import { Storage, DEFAULT_CONFIG, MOCK_STARTERS } from "../lib/storage.js";
 import { parseLeaguePage } from "../lib/textMatch.js";
 
 const POSITIONS = ["QB", "RB", "WR", "TE", "FLEX", "K", "DEF"];
@@ -33,7 +33,39 @@ async function loadForm() {
 
   const confirmPhrases = await Storage.getConfirmPhrases();
   document.getElementById("confirmPhrases").value = confirmPhrases.join("\n");
+
+  await renderPractice();
 }
+
+async function renderPractice() {
+  const { active } = await Storage.getPractice();
+  const card = document.getElementById("practiceCard");
+  card.classList.toggle("practice-on", active);
+  document.getElementById("practiceState").textContent = active
+    ? "ON — these are mock settings, not your league's. Turn this off before your real draft."
+    : "Off — the settings below are your league's.";
+  document.getElementById("practiceToggle").textContent = active
+    ? "Restore my league settings"
+    : "Switch to Yahoo mock settings";
+}
+
+document.getElementById("practiceToggle").addEventListener("click", async () => {
+  const practice = await Storage.getPractice();
+  if (practice.active) {
+    // Restore verbatim rather than recomputing: whatever was there before is
+    // the only thing that's certainly right.
+    if (practice.savedConfig) await Storage.setConfig(practice.savedConfig);
+    await Storage.setPractice({ active: false, savedConfig: null });
+  } else {
+    const config = await Storage.getConfig();
+    await Storage.setPractice({ active: true, savedConfig: config });
+    await Storage.setConfig({
+      ...config,
+      roster: { ...config.roster, starters: { ...MOCK_STARTERS } },
+    });
+  }
+  await loadForm();
+});
 
 function renderTeamList(rosters) {
   const names = Object.keys(rosters);
