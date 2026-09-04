@@ -654,11 +654,17 @@ async function main() {
      * filtered list would otherwise make everyone outside the filter look
      * drafted. */
     let found = null;
+    let sawName = false;
     const seen = new Set();
     detectionSuspended = true;
     try {
       await sweepList((text) => {
         if (!found) found = findPlayerClickTarget(document.body, name, { player: meta });
+        // Identifying him and merely seeing his name are different questions.
+        // The click target insists the row shows his team, which fails when
+        // our pool disagrees with the room — and without this, that turned
+        // into "drafted", in a waiting room where nothing had been drafted.
+        if (!sawName && nameAppears(name, text)) sawName = true;
         if (boardNameSet) {
           for (const n of findBoardNames(text, boardNameSet, boardPlayers)) seen.add(n);
         }
@@ -669,7 +675,12 @@ async function main() {
     }
 
     const sawWholeBoard = seen.size >= LIST_COMPLETE_ROWS;
-    return { el: found, searchBox: null, searched: true, filtered: !found && sawWholeBoard };
+    return {
+      el: found,
+      searchBox: null,
+      searched: true,
+      filtered: !found && sawWholeBoard && !sawName,
+    };
   }
 
   async function closeSearch(box) {
