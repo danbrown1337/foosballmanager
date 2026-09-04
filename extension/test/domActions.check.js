@@ -19,7 +19,9 @@ import { dirname, join } from "node:path";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const EXT_ROOT = join(HERE, "..");
-const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+// Playwright's own Chromium: branded Google Chrome ignores --load-extension
+// (see load_check.js), and a fixed path only exists in one build environment.
+const CHROME = process.env.FM_CHROME || chromium.executablePath();
 
 // A synthetic page mixing the three interactive patterns a draft room might
 // plausibly use for a player row: a real <button>, a plain <div> with an
@@ -37,6 +39,15 @@ const PAGE_HTML = `<!doctype html><html><body>
     <li><button class="player-row">Jahmyr Gibbs Det - RB</button></li>
     <li><div class="player-row" onclick="window.__clicked='div-row'">Josh Allen Buf - QB</div></li>
     <li><span>Puka Nacua LAR - WR</span></li>
+
+    <!-- How Yahoo actually renders a row: initial and surname only, with the
+         position and team beside it. No full name appears anywhere. -->
+    <li><button class="row-abbrev">J. JEFFERSON (WR · Min)</button></li>
+
+    <!-- Same abbreviation, two players, same position: only the team tells
+         them apart, and clicking the wrong one drafts the wrong player. -->
+    <li><button class="row-bijan">B. Robinson RB Atl</button></li>
+    <li><button class="row-brian">B. Robinson RB Was</button></li>
   </ul>
 
   <div id="confirmDialog" style="display:none">
@@ -109,6 +120,25 @@ export async function run(document) {
 
   const missing = findPlayerClickTarget(document.body, "Nobody Real");
   results.missingIsNull = missing === null;
+
+  // The room writes "J. JEFFERSON", never "Justin Jefferson".
+  const abbrev = findPlayerClickTarget(document.body, "Justin Jefferson",
+    { player: { pos: "WR", team: "Min" } });
+  results.abbrevClass = abbrev ? abbrev.className : null;
+
+  // Same abbreviation, two rows: the team must decide which is clicked.
+  const bijan = findPlayerClickTarget(document.body, "Bijan Robinson",
+    { player: { pos: "RB", team: "Atl" } });
+  results.bijanClass = bijan ? bijan.className : null;
+  const brian = findPlayerClickTarget(document.body, "Brian Robinson",
+    { player: { pos: "RB", team: "Was" } });
+  results.brianClass = brian ? brian.className : null;
+
+  // Neither row is this player's team, so nothing may be clicked: a wrong
+  // click here drafts a player and cannot be taken back.
+  const wrongTeam = findPlayerClickTarget(document.body, "Bijan Robinson",
+    { player: { pos: "RB", team: "Sea" } });
+  results.wrongTeamRefused = wrongTeam === null;
 
   return results;
 }
@@ -196,6 +226,10 @@ async function main() {
       ["clicking it fires the real confirm handler", result.confirmClicked === true],
       ['does not match an unrelated nav link containing "Draft"', result.navNotMatched === true],
       ["returns null for a player who isn't on the page", result.missingIsNull === true],
+      ["finds a row rendered only as an initial and surname", result.abbrevClass === "row-abbrev"],
+      ["picks the right Robinson by team", result.bijanClass === "row-bijan"],
+      ["picks the other Robinson by team", result.brianClass === "row-brian"],
+      ["clicks nothing when no row matches the player's team", result.wrongTeamRefused === true],
     ];
     for (const [label, ok] of checks) {
       console.log(`  ${ok ? "PASS" : "FAIL"} — ${label}`);

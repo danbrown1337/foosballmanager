@@ -44,14 +44,64 @@ function normalizeText(text) {
  * the text node's immediate parent element if nothing more specific is
  * found within `maxAncestorDepth`, since many draft rooms attach a click
  * handler directly to a row div rather than using a real <button>. */
-export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6 } = {}) {
+/* "Jahmyr Gibbs" never appears in a Yahoo draft room — every name there is
+ * "J. Gibbs", or "J. GIBBS" in the pick feed. Searching only for the full
+ * name is why auto-draft could detect a turn, hold a correct recommendation,
+ * and still never click anything: the element it was looking for did not
+ * exist on the page. */
+function abbrevForms(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length < 2) return [];
+  const tail = parts[parts.length - 1].replace(/[.,]/g, "");
+  const last = /^(jr|sr|ii|iii|iv|v)$/i.test(tail) && parts.length > 2
+    ? parts[parts.length - 2]
+    : tail;
+  return [`${parts[0][0]}. ${last}`, `${parts[0][0]}.${last}`];
+}
+
+export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, player = null } = {}) {
   const doc = root.ownerDocument || root;
   const re = new RegExp(`(?<!\\w)${escapeRegExp(playerName)}(?!\\w)`);
+  const abbrevRes = abbrevForms(playerName).map(
+    (form) => new RegExp(`(?<!\\w)${escapeRegExp(form)}(?!\\w)`, "i")
+  );
+
+  /* An abbreviation can name more than one player, and clicking the wrong row
+   * drafts the wrong player — irreversible, unlike a missed detection. So an
+   * abbreviated match is only accepted when the surrounding row also shows
+   * this player's team or position. */
+  const confirmedByContext = (node, form) => {
+    if (!player) return true;
+    // Team, not position: two players sharing an abbreviation usually share a
+    // position too (Bijan and Brian Robinson are both RBs), so accepting a
+    // position match would happily click either row. Position is only used
+    // when no team is known at all.
+    const required = player.team || player.pos;
+    if (!required) return true;
+    const re = new RegExp(`(?<!\\w)${escapeRegExp(required)}(?!\\w)`, "i");
+    const reForm = new RegExp(`(?<!\\w)${escapeRegExp(form)}(?!\\w)`, "ig");
+    let el = node.parentElement;
+    for (let d = 0; el && d < maxAncestorDepth; d++, el = el.parentElement) {
+      const text = el.textContent || "";
+      if (text.length > 300) break;
+      /* Stop before an ancestor holding a second player with this same
+       * abbreviation: its text is the list, not this row, and a neighbouring
+       * row's team would otherwise "confirm" the wrong player. */
+      if ((text.match(reForm) || []).length > 1) break;
+      if (re.test(text)) return true;
+    }
+    return false;
+  };
+
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      if (!node.nodeValue || !re.test(node.nodeValue)) return NodeFilter.FILTER_SKIP;
+      if (!node.nodeValue) return NodeFilter.FILTER_SKIP;
       if (isInsideOwnOverlay(node.parentElement)) return NodeFilter.FILTER_SKIP;
-      return NodeFilter.FILTER_ACCEPT;
+      if (re.test(node.nodeValue)) return NodeFilter.FILTER_ACCEPT;
+      const forms = abbrevForms(playerName);
+      const matched = forms.find((form, i) => abbrevRes[i].test(node.nodeValue));
+      if (matched && confirmedByContext(node, matched)) return NodeFilter.FILTER_ACCEPT;
+      return NodeFilter.FILTER_SKIP;
     },
   });
 
