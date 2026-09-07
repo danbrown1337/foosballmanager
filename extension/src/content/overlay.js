@@ -74,6 +74,7 @@ function buildPanel() {
                  background: #1d4ed8; color: #fff; cursor: pointer; user-select: none; }
       #fm-head b { font-size: 12px; letter-spacing: .02em; }
       #fm-ver { flex: 1; font-size: 10px; opacity: .75; }
+      #fm-ver.degraded { color: #ffb454; opacity: 1; }
       #fm-body { padding: 10px; display: block; }
       #fm-body.collapsed { display: none; }
       #fm-rec-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
@@ -181,7 +182,7 @@ async function main() {
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
     findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
-    sweepTrust, Attempts;
+    describeRow, sweepTrust, Attempts;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
@@ -195,7 +196,8 @@ async function main() {
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses } =
+     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
+     describeRow } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   /* Every helper this panel uses is destructured from a dynamic import, and a
@@ -210,7 +212,7 @@ async function main() {
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-    looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses, fetchPool,
+    looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses, describeRow, fetchPool,
     leagueIdFromUrl, sweepTrust, Attempts,
   };
   const unbound = Object.keys(wired).filter((name) => typeof wired[name] !== "function");
@@ -273,6 +275,11 @@ async function main() {
    * reported it couldn't confirm player after player. */
   let searchWeTyped = null;
   const QUEUE_DEPTH = 5;
+  /* Deeper while the tab is hidden. The panel cannot reliably act there, so
+   * the queue is what drafts for you — Yahoo picks from it without needing
+   * this tab awake at all. Depth is the whole mitigation, so it goes up. */
+  const QUEUE_DEPTH_HIDDEN = 8;
+  const queueDepth = () => (document.hidden ? QUEUE_DEPTH_HIDDEN : QUEUE_DEPTH);
   let queueEnabled = false;
   let lastQueueRunAt = 0;
   /* Queue maintenance and a board update both drive the room's search box.
@@ -697,10 +704,71 @@ async function main() {
   function noteUnconfirmed(name, sawList) {
     if (!sawList) return;
     if (!unconfirmed.fail(name)) return;
+    if (!missingMeansDrafted) {
+      addLog(`${name} not found in ${UNCONFIRMED_TRIES} full passes — resting him (not marking; this rule has been wrong today).`);
+      return;
+    }
     addLog(`${name} not found in ${UNCONFIRMED_TRIES} full passes of the room — marking drafted and resting him.`);
+    markedByAbsence.add(name);
     sendMessage({ type: "IMPORT_PICKS", names: [name], by: "rival" }).catch(() => {
       // Nothing to do about it here; the next pass will try again.
     });
+  }
+
+  /* Whether the rule above is still trusted, and the evidence against it.
+   *
+   * It is a marking path, and marking paths are what buried seventy available
+   * players once already. Rather than pick a threshold and hope, it watches
+   * its own results: when a later sweep finds a player it had declared
+   * drafted, that is the room contradicting it outright. Two of those and it
+   * stops marking for the rest of the session — it goes on resting names, so
+   * the loop it exists to break stays broken, but it no longer writes to the
+   * board it has been shown to get wrong. */
+  const MAX_ABSENCE_REVERSALS = 2;
+  const markedByAbsence = new Set();
+  let absenceReversals = 0;
+  let missingMeansDrafted = true;
+
+  /* Why a control could not be found, and what that means.
+   *
+   * A taken player leaves the room's available list, but his name stays in
+   * the pick feed and the "Last:" banner — so he still resolves, with no row
+   * behind him and therefore no star and no Draft button. That is not a
+   * failure to find a control; it is the room saying he is gone. A row that
+   * is present but missing its control is the opposite, and must never be
+   * read as a pick. Reported once per player either way, so the next
+   * occurrence is diagnosable without anyone watching. */
+  const describedRows = new Set();
+  function explainMissingControl(name, meta, what) {
+    if (!describeRow) return false;
+    let shape;
+    try {
+      shape = describeRow(document.body, name, { player: meta });
+    } catch {
+      return false;
+    }
+    const gone = shape.found && !shape.inTable;
+    if (!describedRows.has(name)) {
+      describedRows.add(name);
+      addLog(gone
+        ? `${name}: name is on the page but he has no row in the player list — he has been drafted.`
+        : `${name}: row present (${shape.cells} cells, ${shape.controls} controls, icons ${shape.icons.join("/") || "none"}) but no ${what}.`);
+    }
+    return gone;
+  }
+
+  function checkAbsenceRule(freedNames) {
+    if (!missingMeansDrafted || !freedNames?.length) return;
+    for (const name of freedNames) {
+      if (!markedByAbsence.delete(name)) continue;
+      absenceReversals++;
+      addLog(`${name} is back in the room after being marked drafted — that call was wrong.`);
+      if (absenceReversals >= MAX_ABSENCE_REVERSALS) {
+        missingMeansDrafted = false;
+        addLog(`Two wrong calls: no longer marking players drafted just because a sweep can't find them. Use "I drafted this player" if the board looks stale.`);
+        return;
+      }
+    }
   }
   function restingUnconfirmed(name) {
     return unconfirmed.resting(name);
@@ -714,6 +782,31 @@ async function main() {
   // Same reasoning: the configuration is either right or wrong, and repeating
   // it every four seconds would bury everything else in the log.
   let warnedTeamCount = false;
+  /* Said once, then shown continuously. A log line about a degraded panel
+   * scrolls out of view in a busy draft, which is precisely when it matters. */
+  let saidHidden = false;
+  /* Appended to the version in the panel header, where it stays visible for
+   * as long as it is true. */
+  let headerState = "";
+  function setHeaderState(state) {
+    if (state === headerState) return;
+    headerState = state;
+    try {
+      const el = root.querySelector("#fm-ver");
+      const version = `v${chrome.runtime.getManifest().version}`;
+      el.textContent = state ? `${version} — ${state}` : version;
+      el.classList.toggle("degraded", Boolean(state));
+    } catch {
+      // Context gone; handleDeadContext covers it.
+    }
+  }
+
+  function noteHidden() {
+    setHeaderState("degraded — tab hidden");
+    if (saidHidden) return;
+    saidHidden = true;
+    addLog("This tab is in the background, so the panel can't read the player list reliably. Keeping the queue deeper instead — Yahoo drafts from it without this tab awake.");
+  }
 
   /* How many players the board still believes are available. Marking from
    * absence is measured against this rather than a flat row count. It only
@@ -998,7 +1091,7 @@ async function main() {
      * two quarterbacks. Only players the shortlist no longer wants at all,
      * one per cycle, so a queue the user curated isn't emptied underneath
      * them. */
-    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: QUEUE_DEPTH });
+    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth() });
     const keep = new Set(shortlistNow.map((p) => p.name));
     const stale = [...inRoom].filter((name) => !keep.has(name));
     if (stale.length > 0) {
@@ -1059,7 +1152,14 @@ async function main() {
         const star = findQueueStar(document.body, pick.name, { player: meta });
         if (!star) {
           tried.add(pick.name);
-          noteQueueIdle(`queue: found ${pick.name} but no star on his row — trying the next name`);
+          /* His name is on the page with no row behind it: he is drafted, and
+           * the ledger is where that goes. Anything else is a real failure to
+           * find the control, and stays a nudge. */
+          if (explainMissingControl(pick.name, meta, "star")) {
+            noteUnconfirmed(pick.name, true);
+          } else {
+            noteQueueIdle(`queue: found ${pick.name} but no star on his row — trying the next name`);
+          }
           continue;
         }
         clickElement(star);
@@ -1172,6 +1272,7 @@ async function main() {
       markMissing: complete,
     });
     lastBoardUpdateAt = Date.now();
+    checkAbsenceRule(result.freedNames);
     if (!complete) {
       addLog(`Partial view (${seen.size} seen, board has ${availableOnBoard()} available) — freeing only, not marking.`);
     }
@@ -1356,6 +1457,17 @@ async function main() {
     const scroller = findListScroller(document.body);
     collect(document.body.innerText);
     if (!scroller) return { scrolled: false, steps: 0 };
+
+    /* Not slow — unreliable. A hidden tab has its timers throttled to about
+     * once a minute, and rendering suspended with them, so the rows a scroll
+     * is meant to reveal may never mount at all. Walking the list there
+     * produces a confident, wrong view of the room. Read what is already on
+     * screen and say plainly that this was not a sweep: reachedEnd stays
+     * false, so nothing downstream can mistake it for one. */
+    if (document.hidden) {
+      noteHidden();
+      return { scrolled: false, steps: 0, hidden: true };
+    }
 
     const startTop = scroller.scrollTop;
     const step = Math.max(200, scroller.clientHeight - 60);
@@ -1583,6 +1695,10 @@ async function main() {
       }
 
       if (!draftBtn) {
+        const recMeta = (boardPlayers || []).find((p) => p.name === currentRecName) || null;
+        if (explainMissingControl(currentRecName, recMeta, "Draft button")) {
+          noteUnconfirmed(currentRecName, true);
+        }
         addLog(`Found ${currentRecName} but no Draft button on his row — draft him manually.`);
         await clearSearch();
         return;
@@ -1632,6 +1748,20 @@ async function main() {
       .catch(() => {}) // pollForTurn logs its own failures
       .finally(() => { observerPollRunning = false; });
   }
+  /* Coming back to the tab is the one moment the panel can catch up cheaply:
+   * the list renders again, and whatever was missed while it was hidden is
+   * still on the page. */
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      noteHidden();
+      return;
+    }
+    setHeaderState("");
+    saidHidden = false;
+    lastBoardUpdateAt = 0; // let the next cycle sweep immediately
+    observerTick();
+  });
+
   const turnObserver = new MutationObserver(observerTick);
   turnObserver.observe(document.body, {
     subtree: true,

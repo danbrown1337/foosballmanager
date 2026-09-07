@@ -169,7 +169,7 @@ const PROBE_CONTENT_SRC = `
 const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
   findPlayerSearchBox, setInputValue, surnameOf, findQueueStar,
-  findDraftButton, findQueueRemove, looksUnavailableOnPage,
+  findDraftButton, findQueueRemove, looksUnavailableOnPage, describeRow,
   rowShowsNoAdp, readRoomAdp, readRoomStatuses } from "../src/lib/domActions.js";
 import { parsePoolPage } from "../src/lib/yahooPool.js";
 
@@ -370,6 +370,15 @@ export async function run(document) {
     { player: { pos: "RB", team: "ATL" } });
   results.blindRobinson = blind ? (blind.closest("tr") || {}).id ?? null : null;
 
+  /* The two shapes behind "found him but no star on his row". A drafted
+   * player leaves the available list while his name stays in the pick feed,
+   * so he resolves with no row at all — that is the room saying he is gone.
+   * A row that is present but missing its control is the opposite. */
+  results.shapeNoRow = describeRow(document.body, "Jahmyr Gibbs");
+  results.shapeRow = describeRow(document.body, "De'Von Achane",
+    { player: { pos: "RB", team: "Mia", adp: 15.3 } });
+  results.shapeAbsent = describeRow(document.body, "Nobody At All", { player: { pos: "WR" } });
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   // CEL, the commissioner exempt list: neither injured nor suspended, and
   // carrying an ordinary ADP, so nothing else on the row gives him away.
@@ -506,6 +515,13 @@ async function main() {
         result.brianRow === "row-brian"],
       ["and clicks neither when nothing can separate them",
         result.blindRobinson === null],
+      ["a name with no row behind it reads as drafted, not as a missing star",
+        result.shapeNoRow.found === true && result.shapeNoRow.inTable === false],
+      ["a player still listed has his row, and its shape for the log",
+        result.shapeRow.inTable === true && result.shapeRow.cells === 3 &&
+        result.shapeRow.controls >= 1],
+      ["someone not on the page at all is simply not found",
+        result.shapeAbsent.found === false],
       ["including the commissioner exempt list", result.statusExempt === "CEL"],
       ["and flags an exempt player on the page", result.celOnPage === true],
       ["and tags nobody who is playing", result.statusHealthy === null],

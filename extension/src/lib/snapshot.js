@@ -461,12 +461,17 @@ export async function repairBoard(availableNames, { markMissing = true } = {}) {
 
   let markedDrafted = 0;
   let freed = 0;
+  /* Named, not just counted. A caller that concluded a pick on its own
+   * evidence needs to know when the room later contradicts it — that is the
+   * only way a rule that marks players can find out it is wrong. */
+  const freedNames = [];
   for (const player of players) {
     if (state.drafted[player.name] === "mine") continue;
     if (available.has(player.name)) {
       if (player.name in state.drafted) {
         delete state.drafted[player.name];
         freed++;
+        freedNames.push(player.name);
       }
     } else if (markMissing && !(player.name in state.drafted)) {
       // Only when the caller says its view of the room was complete: marking
@@ -476,7 +481,7 @@ export async function repairBoard(availableNames, { markMissing = true } = {}) {
     }
   }
   await Storage.setDraftState(state);
-  return { markedDrafted, freed, seen: available.size };
+  return { markedDrafted, freed, freedNames, seen: available.size };
 }
 
 export async function importPicks(names, by = "rival") {
