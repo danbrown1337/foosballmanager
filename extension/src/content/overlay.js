@@ -674,7 +674,7 @@ async function main() {
     return !nameAppears(name, text);
   }
 
-  async function locatePlayer(name, meta) {
+  async function locatePlayer(name, meta, { keepScroll = false } = {}) {
     let el = findPlayerClickTarget(document.body, name, { player: meta });
     if (el) return { el, searchBox: null, searched: false, filtered: false };
 
@@ -721,7 +721,7 @@ async function main() {
         if (boardNameSet) {
           for (const n of findBoardNames(text, boardNameSet, boardPlayers)) seen.add(n);
         }
-      });
+      }, { restore: !keepScroll });
     } finally {
       detectionSuspended = false;
       previousBoardNames = null;
@@ -792,7 +792,7 @@ async function main() {
 
       const meta = (boardPlayers || []).find((p) => p.name === candidate.name) || null;
       await closeSearch(searchBox);
-      const located = await locatePlayer(candidate.name, meta);
+      const located = await locatePlayer(candidate.name, meta, { keepScroll: true });
       searchBox = located.searchBox || searchBox; // never lose the handle
       if (located.el) {
         return { snapshot, name: candidate.name, el: located.el, searchBox, skipped, exhausted: false };
@@ -1264,7 +1264,7 @@ async function main() {
   /* Walk the whole scrolling list, not the dozen rows on screen. Everything
    * seen is collected; nothing is inferred from absence, so a sweep that
    * misses rows records less rather than something false. */
-  async function sweepList(collect) {
+  async function sweepList(collect, { restore = true } = {}) {
     const scroller = findListScroller(document.body);
     collect(document.body.innerText);
     if (!scroller) return { scrolled: false, steps: 0 };
@@ -1278,8 +1278,14 @@ async function main() {
       collect(document.body.innerText);
       if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) break;
     }
-    scroller.scrollTop = startTop;
-    await wait(120);
+    /* Leave the list where it is when the caller intends to act on what it
+     * found: restoring the scroll unmounts the very row it was looking for,
+     * and the Draft button goes with it. That cost a pick — "no Draft button
+     * on his row" for a player the sweep had just located. */
+    if (restore) {
+      scroller.scrollTop = startTop;
+      await wait(120);
+    }
     return { scrolled: true, steps };
   }
 
@@ -1452,6 +1458,13 @@ async function main() {
        * moment it is clicked. So the two-level split is not "select, then
        * confirm" here — it is "show you the pick" versus "make it". */
       const recRowMeta = (boardPlayers || []).find((p) => p.name === currentRecName) || null;
+
+      /* The list re-renders constantly, so an element found a moment ago may
+       * already be detached — and a detached row has no Draft button to
+       * press. Look again, now, rather than acting on a stale reference. */
+      if (playerEl && !document.contains(playerEl)) {
+        addLog(`${currentRecName}'s row was re-rendered — finding it again.`);
+      }
       const draftBtn = findDraftButton(document.body, currentRecName, { player: recRowMeta });
 
       if (!autoFullBox.checked) {
