@@ -238,9 +238,36 @@ export function guessPenalty(player, config) {
  * Per position, because the positions are not alike: a missing back is the
  * expensive hole, since replacement backs are the worst on the waiver wire,
  * while receivers are deep enough that waiting costs less. */
+/* How much of an open flex slot each position is expected to fill.
+ *
+ * A W/R/T flex is a starting slot like any other, and a league that starts two
+ * of them starts six flex-eligible players, not four. The need gradient used
+ * to count only a position's own slots, so it fell silent the moment a roster
+ * held two backs and two receivers — with two starting slots still empty and
+ * nothing in the engine objecting. The shares match who actually fills a flex
+ * in PPR, and tight ends get none for the same reason they cannot claim one
+ * in surplusPenalty: it is legal and it is the worst use of the slot. */
+export const FLEX_NEED_SHARE = { RB: 0.65, WR: 0.35, TE: 0 };
+
 export const NEED_START_ROUND = 3;
 export const NEED_ESCALATION = { RB: 12, WR: 8, TE: 6, QB: 6, K: 0, DEF: 0 };
 export const NEED_CAP = 60;
+
+/* The first round in which a kicker or defence may be taken: exactly enough
+ * rounds at the end to fill them and no more.
+ *
+ * Two of them in a fifteen-round draft means rounds fourteen and fifteen. One
+ * of them means round fifteen alone — a league with no kicker slot should not
+ * inherit a two-round window sized for a league that has one, and give up a
+ * round of bench upside to a defence that could have been taken later for the
+ * same price. Derived from the roster rather than written down, so it stays
+ * right for any shape. */
+export function defaultOnesieFloor(config) {
+  const starters = config.roster?.starters || {};
+  const onesies = (starters.K || 0) + (starters.DEF || 0);
+  if (onesies === 0) return Infinity; // this league starts neither
+  return Math.max(1, draftableSpotsFor(config) - onesies + 1);
+}
 
 /* Every slot a draft actually fills: the starters plus the bench. */
 export function draftableSpotsFor(config) {
@@ -248,11 +275,28 @@ export function draftableSpotsFor(config) {
   return Object.values(starters).reduce((a, b) => a + b, 0) + (config.roster?.bench || 0);
 }
 
+/* Flex slots not yet covered by a spare at any flex-eligible position. */
+export function openFlexSlots(mine, config) {
+  const starters = config.roster?.starters || {};
+  const flex = starters.FLEX || 0;
+  if (!flex) return 0;
+  const spares = [...FLEX_ELIGIBLE].reduce(
+    (sum, pos) => sum + Math.max(0, mine.filter((p) => p.pos === pos).length - (starters[pos] || 0)),
+    0
+  );
+  return Math.max(0, flex - spares);
+}
+
 export function needBonus(player, mine, config, picksMade) {
   const starters = config.roster?.starters || {};
   const need = starters[player.pos] || 0;
   const have = mine.filter((p) => p.pos === player.pos).length;
-  if (have >= need) return 0; // the slot is filled; surplusPenalty takes over
+
+  const ownSlots = Math.max(0, need - have);
+  const shares = config.autopilot?.flex_need_share ?? FLEX_NEED_SHARE;
+  const flexSlots = openFlexSlots(mine, config) * (shares[player.pos] ?? 0);
+  const missing = ownSlots + flexSlots;
+  if (missing <= 0) return 0; // nothing unfilled this player could start in
 
   const teams = config.league?.num_teams || 10;
   const round = Math.floor(picksMade / teams) + 1;
@@ -265,7 +309,7 @@ export function needBonus(player, mine, config, picksMade) {
 
   const cap = config.autopilot?.need_cap ?? NEED_CAP;
   // elapsed + 1 so the round it switches on is worth something, not zero.
-  const pull = step * (elapsed + 1) * (need - have);
+  const pull = step * (elapsed + 1) * missing;
   return -Math.min(pull, cap); // negative: lower score is a better pick
 }
 
@@ -431,8 +475,7 @@ export function autoPick(players, config) {
    * size. The roster-completion override below reads the unfiltered pool, so
    * a draft that somehow reaches its end still fills the slot. */
   const roundNow = Math.floor(picksMade / config.league.num_teams) + 1;
-  const onesieFloor = config.autopilot?.onesie_min_round ??
-    Math.max(1, draftableSpotsFor(config) - 1);
+  const onesieFloor = config.autopilot?.onesie_min_round ?? defaultOnesieFloor(config);
 
   let pool = avail;
   if (!(coreFilled || lateEnough) || roundNow < onesieFloor) {
