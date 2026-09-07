@@ -171,12 +171,29 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
    * which is the only case worth arbitrating. */
   const rowsSeen = new Map();
   for (const node of matches) {
-    const row = node.parentElement?.closest?.("tr");
+    const row = node.parentElement?.closest?.("tr, [role='row']");
     if (!row || rowsSeen.has(row)) continue;
     rowsSeen.set(row, { node, adp: rowAdp(row) });
   }
 
-  let textNode = matches[0];
+  /* A row with nothing in it is not a row.
+   *
+   * The list is virtualised and leaves empty shells behind, and a name can
+   * match inside one — the panel reported "row present (0 cells, 0 controls,
+   * icons none) but no Draft button" for Derrick Henry at a turn, having
+   * locked onto one of these and stopped looking. The pick went to Yahoo's
+   * autodraft. A match in a real row is always the better answer, so shells
+   * are dropped whenever there is any alternative. */
+  const hasSubstance = (node) => {
+    const row = node.parentElement?.closest?.("tr, [role='row']");
+    if (!row) return true; // not in a row at all: judged elsewhere, not here
+    return (row.children?.length || 0) > 0 ||
+      row.querySelectorAll(CLICKABLE_SELECTOR).length > 0;
+  };
+  const substantial = matches.filter(hasSubstance);
+  const usable = substantial.length > 0 ? substantial : matches;
+
+  let textNode = usable[0];
   const rivals = [...rowsSeen.values()].filter((r) => r.adp !== null);
   if (rivals.length > 1) {
     /* ADP is the one thing that still tells them apart, and the board knows
