@@ -362,3 +362,64 @@ export function parseLeaguePage(text) {
   }
   return teams;
 }
+
+
+/* Yahoo's own record of what has been drafted.
+ *
+ * Everything else in this file infers picks: names appearing in a feed, names
+ * vanishing from a list, a sweep concluding from silence. All of that exists
+ * because the available list was the only thing being read, and all of it has
+ * been wrong at least once — seventy-three players buried by one bad sweep,
+ * an abbreviation clicked for the wrong Robinson, whole rounds spent on a
+ * board that believed the best backs were gone.
+ *
+ * The room states the answer outright in its results and roster views:
+ *
+ *   Round 6, Pick 8 (78th Overall)
+ *   MarShawn Lloyd GB - RB
+ *
+ * Full names, so nothing needs disambiguating; a round and a pick, so a
+ * decision log can be rebuilt after the fact; and a positive statement rather
+ * than an inference from absence.
+ *
+ * Ownership is deliberately not decided here. This says who is gone, which is
+ * the part that has been guessed at. Whose they are is read from the room's
+ * roster panel, where it is equally plain.
+ */
+const PICK_HEADER = /^Round\s+(\d+),\s*Pick\s+(\d+)\s*\((\d+)(?:st|nd|rd|th)\s+Overall\)/i;
+/* "Jaxon Smith-Njigba Sea - WR", and also "Chris Rodriguez Jr. Jax - RB" and
+ * "Chiefs KC - DEF": the team is the last token before the dash, whatever the
+ * name did on its way there. */
+const PICK_BODY = /^(.+?)\s+(\S+)\s+-\s+([A-Za-z/]{1,4})$/;
+
+export function parseDraftResults(text) {
+  const lines = String(text || "").split("\n").map((line) => line.trim());
+  const picks = [];
+  const seen = new Set();
+
+  for (let i = 0; i < lines.length; i++) {
+    const header = PICK_HEADER.exec(lines[i]);
+    if (!header) continue;
+
+    // The name sits on the next line with content in it; a blank line between
+    // the two is a rendering detail, not a missing pick.
+    let j = i + 1;
+    while (j < lines.length && !lines[j]) j++;
+    const body = j < lines.length ? PICK_BODY.exec(lines[j]) : null;
+    if (!body) continue;
+
+    const name = body[1].trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    picks.push({
+      round: Number(header[1]),
+      pick: Number(header[2]),
+      overall: Number(header[3]),
+      name,
+      team: body[2].toUpperCase(),
+      pos: normalizePosition(body[3]) || body[3].toUpperCase(),
+    });
+    i = j;
+  }
+  return picks;
+}
