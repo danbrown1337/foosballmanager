@@ -1042,6 +1042,7 @@ async function main() {
      * where a D-grade receiver came from. */
     const expected = snap.board.filter((p) => !p.draftedBy).length;
 
+    let sweep = { reachedEnd: false };
     const seen = new Set();
     /* Collect ADP while we're already walking every row. Names come back as
      * the room writes them, so each is resolved against the board with the
@@ -1051,7 +1052,7 @@ async function main() {
     const statusByBoardName = {};
     detectionSuspended = true;
     try {
-      await sweepList(() => {
+      sweep = await sweepList(() => {
         for (const name of findBoardNames(scroller.innerText, boardNameSet, boardPlayers)) {
           seen.add(name);
         }
@@ -1090,7 +1091,9 @@ async function main() {
      * fullest view we have managed. A thinner one may still free players it
      * saw — that direction cannot invent a pick. */
     bestSweepSeen = Math.max(bestSweepSeen, seen.size);
-    const complete = seen.size >= bestSweepSeen * 0.95;
+    // Both: it walked to the bottom, and it saw about as much as the best view
+    // so far. Either alone has let a partial view rewrite the board.
+    const complete = sweep.reachedEnd && seen.size >= bestSweepSeen * 0.95;
     const result = await sendMessage({
       type: "REPAIR_BOARD",
       names: [...seen],
@@ -1272,11 +1275,15 @@ async function main() {
     const startTop = scroller.scrollTop;
     const step = Math.max(200, scroller.clientHeight - 60);
     let steps = 0;
+    let reachedEnd = false;
     for (let top = 0; top <= scroller.scrollHeight && steps < 40; top += step, steps++) {
       scroller.scrollTop = top;
       await wait(160); // let the list render the rows it just revealed
       collect(document.body.innerText);
-      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) break;
+      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) {
+        reachedEnd = true;
+        break;
+      }
     }
     /* Leave the list where it is when the caller intends to act on what it
      * found: restoring the scroll unmounts the very row it was looking for,
@@ -1286,7 +1293,12 @@ async function main() {
       scroller.scrollTop = startTop;
       await wait(120);
     }
-    return { scrolled: true, steps };
+    /* Whether the walk actually got to the bottom. Comparing one sweep's size
+     * against earlier ones leaves a hole on a fresh page: the first sweep sets
+     * the standard, so a partial one becomes the yardstick and marks players
+     * drafted from a view that never covered the list. Reaching the end is a
+     * fact about this sweep alone. */
+    return { scrolled: true, steps, reachedEnd };
   }
 
   /* Keep the board current regardless of what else is enabled. Detection
