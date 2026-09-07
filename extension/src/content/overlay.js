@@ -263,6 +263,17 @@ async function main() {
   let observers = [];
   let lastPollAt = Date.now();
   let previousBoardNames = null;
+  /* Where the list was standing when those names were read.
+   *
+   * The player list is virtualised: perhaps twenty rows exist in the DOM at
+   * any moment, and scrolling swaps them. Comparing two samples taken at
+   * different scroll positions therefore says nothing about who was drafted —
+   * every row that scrolled out of view looks exactly like a player who left
+   * the pool. A live draft that had not yet made its first pick recorded
+   * seventeen picks that way, all of them bottom-of-the-list players, because
+   * queue maintenance had scrolled down to star someone and the next poll
+   * found the list back at the top. */
+  let previousScrollTop = null;
   let boardNameSet = null;
   let boardPlayers = null;
   let lastConfig = null;
@@ -320,7 +331,8 @@ async function main() {
   Storage.getPollMode().then((mode) => { modeSelect.value = mode; });
   modeSelect.addEventListener("change", () => {
     Storage.setPollMode(modeSelect.value);
-    previousBoardNames = null; // avoid a false diff across a mode switch
+    previousBoardNames = null;
+    previousScrollTop = null; // avoid a false diff across a mode switch
   });
 
   pollToggle.addEventListener("click", () => {
@@ -576,6 +588,7 @@ async function main() {
     try {
       const snapshot = await sendMessage({ type: "RESET_DRAFT" });
       previousBoardNames = null;
+      previousScrollTop = null;
       reportedAmbiguous.clear();
       turnActive = false;
       turnHandled = false;
@@ -918,6 +931,7 @@ async function main() {
     } finally {
       detectionSuspended = false;
       previousBoardNames = null;
+      previousScrollTop = null;
     }
 
     /* The same rule the board repair uses. This path is the one that actually
@@ -948,7 +962,8 @@ async function main() {
     searchWeTyped = null;
     setInputValue(searchBox, "");
     await wait(400);
-    previousBoardNames = null; // the filtered page was never a real board
+    previousBoardNames = null;
+    previousScrollTop = null; // the filtered page was never a real board
     detectionSuspended = false;
   }
 
@@ -1086,6 +1101,7 @@ async function main() {
         setInputValue(box, "");
         searchWeTyped = null;
         previousBoardNames = null;
+        previousScrollTop = null;
         await wait(500);
       } else {
         return noteQueueIdle(`queue: the room's search box has "${box.value}" in it — clear it to see the full list`);
@@ -1291,6 +1307,7 @@ async function main() {
     } finally {
       detectionSuspended = false;
       previousBoardNames = null;
+      previousScrollTop = null;
     }
 
     if (!sweepTrust(seen.size, sweep.reachedEnd, expected, bestSweepSeen).free) {
@@ -1388,6 +1405,7 @@ async function main() {
       if (detectionSuspended) {
         detectionSuspended = false;
         previousBoardNames = null;
+        previousScrollTop = null;
       }
       if (isContextGone(err)) return handleDeadContext();
       showError(String(err.message || err));
@@ -1450,6 +1468,7 @@ async function main() {
       boardNameSet = null;
       boardPlayers = null;
       previousBoardNames = null;
+      previousScrollTop = null;
       addLog(`Imported ${players.length} players from Yahoo — the board is now the league's own list.`);
       await refresh();
     } catch (err) {
@@ -1640,6 +1659,7 @@ async function main() {
         setInputValue(box, "");
         addLog("Cleared a leftover player search.");
         previousBoardNames = null;
+        previousScrollTop = null;
       }
       searchWeTyped = null;
     }
@@ -1682,7 +1702,9 @@ async function main() {
         addLog(`"${abbrev}" matches two players — mark it by hand if it was drafted.`);
       }
 
-      if (previousBoardNames) {
+      const scrollNow = findListScroller(document.body)?.scrollTop ?? null;
+      const sameView = previousScrollTop === scrollNow;
+      if (previousBoardNames && sameView) {
         // "appear": a picks feed — names show up as taken.
         // "disappear": an available-player pool — names leave it as taken.
         const newlyDrafted = inferDraftedFromPoll(previousBoardNames, found, modeSelect.value);
@@ -1696,6 +1718,7 @@ async function main() {
         }
       }
       previousBoardNames = found;
+      previousScrollTop = scrollNow;
     } catch (err) {
       // A dead context is permanent and needs saying — silently retrying it
       // every few seconds is what made a reloaded extension look like a
@@ -1821,6 +1844,7 @@ async function main() {
       if (detectionSuspended) {
         detectionSuspended = false;
         previousBoardNames = null;
+        previousScrollTop = null;
       }
       if (isContextGone(err)) return handleDeadContext();
       /* Not silent any more. This swallowed a ReferenceError on every turn —
