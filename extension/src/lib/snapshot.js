@@ -8,6 +8,7 @@
 import { loadPlayers, applyNotes, assignTiers, applyDraftState, applyByes, scarcityReport } from "../engine/board.js";
 import { autoPick, topPicks } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
+import { adpUrl, parseAdpFeed } from "./consensusAdp.js";
 
 let cachedAdp = null;
 let cachedNotes = null;
@@ -69,9 +70,21 @@ async function buildPlayers(adp, notes, byes) {
   const players = loadPlayers(rows);
   applyNotes(players, notes);
 
-  /* The room's own ADP wins over anything else: it is the number the people
-   * in this draft are drafting toward, and the only real one available — the
-   * league player list has no such column. */
+  /* Consensus ADP under the room's own. Order of preference, weakest first:
+   * list position from the pool, then consensus ADP from outside Yahoo, then
+   * whatever this actual draft room reports — that last being the number the
+   * people in this room are drafting toward. */
+  const consensus = await Storage.getConsensus();
+  if (consensus?.players?.length) {
+    const byName = new Map(consensus.players.map((p) => [p.name, p]));
+    for (const p of players) {
+      const match = byName.get(p.name);
+      if (!match) continue;
+      p.adp = match.adp;
+      if (p.bye == null && match.bye != null) p.bye = match.bye;
+    }
+  }
+
   const roomAdp = await Storage.getRoomAdp();
   if (roomAdp) {
     for (const p of players) {
@@ -333,6 +346,28 @@ export async function shortlist(n = 5) {
 /* ADP observed in the draft room, merged over whatever the board was using.
  * Names arrive as the room writes them and are resolved by the caller, so
  * this stores board names only. */
+/* Fetch consensus ADP and keep it. Runs in the service worker because a
+ * content script cannot go cross-origin; the host permission covers only this
+ * one domain. */
+export async function refreshConsensusAdp() {
+  const config = await Storage.getConfig();
+  const url = adpUrl({
+    scoring: config.league?.scoring,
+    teams: config.league?.num_teams,
+    year: new Date().getFullYear(),
+  });
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`ADP feed returned ${response.status}`);
+  const players = parseAdpFeed(await response.json());
+  if (players.length < 100) {
+    // A short feed is a failed request wearing a success, and this replaces
+    // the ordering of the entire board.
+    return { ok: false, count: players.length };
+  }
+  await Storage.setConsensus({ fetchedAt: Date.now(), url, players });
+  return { ok: true, count: players.length };
+}
+
 export async function recordRoomAdp(entries) {
   const existing = (await Storage.getRoomAdp()) || {};
   let changed = 0;

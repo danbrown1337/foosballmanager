@@ -24,6 +24,7 @@ const KEYS = {
   queueEnabled: "fm_queue_enabled",
   pool: "fm_pool",
   roomAdp: "fm_room_adp",
+  consensus: "fm_consensus_adp",
 };
 
 /* Yahoo's standard mock draft room starts one W/R/T flex and a kicker; the
@@ -152,6 +153,15 @@ export const Storage = {
   /* ADP as the draft room reports it, keyed by board name. The league player
    * list has no ADP column, so without this the board orders by list position
    * and has no idea where players actually go. */
+  /* Consensus ADP fetched from outside Yahoo, with when it was fetched: this
+   * one goes stale in a way the room's own numbers don't. */
+  async getConsensus() {
+    return get(KEYS.consensus, null);
+  },
+  async setConsensus(value) {
+    return set(KEYS.consensus, value);
+  },
+
   async getRoomAdp() {
     return get(KEYS.roomAdp, null);
   },
