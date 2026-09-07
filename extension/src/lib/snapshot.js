@@ -81,6 +81,17 @@ async function buildPlayers(adp, notes, byes) {
   }
   const players = loadPlayers(rows);
   applyNotes(players, notes);
+  /* Every number we hold for a player, kept rather than overwritten.
+   *
+   * The layers below used to replace each other, so the last one to write won
+   * and the disagreement between them was thrown away. That disagreement is
+   * information: when one board has a player 69th and another has him 117th,
+   * something about his role is unsettled, and the engine should be less sure
+   * of him than of a player every source agrees on. */
+  for (const p of players) {
+    p.adpBySource = {};
+    if (p.adpSource === "pool") p.adpBySource.pool = p.adp;
+  }
 
   /* Consensus ADP under the room's own. Order of preference, weakest first:
    * list position from the pool, then consensus ADP from outside Yahoo, then
@@ -94,6 +105,7 @@ async function buildPlayers(adp, notes, byes) {
       if (!match) continue;
       p.adp = match.adp;
       p.adpSource = "consensus";
+      p.adpBySource.consensus = match.adp;
       if (p.bye == null && match.bye != null) p.bye = match.bye;
     }
   }
@@ -108,6 +120,17 @@ async function buildPlayers(adp, notes, byes) {
     }
   }
 
+  /* Projected points, straight off the room's own column. This is what makes
+   * a tier cliff measurable: how much is actually lost by taking the next
+   * player at the position instead of this one. */
+  const roomProjection = await Storage.getRoomProjection();
+  if (roomProjection) {
+    for (const p of players) {
+      const value = roomProjection[p.name];
+      if (typeof value === "number" && value > 0) p.proj = value;
+    }
+  }
+
   const roomAdp = await Storage.getRoomAdp();
   const roomAdpCount = roomAdp ? Object.keys(roomAdp).length : 0;
   if (roomAdp) {
@@ -116,6 +139,7 @@ async function buildPlayers(adp, notes, byes) {
       if (typeof value === "number" && value > 0) {
         p.adp = value;
         p.adpSource = "room";
+        p.adpBySource.room = value;
       }
     }
   }
@@ -139,6 +163,13 @@ async function buildPlayers(adp, notes, byes) {
     for (const p of players) {
       if (p.adpSource === "rank") p.undrafted = true;
     }
+  }
+
+  /* How far apart the sources are for each player. Two is enough to see a
+   * disagreement; the spread is what the engine acts on. */
+  for (const p of players) {
+    const values = Object.values(p.adpBySource).filter((v) => typeof v === "number");
+    p.adpSpread = values.length > 1 ? Math.max(...values) - Math.min(...values) : 0;
   }
   if (pool?.players?.length) {
     // Injury designations come only from the imported pool; the bundled file
@@ -179,7 +210,16 @@ async function buildPlayers(adp, notes, byes) {
   return players;
 }
 
-export async function buildSnapshot() {
+/* The turn context the room knows and the engine cannot work out for itself:
+ * how many picks until this manager is up again. Only the panel can see it —
+ * it depends on the draft slot and the snake — so it rides in with the
+ * request rather than being stored. */
+function withTurnContext(config, picksUntilTurn) {
+  if (!Number.isFinite(picksUntilTurn) || picksUntilTurn <= 0) return config;
+  return { ...config, autopilot: { ...(config.autopilot || {}), picks_until_turn: picksUntilTurn } };
+}
+
+export async function buildSnapshot({ picksUntilTurn = null } = {}) {
   const [{ adp, notes, byes }, config, draftState, practice] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
@@ -190,7 +230,7 @@ export async function buildSnapshot() {
   const players = await buildPlayers(adp, notes, byes);
   applyDraftState(players, draftState);
 
-  const decision = autoPick(players, config);
+  const decision = autoPick(players, withTurnContext(config, picksUntilTurn));
   const mine = players.filter((p) => p.draftedBy === "mine").sort((a, b) => a.adp - b.adp);
 
   return {
@@ -350,7 +390,7 @@ export async function setPracticeMode(active) {
 
 /* The shortlist the draft room's queue should hold. Built from the same live
  * state as buildSnapshot, so it reflects every pick recorded so far. */
-export async function shortlist(n = 5) {
+export async function shortlist(n = 5, { picksUntilTurn = null } = {}) {
   const [{ adp, notes, byes }, config, draftState] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
@@ -404,7 +444,7 @@ export async function shortlist(n = 5) {
   }
 
   const PER_POSITION = 2;
-  const picks = [...reserved, ...topPicks(players, config, n * 3)];
+  const picks = [...reserved, ...topPicks(players, withTurnContext(config, picksUntilTurn), n * 3)];
   const counts = {};
   const out = [];
   const seenNames = new Set();
@@ -469,6 +509,19 @@ export async function recordRoomStatus(entries) {
   }
   if (changed > 0) await Storage.setRoomStatus(existing);
   return { changed, total: Object.keys(existing).length };
+}
+
+export async function recordRoomProjection(entries) {
+  const existing = (await Storage.getRoomProjection()) || {};
+  let changed = 0;
+  for (const [name, proj] of Object.entries(entries)) {
+    if (typeof proj !== "number" || !(proj > 0)) continue;
+    if (existing[name] === proj) continue;
+    existing[name] = proj;
+    changed++;
+  }
+  if (changed > 0) await Storage.setRoomProjection(existing);
+  return { changed };
 }
 
 export async function recordRoomAdp(entries) {

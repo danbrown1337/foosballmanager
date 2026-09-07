@@ -31,6 +31,14 @@ export function makePlayer({ rank, name, team, pos, adp, adpSource = null }) {
      * really list position standing in for a number nobody published. Null
      * where the question doesn't arise — the bundled file is all real ADP. */
     adpSource,
+    /* Each source's number, and how far apart they are. A player two boards
+     * disagree about by fifty places is not the same bet as one they agree
+     * on, whatever the number in .adp says. */
+    /* Projected season points, when the room publishes them. Null elsewhere,
+     * and every rule that uses it treats null as "no information". */
+    proj: null,
+    adpBySource: {},
+    adpSpread: 0,
     tier: 0,
     draftedBy: null, // null | "mine" | "rival"
     noteTag: null,

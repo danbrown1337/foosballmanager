@@ -182,7 +182,7 @@ async function main() {
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
     findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
-    describeRow, sweepTrust, Attempts;
+    readRoomProjections, describeRow, sweepTrust, Attempts;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
@@ -196,8 +196,8 @@ async function main() {
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
-     describeRow } =
+     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomProjections,
+     readRoomStatuses, describeRow } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   /* Every helper this panel uses is destructured from a dynamic import, and a
@@ -212,7 +212,8 @@ async function main() {
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-    looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses, describeRow, fetchPool,
+    looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
+    readRoomProjections, describeRow, fetchPool,
     leagueIdFromUrl, sweepTrust, Attempts,
   };
   const unbound = Object.keys(wired).filter((name) => typeof wired[name] !== "function");
@@ -450,7 +451,7 @@ async function main() {
 
   async function refresh() {
     try {
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn });
       render(snapshot);
       showError(null);
       return snapshot;
@@ -967,8 +968,8 @@ async function main() {
     const unusable = new Set();
 
     for (let attempt = 0; attempt <= maxSkips; attempt++) {
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
-      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2 });
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn });
+      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2, picksUntilTurn });
       /* Skip what is resting as well as what this turn has already ruled
        * out, so a name the room would not produce a moment ago doesn't cost
        * another walk of the list now. */
@@ -1125,7 +1126,7 @@ async function main() {
      * two quarterbacks. Only players the shortlist no longer wants at all,
      * one per cycle, so a queue the user curated isn't emptied underneath
      * them. */
-    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth() });
+    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn });
     const keep = new Set(shortlistNow.map((p) => p.name));
     const stale = [...inRoom].filter((name) => !keep.has(name));
     if (stale.length > 0) {
@@ -1259,6 +1260,7 @@ async function main() {
      * matcher that handles abbreviations, and anything ambiguous is dropped
      * rather than guessed at. */
     const adpByBoardName = {};
+    const projByBoardName = {};
     const statusByBoardName = {};
     detectionSuspended = true;
     try {
@@ -1269,6 +1271,12 @@ async function main() {
         for (const [label, adp] of readRoomAdp(document.body)) {
           const resolved = findBoardNames(label, boardNameSet, boardPlayers);
           if (resolved.size === 1) adpByBoardName[[...resolved][0]] = adp;
+        }
+        // The same walk, one more column: projected points, which is what
+        // makes a tier cliff measurable without any projections provider.
+        for (const [label, proj] of readRoomProjections(document.body)) {
+          const resolved = findBoardNames(label, boardNameSet, boardPlayers);
+          if (resolved.size === 1) projByBoardName[[...resolved][0]] = proj;
         }
         for (const [label, status] of readRoomStatuses(document.body)) {
           const resolved = findBoardNames(label, boardNameSet, boardPlayers);
@@ -1327,6 +1335,16 @@ async function main() {
       const adpResult = await sendMessage({ type: "RECORD_ROOM_ADP", entries: adpByBoardName });
       if (adpResult.changed > 0) {
         addLog(`Read ADP for ${adpResult.changed} players from the room (${adpResult.total} known).`);
+      }
+    }
+
+    const projCount = Object.keys(projByBoardName).length;
+    if (projCount > 0) {
+      const projResult = await sendMessage({
+        type: "RECORD_ROOM_PROJECTION", entries: projByBoardName,
+      });
+      if (projResult.changed > 0) {
+        addLog(`Read projected points for ${projResult.changed} players from the room.`);
       }
     }
 
@@ -1443,6 +1461,7 @@ async function main() {
    * nineteen" is a real number — but for now it is reported rather than
    * acted on. */
   let lastPicksAway = null;
+  let picksUntilTurn = null;
   function reportDraftPosition(text, config) {
     if (!parseDraftSlot) return;
     const slot = parseDraftSlot(location.href, document.title);
@@ -1465,6 +1484,7 @@ async function main() {
     const away = picksUntilMyTurn(position, slot, teams);
     if (away === null || away === lastPicksAway) return;
     lastPicksAway = away;
+    picksUntilTurn = away; // the engine can't derive this: it needs the slot and the snake
     if (away === 0) return; // the turn banner already covers this
     addLog(`Pick ${slot} of ${teams} — your next turn is ${away} pick${away === 1 ? "" : "s"} away.`);
   }
@@ -1587,7 +1607,7 @@ async function main() {
 
     try {
       if (!boardNameSet) {
-        const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
+        const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn });
         boardNameSet = new Set(snapshot.board.map((p) => p.name));
         boardPlayers = snapshot.board;
       }

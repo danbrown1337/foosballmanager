@@ -269,6 +269,91 @@ export function needBonus(player, mine, config, picksMade) {
   return -Math.min(pull, cap); // negative: lower score is a better pick
 }
 
+/* How much less sure to be about a player his sources disagree about.
+ *
+ * MarShawn Lloyd was 69th on one fresh board on September 5 and 117th on
+ * another on September 7, while the back ahead of him had a court date move
+ * forward and stayed on the commissioner's exempt list. Neither board is
+ * wrong; his role is unsettled, and averaging 69 and 117 into 93 hides
+ * exactly the thing worth knowing. A disagreement is a reason to be less
+ * certain, not a number to smooth away.
+ *
+ * The charge is deliberately small — this decides between players who are
+ * otherwise close, and a contested player can still be the right pick. */
+export const DISPERSION_BANDS = [
+  [36, 20], // the sources are describing different players
+  [21, 10],
+  [11, 4],
+];
+
+export function dispersionPenalty(player, config) {
+  const spread = player.adpSpread || 0;
+  const bands = config.autopilot?.dispersion_bands ?? DISPERSION_BANDS;
+  for (const [floor, weight] of bands) if (spread >= floor) return weight;
+  return 0;
+}
+
+/* What is actually lost by waiting one more player at this position.
+ *
+ * A rank difference of one or two inside a tier is noise; the gap between the
+ * last player of a strong tier and the first of the next is the whole
+ * decision. The room publishes projected points per player, so this is a
+ * measurement rather than an inference: the drop from this player to the next
+ * available one at his position, converted into draft places at a
+ * configurable rate.
+ *
+ * Null projections mean no information — the rule contributes nothing rather
+ * than guessing, the same treatment unknown bye weeks get. */
+export const CLIFF_PLACES_PER_POINT = 0.5;
+export const CLIFF_CAP = 30;
+
+export function tierCliffBonus(player, players, config) {
+  if (typeof player.proj !== "number") return 0;
+  const rate = config.autopilot?.cliff_places_per_point ?? CLIFF_PLACES_PER_POINT;
+  const cap = config.autopilot?.cliff_cap ?? CLIFF_CAP;
+
+  const nextUp = players
+    .filter((p) => p.pos === player.pos && !p.draftedBy && p.name !== player.name &&
+      typeof p.proj === "number" && p.adp > player.adp)
+    .sort((a, b) => a.adp - b.adp)[0];
+  if (!nextUp) return 0;
+
+  const drop = player.proj - nextUp.proj;
+  if (drop <= 0) return 0; // the next man up is as good; nothing is lost by waiting
+  return -Math.min(drop * rate, cap); // negative: a cliff pulls him forward
+}
+
+/* Whether this position can wait until the next turn.
+ *
+ * Raw ADP already answers "who is best", so scoring a player by his own
+ * chance of surviving would only restate it. The thing ADP order does not
+ * say is what happens to the *position*: if the next comparable back will
+ * also be gone before your next pick, waiting costs you the tier, and if he
+ * will still be sitting there, waiting costs nothing at all. That is the
+ * difference between two candidates who otherwise score alike.
+ *
+ * Pairs with the tier cliff, which measures how much is lost. This measures
+ * how likely you are to lose it, and stays small because both are estimates
+ * built on a market average. */
+export const URGENCY_BONUS = 6;
+export const PATIENCE_PENALTY = 4;
+
+export function urgencyBonus(player, players, config, picksMade) {
+  const window = config.autopilot?.picks_until_turn;
+  if (!Number.isFinite(window) || window <= 0) return 0; // no turn context
+
+  const nextUp = players
+    .filter((p) => p.pos === player.pos && !p.draftedBy && p.name !== player.name &&
+      p.adp > player.adp)
+    .sort((a, b) => a.adp - b.adp)[0];
+  if (!nextUp) return -(config.autopilot?.urgency_bonus ?? URGENCY_BONUS); // last of his kind
+
+  const deadline = picksMade + 1 + window;
+  return nextUp.adp <= deadline
+    ? -(config.autopilot?.urgency_bonus ?? URGENCY_BONUS)   // his replacement goes too
+    : (config.autopilot?.patience_penalty ?? PATIENCE_PENALTY); // the position keeps
+}
+
 export function byePenalty(player, mine, config) {
   const weight = config.autopilot?.bye_penalty ?? DEFAULT_BYE_PENALTY;
   if (!weight || !player.bye) return 0;
@@ -305,6 +390,9 @@ export function autoPick(players, config) {
       guessedAdp: guessPenalty(p, config),
       backup: backupPenalty(p, mine, players, config),
       need: needBonus(p, mine, config, picksMade),
+      dispersion: dispersionPenalty(p, config),
+      cliff: tierCliffBonus(p, players, config),
+      urgency: urgencyBonus(p, players, config, picksMade),
     };
     components[p.name] = parts;
     scores[p.name] = Object.values(parts).reduce((a, b) => a + b, 0);

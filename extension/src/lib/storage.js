@@ -25,6 +25,7 @@ const KEYS = {
   pool: "fm_pool",
   roomAdp: "fm_room_adp",
   draftLog: "fm_draft_log",
+  roomProjection: "fm_room_projection",
   roomStatus: "fm_room_status",
   consensus: "fm_consensus_adp",
 };
@@ -190,6 +191,13 @@ export const Storage = {
   },
   async clearDraftLog() {
     return set(KEYS.draftLog, []);
+  },
+
+  async getRoomProjection() {
+    return get(KEYS.roomProjection, null);
+  },
+  async setRoomProjection(map) {
+    return set(KEYS.roomProjection, map);
   },
 
   async getRoomAdp() {
