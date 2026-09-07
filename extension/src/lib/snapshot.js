@@ -68,6 +68,17 @@ async function buildPlayers(adp, notes, byes) {
   }
   const players = loadPlayers(rows);
   applyNotes(players, notes);
+
+  /* The room's own ADP wins over anything else: it is the number the people
+   * in this draft are drafting toward, and the only real one available — the
+   * league player list has no such column. */
+  const roomAdp = await Storage.getRoomAdp();
+  if (roomAdp) {
+    for (const p of players) {
+      const value = roomAdp[p.name];
+      if (typeof value === "number" && value > 0) p.adp = value;
+    }
+  }
   if (pool?.players?.length) {
     // Injury designations come only from the imported pool; the bundled file
     // has none, and a player who cannot play must not look draftable.
@@ -319,6 +330,22 @@ export async function shortlist(n = 5) {
  * cannot tell us, since a player you drafted is missing from it for the same
  * reason a rival's pick is.
  */
+/* ADP observed in the draft room, merged over whatever the board was using.
+ * Names arrive as the room writes them and are resolved by the caller, so
+ * this stores board names only. */
+export async function recordRoomAdp(entries) {
+  const existing = (await Storage.getRoomAdp()) || {};
+  let changed = 0;
+  for (const [name, adp] of Object.entries(entries)) {
+    if (typeof adp !== "number" || !(adp > 0)) continue;
+    if (existing[name] === adp) continue;
+    existing[name] = adp;
+    changed++;
+  }
+  if (changed > 0) await Storage.setRoomAdp(existing);
+  return { changed, total: Object.keys(existing).length };
+}
+
 export async function repairBoard(availableNames) {
   const available = new Set(availableNames);
   const { adp, notes, byes } = await loadStaticData();

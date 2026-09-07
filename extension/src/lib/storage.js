@@ -23,6 +23,7 @@ const KEYS = {
   practice: "fm_practice",
   queueEnabled: "fm_queue_enabled",
   pool: "fm_pool",
+  roomAdp: "fm_room_adp",
 };
 
 /* Yahoo's standard mock draft room starts one W/R/T flex and a kicker; the
@@ -148,6 +149,16 @@ export const Storage = {
    * whole point is that forgetting is not survivable on draft day. */
   /* The player pool scraped from the league's own list, when one has been
    * imported. Null means fall back to the bundled snapshot. */
+  /* ADP as the draft room reports it, keyed by board name. The league player
+   * list has no ADP column, so without this the board orders by list position
+   * and has no idea where players actually go. */
+  async getRoomAdp() {
+    return get(KEYS.roomAdp, null);
+  },
+  async setRoomAdp(map) {
+    return set(KEYS.roomAdp, map);
+  },
+
   async getPool() {
     return get(KEYS.pool, null);
   },

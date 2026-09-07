@@ -11,6 +11,7 @@ import {
   setPracticeMode,
   shortlist,
   repairBoard,
+  recordRoomAdp,
   markPick,
   undoPick,
   autopickCommit,
@@ -50,6 +51,9 @@ async function handle(message, sender) {
 
     case "REPAIR_BOARD":
       return repairBoard(message.names);
+
+    case "RECORD_ROOM_ADP":
+      return recordRoomAdp(message.entries);
 
     case "MARK_PICK":
       return markPick(message.name, message.by);

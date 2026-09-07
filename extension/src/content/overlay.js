@@ -180,7 +180,7 @@ async function main() {
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
-    findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp;
+    findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, defenceAliases } =
@@ -1004,11 +1004,20 @@ async function main() {
     const expected = snap.board.filter((p) => !p.draftedBy).length;
 
     const seen = new Set();
+    /* Collect ADP while we're already walking every row. Names come back as
+     * the room writes them, so each is resolved against the board with the
+     * matcher that handles abbreviations, and anything ambiguous is dropped
+     * rather than guessed at. */
+    const adpByBoardName = {};
     detectionSuspended = true;
     try {
       await sweepList(() => {
         for (const name of findBoardNames(scroller.innerText, boardNameSet, boardPlayers)) {
           seen.add(name);
+        }
+        for (const [label, adp] of readRoomAdp(document.body)) {
+          const resolved = findBoardNames(label, boardNameSet, boardPlayers);
+          if (resolved.size === 1) adpByBoardName[[...resolved][0]] = adp;
         }
       });
     } finally {
@@ -1025,6 +1034,14 @@ async function main() {
     }
     const result = await sendMessage({ type: "REPAIR_BOARD", names: [...seen] });
     lastBoardUpdateAt = Date.now();
+
+    const adpCount = Object.keys(adpByBoardName).length;
+    if (adpCount > 0) {
+      const adpResult = await sendMessage({ type: "RECORD_ROOM_ADP", entries: adpByBoardName });
+      if (adpResult.changed > 0) {
+        addLog(`Read ADP for ${adpResult.changed} players from the room (${adpResult.total} known).`);
+      }
+    }
 
     if (!verify) return { ok: true, result };
     const resolved = await resolveAvailableRecommendation(10);

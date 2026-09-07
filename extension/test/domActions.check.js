@@ -151,7 +151,7 @@ const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
   findPlayerSearchBox, setInputValue, surnameOf, findQueueStar,
   findDraftButton, findQueueRemove, looksUnavailableOnPage,
-  rowShowsNoAdp } from "../src/lib/domActions.js";
+  rowShowsNoAdp, readRoomAdp } from "../src/lib/domActions.js";
 import { parsePoolPage } from "../src/lib/yahooPool.js";
 
 export async function run(document) {
@@ -316,6 +316,12 @@ export async function run(document) {
     { player: { pos: "DEF", team: "HOU" } });
   results.defenceRow = defEl ? defEl.closest("tr").id : null;
 
+  // The room's ADP column, which the league player list doesn't have.
+  const roomAdp = readRoomAdp(document.body);
+  results.adpPairs = roomAdp.size;
+  results.adpAchane = roomAdp.get("D. Achane") ?? null;
+  results.adpSkipsDashes = !roomAdp.has("J. Reed");
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
 
@@ -439,6 +445,8 @@ async function main() {
       ["reads an out designation off the row itself", result.naOnPage === true],
       ["spots a row whose ADP column is a dash", result.noAdpRow === true],
       ["finds a defence by its team nickname", result.defenceRow === "row-defence"],
+      ["reads the room's ADP column", result.adpAchane === 15.3],
+      ["skips rows whose ADP is a dash", result.adpSkipsDashes === true],
       ["and leaves a row with a real ADP alone", result.hasAdpRow === false],
       ["and doesn't flag a healthy player", result.fitOnPage === false],
     ];
