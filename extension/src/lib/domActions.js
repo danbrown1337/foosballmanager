@@ -72,6 +72,23 @@ function abbrevForms(name) {
   return [`${parts[0][0]}. ${last}`, `${parts[0][0]}.${last}`];
 }
 
+/* The ADP the room prints on one row, read from its table's ADP column.
+ *
+ * Used to tell two players apart when nothing else can. Bijan Robinson and
+ * Brian Robinson are both running backs for Atlanta, so an abbreviated name,
+ * a position and a team are all identical between them — the room writes
+ * "B. ROBINSON" for each. Their ADPs are 2.3 and 152.9. */
+export function rowAdp(row) {
+  const table = row.closest?.("table");
+  if (!table) return null;
+  const headerRows = [...table.querySelectorAll("thead tr")];
+  const headers = headerRows.length ? [...headerRows[headerRows.length - 1].children] : [];
+  const adpCol = headers.findIndex((th) => /^adp$/i.test((th.textContent || "").trim()));
+  if (adpCol < 0) return null;
+  const value = Number((row.children[adpCol]?.textContent || "").trim());
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
 export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, player = null } = {}) {
   const doc = root.ownerDocument || root;
   /* A defence's row says "Texans", never "Houston Defense", so the name we
@@ -97,8 +114,6 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
     // when no team is known at all.
     const required = player.team || player.pos;
     if (!required) return true;
-    const re = new RegExp(`(?<!\\w)${escapeRegExp(required)}(?!\\w)`, "i");
-    const reForm = new RegExp(`(?<!\\w)${escapeRegExp(form)}(?!\\w)`, "ig");
     let el = node.parentElement;
     for (let d = 0; el && d < maxAncestorDepth; d++, el = el.parentElement) {
       const text = el.textContent || "";
@@ -106,8 +121,15 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
       /* Stop before an ancestor holding a second player with this same
        * abbreviation: its text is the list, not this row, and a neighbouring
        * row's team would otherwise "confirm" the wrong player. */
-      if ((text.match(reForm) || []).length > 1) break;
-      if (re.test(text)) return true;
+      if (countMentions(text, form) > 1) break;
+      /* Cell by cell, not by pattern. textContent runs the cells together —
+       * a row reads "B. RobinsonRBAtlBye 11" — so "Atl" sits between two
+       * capitals, where a word-boundary test fails and even textMentions
+       * fails, since that only relaxes the trailing side. Team confirmation
+       * was therefore failing on every row in the real room, which is what
+       * "couldn't confirm Chase Brown" meant in the log. The room gives each
+       * value its own cell, so ask the cells. */
+      if (showsValue(el, required)) return true;
     }
     return false;
   };
@@ -124,8 +146,58 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
     },
   });
 
-  const textNode = walker.nextNode();
-  if (!textNode) return null;
+  /* Collect every match rather than taking the first.
+   *
+   * Taking the first drafted Brian Robinson with the eighth pick of a draft,
+   * where the intended player was Bijan — same initial, same surname, same
+   * position, same team, and so nothing above can separate them. The panel
+   * had already noticed the collision and said so in its log; only this path
+   * went ahead regardless. */
+  const matches = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    matches.push(node);
+    if (matches.length >= 8) break; // a real collision is two rows, not eight
+  }
+  if (matches.length === 0) return null;
+
+  /* Several matches are usually one player written in several places — the
+   * pick feed, the queue panel, his row — not two players. A collision is
+   * specifically two different rows of the same table competing for the name,
+   * which is the only case worth arbitrating. */
+  const rowsSeen = new Map();
+  for (const node of matches) {
+    const row = node.parentElement?.closest?.("tr");
+    if (!row || rowsSeen.has(row)) continue;
+    rowsSeen.set(row, { node, adp: rowAdp(row) });
+  }
+
+  let textNode = matches[0];
+  const rivals = [...rowsSeen.values()].filter((r) => r.adp !== null);
+  if (rivals.length > 1) {
+    /* ADP is the one thing that still tells them apart, and the board knows
+     * the intended player's. Pick the row nearest it, and only when the
+     * choice is clear: a wrong click drafts a player and cannot be undone,
+     * so an unreadable or ambiguous column means walking away, not guessing. */
+    const wanted = Number(player?.adp);
+    if (!Number.isFinite(wanted)) return null;
+    const scored = rivals
+      .map((r) => ({ node: r.node, gap: Math.abs(r.adp - wanted) }))
+      .sort((a, b) => a.gap - b.gap);
+    if (scored.length > 1 && scored[1].gap - scored[0].gap < 5) return null;
+    if (scored[0].gap > 40) return null; // nearest is still not this player
+    textNode = scored[0].node;
+  } else if (rivals.length === 1) {
+    /* One row is not proof of no collision: the list mounts a dozen rows at a
+     * time, so the other Robinson may simply be scrolled out. Where both the
+     * board and the row state an ADP, they have to be in the same
+     * neighbourhood. The tolerance is wide because the two numbers come from
+     * different sources — our consensus feed and Yahoo's own column — and
+     * they disagree by a few places routinely. They do not disagree by a
+     * hundred and fifty. */
+    const wanted = Number(player?.adp);
+    if (Number.isFinite(wanted) && Math.abs(rivals[0].adp - wanted) > 40) return null;
+    textNode = rivals[0].node;
+  }
 
   let el = textNode.parentElement;
   let fallback = el;
@@ -369,6 +441,30 @@ export function readRoomAdp(root) {
  * intact — a capital may follow, since textContent runs cells together into
  * "J. ReedNAWRCar", but a lowercase letter may not, or "Reeder" would match.
  */
+/* How many times a form is mentioned, under the same rule textMentions uses.
+ * Counting with a word-boundary regex disagreed with the test that follows
+ * it, so a row could be rejected as "two players" and then not confirmed for
+ * either of them. */
+/* Does this element show exactly this value — a team or a position — in one
+ * of its cells, or spelled out cleanly in its text? */
+function showsValue(el, required) {
+  const wanted = required.trim().toUpperCase();
+  for (const cell of el.querySelectorAll?.("td, th, span, abbr, div") || []) {
+    if ((cell.textContent || "").trim().toUpperCase() === wanted) return true;
+  }
+  return textMentions(el.textContent || "", [required]);
+}
+
+function countMentions(text, form) {
+  let n = 0;
+  const re = new RegExp(`(?<!\\w)${escapeRegExp(form)}`, "gi");
+  for (const match of text.matchAll(re)) {
+    const next = text[match.index + match[0].length];
+    if (!next || !/[a-z]/.test(next)) n++;
+  }
+  return n;
+}
+
 function textMentions(text, forms) {
   for (const form of forms) {
     const re = new RegExp(`(?<!\\w)${escapeRegExp(form)}`, "gi");

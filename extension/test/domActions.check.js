@@ -46,8 +46,8 @@ const PAGE_HTML = `<!doctype html><html><body>
 
     <!-- Same abbreviation, two players, same position: only the team tells
          them apart, and clicking the wrong one drafts the wrong player. -->
-    <li><button class="row-bijan">B. Robinson RB Atl</button></li>
-    <li><button class="row-brian">B. Robinson RB Was</button></li>
+    <li><button class="row-mikew">M. Williams WR Sea</button></li>
+    <li><button class="row-marvw">M. Williams WR NYJ</button></li>
   </ul>
 
   <div id="confirmDialog" style="display:none">
@@ -95,6 +95,16 @@ const PAGE_HTML = `<!doctype html><html><body>
       <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
       <td><span>J. Reed</span><span>NA</span><span>WR</span><span>Car</span></td>
       <td>-</td>
+    </tr>
+    <tr id="row-bijan">
+      <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
+      <td><span>B. Robinson</span><span>RB</span><span>Atl</span><span>Bye 11</span></td>
+      <td>2.3</td>
+    </tr>
+    <tr id="row-brian">
+      <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
+      <td><span>B. Robinson</span><span>RB</span><span>Atl</span><span>Bye 11</span></td>
+      <td>152.9</td>
     </tr>
     <tr id="row-exempt">
       <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
@@ -199,18 +209,18 @@ export async function run(document) {
     { player: { pos: "WR", team: "Min" } });
   results.abbrevClass = abbrev ? abbrev.className : null;
 
-  // Same abbreviation, two rows: the team must decide which is clicked.
-  const bijan = findPlayerClickTarget(document.body, "Bijan Robinson",
-    { player: { pos: "RB", team: "Atl" } });
-  results.bijanClass = bijan ? bijan.className : null;
-  const brian = findPlayerClickTarget(document.body, "Brian Robinson",
-    { player: { pos: "RB", team: "Was" } });
-  results.brianClass = brian ? brian.className : null;
+  // Same abbreviation, two entries, different teams: the team decides.
+  const mikeW = findPlayerClickTarget(document.body, "Mike Williams",
+    { player: { pos: "WR", team: "Sea" } });
+  results.bijanClass = mikeW ? mikeW.className : null;
+  const marvW = findPlayerClickTarget(document.body, "Marvin Williams",
+    { player: { pos: "WR", team: "NYJ" } });
+  results.brianClass = marvW ? marvW.className : null;
 
   // Neither row is this player's team, so nothing may be clicked: a wrong
   // click here drafts a player and cannot be taken back.
-  const wrongTeam = findPlayerClickTarget(document.body, "Bijan Robinson",
-    { player: { pos: "RB", team: "Sea" } });
+  const wrongTeam = findPlayerClickTarget(document.body, "Mike Williams",
+    { player: { pos: "WR", team: "Buf" } });
   results.wrongTeamRefused = wrongTeam === null;
 
   // A recommended player who isn't rendered: nothing to click until searched.
@@ -346,6 +356,20 @@ export async function run(document) {
   results.statusHealthy = statuses.get("D. Achane") ?? null;
   results.statusExempt = statuses.get("J. Jacobs") ?? null;
 
+  /* Two Atlanta running backs, both written "B. Robinson". Name, position and
+   * team are identical, so only the ADP column separates them. Taking the
+   * first match here drafted Brian with the eighth pick of a draft. */
+  const bijan = findPlayerClickTarget(document.body, "Bijan Robinson",
+    { player: { pos: "RB", team: "ATL", adp: 2.3 } });
+  results.bijanRow = bijan ? (bijan.closest("tr") || {}).id ?? null : null;
+  const brian = findPlayerClickTarget(document.body, "Brian Robinson",
+    { player: { pos: "RB", team: "ATL", adp: 152.9 } });
+  results.brianRow = brian ? (brian.closest("tr") || {}).id ?? null : null;
+  // No ADP to arbitrate with: refuse rather than guess between the two.
+  const blind = findPlayerClickTarget(document.body, "Bijan Robinson",
+    { player: { pos: "RB", team: "ATL" } });
+  results.blindRobinson = blind ? (blind.closest("tr") || {}).id ?? null : null;
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   // CEL, the commissioner exempt list: neither injured nor suspended, and
   // carrying an ordinary ADP, so nothing else on the row gives him away.
@@ -439,8 +463,8 @@ async function main() {
       ['does not match an unrelated nav link containing "Draft"', result.navNotMatched === true],
       ["returns null for a player who isn't on the page", result.missingIsNull === true],
       ["finds a row rendered only as an initial and surname", result.abbrevClass === "row-abbrev"],
-      ["picks the right Robinson by team", result.bijanClass === "row-bijan"],
-      ["picks the other Robinson by team", result.brianClass === "row-brian"],
+      ["picks the right namesake by team", result.bijanClass === "row-mikew"],
+      ["picks the other namesake by team", result.brianClass === "row-marvw"],
       ["clicks nothing when no row matches the player's team", result.wrongTeamRefused === true],
       ["an unrendered player has no click target", result.bowersAbsent === true],
       ["finds the room's player search box", result.searchBoxFound === true],
@@ -476,6 +500,12 @@ async function main() {
         result.queuedDraftClass === "q-draft"],
       ["spots a queued player whose entry shows no ADP", result.queuedNoAdp === true],
       ["reads every out designation in the room at once", result.statusReed === "NA"],
+      ["tells two same-team, same-position namesakes apart by ADP",
+        result.bijanRow === "row-bijan"],
+      ["and picks the other one when he is the one wanted",
+        result.brianRow === "row-brian"],
+      ["and clicks neither when nothing can separate them",
+        result.blindRobinson === null],
       ["including the commissioner exempt list", result.statusExempt === "CEL"],
       ["and flags an exempt player on the page", result.celOnPage === true],
       ["and tags nobody who is playing", result.statusHealthy === null],
