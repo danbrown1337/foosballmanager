@@ -12,6 +12,7 @@ import {
   shortlist,
   repairBoard,
   recordRoomAdp,
+  refreshConsensusAdp,
   markPick,
   undoPick,
   autopickCommit,
@@ -54,6 +55,9 @@ async function handle(message, sender) {
 
     case "RECORD_ROOM_ADP":
       return recordRoomAdp(message.entries);
+
+    case "REFRESH_CONSENSUS_ADP":
+      return refreshConsensusAdp();
 
     case "MARK_PICK":
       return markPick(message.name, message.by);

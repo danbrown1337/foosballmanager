@@ -134,7 +134,7 @@ function buildPanel() {
       <div id="fm-rec-why"></div>
       <button id="fm-take" disabled>I drafted this player</button>
       <button id="fm-update">Update board from Yahoo</button>
-      <button id="fm-pool">Import player pool from Yahoo</button>
+      <button id="fm-pool">Import players and ADP</button>
       <button id="fm-reset">New draft — clear picks</button>
       <div id="fm-log"></div>
       <div id="fm-status">
@@ -1138,6 +1138,18 @@ async function main() {
         return;
       }
       await Storage.setPool({ fetchedAt: Date.now(), leagueId, players });
+
+      /* Consensus ADP in the same press: Yahoo publishes ADP only inside a
+       * draft room, so without this the board has no idea where anyone goes
+       * until a draft is already under way. */
+      try {
+        const adp = await sendMessage({ type: "REFRESH_CONSENSUS_ADP" });
+        addLog(adp.ok
+          ? `Consensus ADP loaded for ${adp.count} players.`
+          : `Consensus ADP looked wrong (${adp.count} players) — keeping what we had.`);
+      } catch (err) {
+        addLog(`Couldn't load consensus ADP: ${String(err.message || err)}`);
+      }
       boardNameSet = null;
       boardPlayers = null;
       previousBoardNames = null;
