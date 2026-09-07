@@ -178,7 +178,7 @@ async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
     teamCountBounds, defenceAliases, parseDraftResults, teamsFromRoundChange,
-    parseRosterFormat,
+    parseRosterFormat, draftRoomId,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
@@ -187,7 +187,8 @@ async function main() {
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
-     defenceAliases, parseDraftResults, teamsFromRoundChange, parseRosterFormat } =
+     defenceAliases, parseDraftResults, teamsFromRoundChange, parseRosterFormat,
+     draftRoomId } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -210,7 +211,7 @@ async function main() {
     findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
     parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases,
-    parseDraftResults, teamsFromRoundChange, parseRosterFormat, isMyTurn,
+    parseDraftResults, teamsFromRoundChange, parseRosterFormat, draftRoomId, isMyTurn,
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -263,6 +264,9 @@ async function main() {
   let timers = [];
   let observers = [];
   let lastPollAt = Date.now();
+  /* Declared up here because addLog uses it, and addLog runs from the moment
+   * the panel exists. */
+  const roomId = draftRoomId ? draftRoomId(location.href) : null;
   let previousBoardNames = null;
   /* Where the list was standing when those names were read.
    *
@@ -495,7 +499,25 @@ async function main() {
     }
   });
 
+  /* Written to storage as well as to the panel, throttled so a busy draft
+   * does not write on every line. The log was in the DOM and nowhere else, so
+   * a reload destroyed the account of whatever had just gone wrong — which is
+   * precisely the moment a reload tends to happen. */
+  let logLines = [];
+  let logFlushAt = 0;
+  function flushLog(force = false) {
+    if (!roomId) return;
+    const now = Date.now();
+    if (!force && now - logFlushAt < 2000) return;
+    logFlushAt = now;
+    Storage.setRoomLog(roomId, logLines).catch(() => {});
+  }
+
   function addLog(text) {
+    logLines.push(`${new Date().toISOString().slice(11, 19)} ${text}`);
+    if (logLines.length > 200) logLines = logLines.slice(-200);
+    flushLog();
+
     const line = document.createElement("div");
     line.textContent = text;
     log.prepend(line);
@@ -532,6 +554,7 @@ async function main() {
       const format = parseRosterFormat(text);
       if (format && JSON.stringify(format.starters) !== JSON.stringify(detectedFormat?.starters)) {
         detectedFormat = format;
+        Storage.setRoomFacts(roomId, { format }).catch(() => {});
         const shown = Object.entries(format.starters)
           .map(([pos, n]) => (n > 1 ? `${n}x${pos}` : pos)).join(" ");
         addLog(`This room's format: ${shown}, ${format.bench} bench (${format.total} picks) — using it for every calculation from here.`);
@@ -971,11 +994,19 @@ async function main() {
       searchBox: null,
       searched: true,
       filtered: !found && sawWholeBoard && !sawName,
-      /* Weaker than sawWholeBoard, and enough to be worth counting: the walk
-       * reached the bottom of a list with a credible number of rows in it. A
-       * single one of these is not evidence a player is drafted. Three in a
-       * row is a different matter. */
-      sawList: sweep.reachedEnd && sweepTrust(seen.size, true, availableOnBoard(), 0).free,
+      /* The same bar as marking, not the weaker one used for freeing.
+       *
+       * This was the freeing threshold, on the reasoning that three partial
+       * views are worth one complete one. They are not. A sweep that reads
+       * 57% of the board reads much the same 57% every time — the rows it
+       * cannot reach are the rows it cannot reach — so three misses of a
+       * systematically unseen region is one miss repeated, and repetition is
+       * only evidence when the observations are independent. A live draft
+       * marked Marvin Harrison Jr., Jameson Williams, Brandon Aubrey and
+       * Ka'imi Fairbairn drafted on that basis, all still available, one line
+       * after the board refresh had refused to mark anyone at all from the
+       * very same view. */
+      sawList: sawWholeBoard,
     };
   }
 
@@ -1553,6 +1584,7 @@ async function main() {
     lastDraftPosition = position;
     if (detected && detected !== detectedTeams) {
       detectedTeams = detected;
+      Storage.setRoomFacts(roomId, { teams: detected }).catch(() => {});
       if (detected !== teams) {
         addLog(`This room has ${detected} teams, not the ${teams} in your settings — using ${detected} for every pick calculation from here. Change it in Options to make it stick.`);
       } else {
@@ -1990,6 +2022,36 @@ async function main() {
     childList: true,
     characterData: true,
   });
+
+  /* A reload starts the content script from nothing, and the team count is
+   * derived from watching a round tick over — so without this the panel falls
+   * back to the configured count and stays wrong until the next round begins,
+   * which in a slow draft is most of a round. Restoring is safe because these
+   * are stored against this room's own id. */
+  if (roomId) {
+    try {
+      const [facts, saved] = await Promise.all([
+        Storage.getRoomFacts(roomId),
+        Storage.getRoomLog(roomId),
+      ]);
+      if (saved?.length) {
+        logLines = saved;
+        for (const line of saved.slice(-20)) {
+          const el = document.createElement("div");
+          el.textContent = line;
+          log.prepend(el);
+        }
+      }
+      if (facts?.teams) {
+        detectedTeams = facts.teams;
+        addLog(`Picking up where this room left off: ${facts.teams} teams.`);
+      }
+      if (facts?.format?.starters) detectedFormat = facts.format;
+    } catch {
+      // Nothing stored, or storage is gone; the detectors will work it out
+      // again from the next round change.
+    }
+  }
 
   refresh();
   timers = [
