@@ -207,6 +207,15 @@ export function teamCountBounds(position) {
   return { min, max };
 }
 
+/* Which draft room this is: the id out of a draft client URL, as in
+ * /draftclient/f1/10984414/12. Facts learned about a room are stored against
+ * it, so what a mock says about itself can never be mistaken for the league
+ * it is practising for. */
+export function draftRoomId(url) {
+  const m = /\/draftclient\/[^/]+\/(\d+)/.exec(String(url || ""));
+  return m ? m[1] : null;
+}
+
 /* The exact number of teams, from watching the round tick over.
  *
  * A configured team count that the room contradicts corrupts everything built

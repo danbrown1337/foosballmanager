@@ -26,6 +26,8 @@ const KEYS = {
   roomAdp: "fm_room_adp",
   draftLog: "fm_draft_log",
   roomProjection: "fm_room_projection",
+  roomFacts: "fm_room_facts",
+  roomLog: "fm_room_log",
   roomStatus: "fm_room_status",
   consensus: "fm_consensus_adp",
 };
@@ -191,6 +193,41 @@ export const Storage = {
   },
   async clearDraftLog() {
     return set(KEYS.draftLog, []);
+  },
+
+  /* What a room told us about itself, kept against that room's id.
+   *
+   * A reload loses everything the content script held, and the team count is
+   * derived from watching a round tick over — so after a reload the panel
+   * would fall back to the configured count and stay wrong until the next
+   * round began, which can be most of a round in a slow draft. These are
+   * facts about a specific room, so storing them per room means a mock's
+   * twelve teams can never be read as the real league's ten. */
+  async getRoomFacts(roomId) {
+    if (!roomId) return null;
+    const all = await get(KEYS.roomFacts, {});
+    return all[roomId] || null;
+  },
+  async setRoomFacts(roomId, facts) {
+    if (!roomId) return;
+    const all = await get(KEYS.roomFacts, {});
+    all[roomId] = { ...(all[roomId] || {}), ...facts, at: Date.now() };
+    return set(KEYS.roomFacts, all);
+  },
+
+  /* The panel's log, which was in the DOM and nowhere else — so a reload
+   * destroyed the account of whatever had just gone wrong, which is exactly
+   * when a reload happens. */
+  async getRoomLog(roomId) {
+    if (!roomId) return [];
+    const all = await get(KEYS.roomLog, {});
+    return all[roomId] || [];
+  },
+  async setRoomLog(roomId, lines) {
+    if (!roomId) return;
+    const all = await get(KEYS.roomLog, {});
+    all[roomId] = lines.slice(-200);
+    return set(KEYS.roomLog, all);
   },
 
   async getRoomProjection() {
