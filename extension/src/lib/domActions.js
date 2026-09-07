@@ -78,6 +78,11 @@ function abbrevForms(name) {
  * Brian Robinson are both running backs for Atlanta, so an abbreviated name,
  * a position and a team are all identical between them — the room writes
  * "B. ROBINSON" for each. Their ADPs are 2.3 and 152.9. */
+/* Only a gulf this size is evidence of the wrong player, and only when the
+ * row is alone. Two competing rows are judged against each other instead,
+ * where a much finer comparison is sound. */
+const SINGLE_ROW_ADP_GULF = 100;
+
 export function rowAdp(row) {
   const table = row.closest?.("table");
   if (!table) return null;
@@ -190,12 +195,17 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
     /* One row is not proof of no collision: the list mounts a dozen rows at a
      * time, so the other Robinson may simply be scrolled out. Where both the
      * board and the row state an ADP, they have to be in the same
-     * neighbourhood. The tolerance is wide because the two numbers come from
-     * different sources — our consensus feed and Yahoo's own column — and
-     * they disagree by a few places routinely. They do not disagree by a
-     * hundred and fifty. */
+     * neighbourhood.
+     *
+     * The tolerance is very wide on purpose. The board's number is often not
+     * an ADP at all: a league player list with no ADP column falls back to
+     * list position, and the consensus feed covers about four fifths of a
+     * pool, so a legitimate row routinely sits tens of places from what the
+     * board holds. Vetoing on a smaller gap would reject real rows and leave
+     * the queue unable to star anyone. Namesakes are separated by far more
+     * than this — Bijan and Brian Robinson are a hundred and fifty apart. */
     const wanted = Number(player?.adp);
-    if (Number.isFinite(wanted) && Math.abs(rivals[0].adp - wanted) > 40) return null;
+    if (Number.isFinite(wanted) && Math.abs(rivals[0].adp - wanted) > SINGLE_ROW_ADP_GULF) return null;
     textNode = rivals[0].node;
   }
 

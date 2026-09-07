@@ -176,7 +176,7 @@ function buildPanel() {
 async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
-    defenceAliases,
+    teamCountBounds, defenceAliases,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
@@ -184,7 +184,8 @@ async function main() {
     sweepTrust, Attempts;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
-     parseDraftSlot, parseDraftPosition, picksUntilMyTurn, defenceAliases } =
+     parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
+     defenceAliases } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -205,7 +206,7 @@ async function main() {
   const wired = {
     findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
-    parseDraftPosition, picksUntilMyTurn, defenceAliases, isMyTurn,
+    parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases, isMyTurn,
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -677,11 +678,29 @@ async function main() {
    *
    * The ledger is what carries a failure from one cycle to the next. The
    * reasoning and its tests live in src/lib/attempts.js. */
-  const unconfirmed = new Attempts({ tries: 3, restMs: 90_000 });
-  function noteUnconfirmed(name) {
-    if (unconfirmed.fail(name)) {
-      addLog(`${name} can't be found in the room after 3 tries — resting him for 90s so the queue can move on.`);
-    }
+  const UNCONFIRMED_TRIES = 3;
+  const unconfirmed = new Attempts({ tries: UNCONFIRMED_TRIES, restMs: 90_000 });
+
+  /* Records a miss, and concludes a pick once there have been enough of them.
+   *
+   * Making a single sweep's silence mean "drafted" was what buried seventy
+   * available players, so that inference is now hard to earn. But refusing it
+   * entirely leaves the opposite failure, and that one also cost a turn: the
+   * board went on recommending Ashton Jeanty for a whole draft after somebody
+   * took him during a throttled window, because nothing was allowed to notice
+   * he had gone.
+   *
+   * Three separate walks to the bottom of a credible list, none of which
+   * found him, is a different quality of evidence from one partial view — so
+   * that is where the conclusion sits. Misses from a sweep that never got
+   * down the list are not counted at all. */
+  function noteUnconfirmed(name, sawList) {
+    if (!sawList) return;
+    if (!unconfirmed.fail(name)) return;
+    addLog(`${name} not found in ${UNCONFIRMED_TRIES} full passes of the room — marking drafted and resting him.`);
+    sendMessage({ type: "IMPORT_PICKS", names: [name], by: "rival" }).catch(() => {
+      // Nothing to do about it here; the next pass will try again.
+    });
   }
   function restingUnconfirmed(name) {
     return unconfirmed.resting(name);
@@ -692,6 +711,9 @@ async function main() {
   let bestSweepSeen = 0;
   // Once per page, not once per turn: it is the same advice every time.
   let warnedHiddenTurn = false;
+  // Same reasoning: the configuration is either right or wrong, and repeating
+  // it every four seconds would bury everything else in the log.
+  let warnedTeamCount = false;
 
   /* How many players the board still believes are available. Marking from
    * absence is measured against this rather than a flat row count. It only
@@ -774,6 +796,11 @@ async function main() {
       searchBox: null,
       searched: true,
       filtered: !found && sawWholeBoard && !sawName,
+      /* Weaker than sawWholeBoard, and enough to be worth counting: the walk
+       * reached the bottom of a list with a credible number of rows in it. A
+       * single one of these is not evidence a player is drafted. Three in a
+       * row is a different matter. */
+      sawList: sweep.reachedEnd && sweepTrust(seen.size, true, availableOnBoard(), 0).free,
     };
   }
 
@@ -855,7 +882,7 @@ async function main() {
         // not produce is not worth a full sweep of the list at every turn as
         // well as every queue cycle.
         unusable.add(candidate.name);
-        noteUnconfirmed(candidate.name);
+        noteUnconfirmed(candidate.name, located.sawList);
       }
     }
     return { snapshot: null, name: null, el: null, searchBox, skipped, exhausted: true };
@@ -1007,7 +1034,7 @@ async function main() {
             // Couldn't confirm him either way: don't touch the board, and try
             // the next name rather than ending the cycle.
             tried.add(pick.name);
-            noteUnconfirmed(pick.name);
+            noteUnconfirmed(pick.name, located.sawList);
             noteQueueIdle(`queue: couldn't confirm ${pick.name} in the room — trying the next name`);
             continue;
           }
@@ -1287,6 +1314,19 @@ async function main() {
     const teams = config?.league?.num_teams;
     const position = parseDraftPosition(text);
     if (!slot || !teams || !position) return;
+
+    /* A configured team count that the room contradicts makes every pick
+     * calculation wrong — how far away your turn is, and with it the endgame
+     * reservation that fills the kicker and defence slots — and nothing else
+     * in the panel would notice. The round and pick on screen bound the real
+     * count, so check it against the configuration once. */
+    const bounds = teamCountBounds(position);
+    if (bounds && (teams < bounds.min || teams > bounds.max) && !warnedTeamCount) {
+      warnedTeamCount = true;
+      const range = bounds.max === Infinity ? `${bounds.min} or more` : `${bounds.min}-${bounds.max}`;
+      addLog(`This room looks like a ${range} team draft, but the panel is set to ${teams}. Fix it in Options or every "picks away" number is wrong.`);
+    }
+
     const away = picksUntilMyTurn(position, slot, teams);
     if (away === null || away === lastPicksAway) return;
     lastPicksAway = away;
