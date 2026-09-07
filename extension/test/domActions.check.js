@@ -89,7 +89,7 @@ const PAGE_HTML = `<!doctype html><html><body>
     </tr>
     <tr id="row-inactive">
       <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
-      <td><span>J. Reed</span> <span>NA</span> <span>WR</span> <span>Car</span></td>
+      <td><span>J. Reed</span><span>NA</span><span>WR</span><span>Car</span></td>
       <td>-</td>
     </tr>
     <tr id="row-queued">
