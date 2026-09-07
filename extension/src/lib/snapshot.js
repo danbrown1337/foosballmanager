@@ -222,12 +222,35 @@ async function buildPlayers(adp, notes, byes) {
  * how many picks until this manager is up again. Only the panel can see it —
  * it depends on the draft slot and the snake — so it rides in with the
  * request rather than being stored. */
-function withTurnContext(config, picksUntilTurn) {
-  if (!Number.isFinite(picksUntilTurn) || picksUntilTurn <= 0) return config;
-  return { ...config, autopilot: { ...(config.autopilot || {}), picks_until_turn: picksUntilTurn } };
+function withRoomContext(config, { picksUntilTurn = null, teams = null, format = null } = {}) {
+  let out = config;
+
+  /* The room's own team count and starting construction, over the configured
+   * ones. These are facts about the draft being played, not preferences, and
+   * they are what every rule downstream is derived from — replacement level,
+   * the need gradient, the depth targets, the round kickers unlock, how many
+   * picks remain. A mock starts a kicker and one flex while the league it is
+   * practising for starts no kicker and two, so taking the settings on faith
+   * gets all of them wrong at once.
+   *
+   * Applied per request rather than saved, because that same difference means
+   * what a mock room says must never overwrite the real league's settings. */
+  if (Number.isFinite(teams) && teams >= 2) {
+    out = { ...out, league: { ...(out.league || {}), num_teams: teams } };
+  }
+  if (format?.starters && format.total > 0) {
+    out = {
+      ...out,
+      roster: { ...(out.roster || {}), starters: format.starters, bench: format.bench, ir: format.ir },
+    };
+  }
+  if (Number.isFinite(picksUntilTurn) && picksUntilTurn > 0) {
+    out = { ...out, autopilot: { ...(out.autopilot || {}), picks_until_turn: picksUntilTurn } };
+  }
+  return out;
 }
 
-export async function buildSnapshot({ picksUntilTurn = null } = {}) {
+export async function buildSnapshot({ picksUntilTurn = null, teams = null, format = null } = {}) {
   const [{ adp, notes, byes }, config, draftState, practice] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
@@ -238,7 +261,8 @@ export async function buildSnapshot({ picksUntilTurn = null } = {}) {
   const players = await buildPlayers(adp, notes, byes);
   applyDraftState(players, draftState);
 
-  const decision = autoPick(players, withTurnContext(config, picksUntilTurn));
+  const room = withRoomContext(config, { picksUntilTurn, teams, format });
+  const decision = autoPick(players, room);
   const mine = players.filter((p) => p.draftedBy === "mine").sort((a, b) => a.adp - b.adp);
 
   return {
@@ -398,7 +422,7 @@ export async function setPracticeMode(active) {
 
 /* The shortlist the draft room's queue should hold. Built from the same live
  * state as buildSnapshot, so it reflects every pick recorded so far. */
-export async function shortlist(n = 5, { picksUntilTurn = null } = {}) {
+export async function shortlist(n = 5, { picksUntilTurn = null, teams = null, format = null } = {}) {
   const [{ adp, notes, byes }, config, draftState] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
@@ -427,9 +451,15 @@ export async function shortlist(n = 5, { picksUntilTurn = null } = {}) {
    *
    * So once the roster is nearly full, every unfilled starting position gets
    * an entry, ahead of anything else. */
-  const starters = config.roster?.starters || {};
+  /* One config for the whole function: the room's own team count and format
+   * where it stated them, the settings where it did not. Everything below —
+   * which slots are unfilled, how many picks remain, when a kicker unlocks —
+   * has to read the same one the engine does, or the queue and the engine
+   * disagree about the draft they are in. */
+  const roomConfig = withRoomContext(config, { picksUntilTurn, teams, format });
+  const starters = roomConfig.roster?.starters || {};
   const mine = players.filter((p) => p.draftedBy === "mine");
-  const spots = Object.values(starters).reduce((a, b) => a + b, 0) + (config.roster?.bench || 0);
+  const spots = Object.values(starters).reduce((a, b) => a + b, 0) + (roomConfig.roster?.bench || 0);
   const remaining = spots - mine.length;
   const unfilled = Object.keys(starters).filter(
     (pos) => pos !== "FLEX" && mine.filter((p) => p.pos === pos).length < starters[pos]
@@ -441,8 +471,8 @@ export async function shortlist(n = 5, { picksUntilTurn = null } = {}) {
    * round twelve hands over a pick that autoPick would have refused, and the
    * two disagreeing is worse than either rule alone. */
   const picksMade = players.filter((p) => p.draftedBy).length;
-  const roundNow = Math.floor(picksMade / (config.league?.num_teams || 10)) + 1;
-  const onesieFloor = config.autopilot?.onesie_min_round ?? defaultOnesieFloor(config);
+  const roundNow = Math.floor(picksMade / (roomConfig.league?.num_teams || 10)) + 1;
+  const onesieFloor = roomConfig.autopilot?.onesie_min_round ?? defaultOnesieFloor(roomConfig);
 
   const reserved = [];
   if (unfilled.length > 0 && remaining <= unfilled.length + 3) {
@@ -462,7 +492,7 @@ export async function shortlist(n = 5, { picksUntilTurn = null } = {}) {
   }
 
   const PER_POSITION = 2;
-  const picks = [...reserved, ...topPicks(players, withTurnContext(config, picksUntilTurn), n * 3)];
+  const picks = [...reserved, ...topPicks(players, roomConfig, n * 3)];
   const counts = {};
   const out = [];
   const seenNames = new Set();

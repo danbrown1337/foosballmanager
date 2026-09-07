@@ -39,7 +39,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handle(message, sender) {
   switch (message.type) {
     case "GET_SNAPSHOT":
-      return buildSnapshot({ picksUntilTurn: message.picksUntilTurn ?? null });
+      return buildSnapshot({
+        picksUntilTurn: message.picksUntilTurn ?? null,
+        teams: message.teams ?? null,
+        format: message.format ?? null,
+      });
 
     case "IMPORT_PICKS": {
       // Explicit attribution, unlike DETECTED_PICKS which is always "rival".
@@ -52,7 +56,11 @@ async function handle(message, sender) {
       return setPracticeMode(!!message.active);
 
     case "GET_SHORTLIST":
-      return shortlist(message.n || 5, { picksUntilTurn: message.picksUntilTurn ?? null });
+      return shortlist(message.n || 5, {
+        picksUntilTurn: message.picksUntilTurn ?? null,
+        teams: message.teams ?? null,
+        format: message.format ?? null,
+      });
 
     case "RECORD_DECISION":
       return recordDecision(message.entry);
