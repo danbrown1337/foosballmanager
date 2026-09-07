@@ -67,7 +67,9 @@ const PAGE_HTML = `<!doctype html><html><body>
   <div id="pick-feed">Last: D. ACHANE (RB · Mia)</div>
   <div id="queue-panel">Autodraft will pick from queue
     <div class="q-entry"><button class="q-draft">Draft</button>
-      <span>J. Gibbs</span><span>RB</span><span>Det</span></div>
+      <span>J. Gibbs</span><span>RB</span><span>Det</span><span>ADP: 1.4</span></div>
+    <div class="q-entry"><button class="q-draft">Draft</button>
+      <span>C. Brown</span><span>WR</span><span>Dal</span><span>ADP: -</span></div>
     <div class="q-entry"><button class="q-remove"><svg data-icon="star-filled"></svg></button>
       <span>J. Hurts</span> <span>QB</span> <span>Phi</span></div>
     <div class="q-entry"><button class="q-remove"><svg data-icon="star-filled"></svg></button>
@@ -329,6 +331,10 @@ export async function run(document) {
     { player: { pos: "RB", team: "DET" } });
   results.queuedDraftClass = queuedDraft ? queuedDraft.className : null;
 
+  // A queued player has no row; his ADP is printed on the queue entry.
+  results.queuedNoAdp = rowShowsNoAdp(document.body, "Chase Brown");
+  results.queuedHasAdp = rowShowsNoAdp(document.body, "Jahmyr Gibbs");
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
 
@@ -454,6 +460,8 @@ async function main() {
       ["finds a defence by its team nickname", result.defenceRow === "row-defence"],
       ["finds the Draft button on a queued player's panel entry",
         result.queuedDraftClass === "q-draft"],
+      ["spots a queued player whose entry shows no ADP", result.queuedNoAdp === true],
+      ["and leaves a queued player who has one alone", result.queuedHasAdp === false],
       ["reads the room's ADP column", result.adpAchane === 15.3],
       ["skips rows whose ADP is a dash", result.adpSkipsDashes === true],
       ["and leaves a row with a real ADP alone", result.hasAdpRow === false],
