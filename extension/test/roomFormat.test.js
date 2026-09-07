@@ -24,12 +24,20 @@ const panel = (...lines) => {
 };
 const bench = (n) => Array(n).fill("BN");
 
-test("the round ticking over states the team count exactly", () => {
-  // The last pick of round R is pick R x teams, so the first of round R+1
-  // is R x teams + 1. One transition, no estimate.
+test("two consecutive picks across a round boundary state the count exactly", () => {
+  // The last pick of round R is pick R x teams, so a pair that straddles the
+  // boundary gives teams = pick / round with nothing assumed.
   assert.equal(teamsFromRoundChange({ round: 1, pick: 12 }, { round: 2, pick: 13 }), 12);
   assert.equal(teamsFromRoundChange({ round: 2, pick: 20 }, { round: 3, pick: 21 }), 10);
   assert.equal(teamsFromRoundChange({ round: 4, pick: 48 }, { round: 5, pick: 49 }), 12);
+});
+
+test("landing mid-round after the change proves nothing", () => {
+  /* This is what a four-second poll actually sees in a fast room, and it was
+   * the bug: seeing round 2 and then round 3 says nothing about which pick of
+   * round 3 was caught. A live draft called itself 14 teams and then 15. */
+  assert.equal(teamsFromRoundChange({ round: 2, pick: 31 }, { round: 3, pick: 33 }), null);
+  assert.equal(teamsFromRoundChange({ round: 1, pick: 12 }, { round: 2, pick: 15 }), null);
 });
 
 test("a missed round or a number that doesn't divide gives no answer", () => {

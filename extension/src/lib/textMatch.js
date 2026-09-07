@@ -235,10 +235,21 @@ export function draftRoomId(url) {
  * no answer rather than a wrong one. */
 export function teamsFromRoundChange(before, after) {
   if (!before || !after) return null;
+  /* Both halves matter, and the second was missing.
+   *
+   * Seeing round R and then round R+1 does not mean the second observation is
+   * the first pick of the new round — polls are seconds apart and a fast room
+   * moves several picks between them, so landing on pick three of round three
+   * gave "teams = 16" one moment and a different wrong answer the next. A
+   * live draft reported itself as 14 teams and then 15.
+   *
+   * Only consecutive picks that straddle the boundary say anything: the last
+   * pick of round R is pick R x teams exactly, so teams = pick / round with
+   * nothing assumed. */
   if (after.round !== before.round + 1) return null;
-  const completed = after.round - 1;
-  if (completed < 1) return null;
-  const teams = (after.pick - 1) / completed;
+  if (after.pick !== before.pick + 1) return null;
+  if (before.round < 1) return null;
+  const teams = before.pick / before.round;
   if (!Number.isInteger(teams) || teams < 2 || teams > 32) return null;
   return teams;
 }
