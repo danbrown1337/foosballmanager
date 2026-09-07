@@ -177,7 +177,8 @@ function buildPanel() {
 async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
-    teamCountBounds, defenceAliases, parseDraftResults,
+    teamCountBounds, defenceAliases, parseDraftResults, teamsFromRoundChange,
+    parseRosterFormat,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
@@ -186,7 +187,7 @@ async function main() {
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
-     defenceAliases, parseDraftResults } =
+     defenceAliases, parseDraftResults, teamsFromRoundChange, parseRosterFormat } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -209,7 +210,7 @@ async function main() {
     findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
     parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases,
-    parseDraftResults, isMyTurn,
+    parseDraftResults, teamsFromRoundChange, parseRosterFormat, isMyTurn,
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -470,7 +471,7 @@ async function main() {
 
   async function refresh() {
     try {
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn });
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat });
       render(snapshot);
       showError(null);
       return snapshot;
@@ -515,6 +516,27 @@ async function main() {
    * too. That combination emptied a kicker slot in live testing. */
   function checkRosterShape(text, config) {
     if (!findRosterSlots || !config) return;
+
+    /* What the room says its format is, taken over what the settings say.
+     *
+     * Everything downstream rests on this — replacement level, the need
+     * gradient, the depth targets, which round kickers unlock, how many picks
+     * are left — and until now it was typed in by hand. A mock room starts a
+     * kicker and one flex; the league it is practising for starts no kicker
+     * and two. Scoring one as though it were the other is wrong in every rule
+     * at once.
+     *
+     * Session only, never written to settings, for the same reason: what a
+     * mock room says must not overwrite the real league's configuration. */
+    if (parseRosterFormat) {
+      const format = parseRosterFormat(text);
+      if (format && JSON.stringify(format.starters) !== JSON.stringify(detectedFormat?.starters)) {
+        detectedFormat = format;
+        const shown = Object.entries(format.starters)
+          .map(([pos, n]) => (n > 1 ? `${n}x${pos}` : pos)).join(" ");
+        addLog(`This room's format: ${shown}, ${format.bench} bench (${format.total} picks) — using it for every calculation from here.`);
+      }
+    }
     const starters = config.roster?.starters || {};
 
     /* The size check first, because getting this wrong is not a nuance — the
@@ -994,8 +1016,8 @@ async function main() {
     const unusable = new Set();
 
     for (let attempt = 0; attempt <= maxSkips; attempt++) {
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn });
-      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2, picksUntilTurn });
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat });
+      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2, picksUntilTurn, teams: detectedTeams, format: detectedFormat });
       /* Skip what is resting as well as what this turn has already ruled
        * out, so a name the room would not produce a moment ago doesn't cost
        * another walk of the list now. */
@@ -1167,7 +1189,7 @@ async function main() {
      * two quarterbacks. Only players the shortlist no longer wants at all,
      * one per cycle, so a queue the user curated isn't emptied underneath
      * them. */
-    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn });
+    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn, teams: detectedTeams, format: detectedFormat });
     const keep = new Set(shortlistNow.map((p) => p.name));
     const stale = [...inRoom].filter((name) => !keep.has(name));
     if (stale.length > 0) {
@@ -1506,10 +1528,13 @@ async function main() {
    * acted on. */
   let lastPicksAway = null;
   let picksUntilTurn = null;
+  let lastDraftPosition = null;
+  let detectedTeams = null;
+  let detectedFormat = null;
   function reportDraftPosition(text, config) {
     if (!parseDraftSlot) return;
     const slot = parseDraftSlot(location.href, document.title);
-    const teams = config?.league?.num_teams;
+    const teams = detectedTeams ?? config?.league?.num_teams;
     const position = parseDraftPosition(text);
     if (!slot || !teams || !position) return;
 
@@ -1518,6 +1543,23 @@ async function main() {
      * reservation that fills the kicker and defence slots — and nothing else
      * in the panel would notice. The round and pick on screen bound the real
      * count, so check it against the configuration once. */
+    /* The room's own team count, taken over the configured one.
+     *
+     * Not written back to settings: a mock room is twelve teams while the
+     * league it is practising for is ten, so persisting what a mock says
+     * would corrupt the real league's configuration. It applies for this
+     * session only, the same way practice settings do. */
+    const detected = teamsFromRoundChange(lastDraftPosition, position);
+    lastDraftPosition = position;
+    if (detected && detected !== detectedTeams) {
+      detectedTeams = detected;
+      if (detected !== teams) {
+        addLog(`This room has ${detected} teams, not the ${teams} in your settings — using ${detected} for every pick calculation from here. Change it in Options to make it stick.`);
+      } else {
+        addLog(`Confirmed ${detected} teams from the round change.`);
+      }
+    }
+
     const bounds = teamCountBounds(position);
     if (bounds && (teams < bounds.min || teams > bounds.max) && !warnedTeamCount) {
       warnedTeamCount = true;
@@ -1704,7 +1746,7 @@ async function main() {
 
     try {
       if (!boardNameSet) {
-        const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn });
+        const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat });
         boardNameSet = new Set(snapshot.board.map((p) => p.name));
         boardPlayers = snapshot.board;
       }

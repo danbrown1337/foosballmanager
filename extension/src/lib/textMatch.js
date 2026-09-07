@@ -207,6 +207,33 @@ export function teamCountBounds(position) {
   return { min, max };
 }
 
+/* The exact number of teams, from watching the round tick over.
+ *
+ * A configured team count that the room contradicts corrupts everything built
+ * on it — how many picks until your turn, which round the need gradient is
+ * escalating in, where the kicker floor falls — and it does so silently. A
+ * mock room is twelve teams while the league it is practising for is ten, so
+ * this is not a rare mistake, it is the normal case.
+ *
+ * The room says it outright, once per round. The last pick of round R is pick
+ * R x teams, so the first pick of round R+1 is R x teams + 1, and one
+ * transition gives the count with nothing estimated:
+ *
+ *     teams = (firstPickOfNewRound - 1) / roundsCompleted
+ *
+ * Returns null unless the arithmetic comes out whole and the two observations
+ * really are consecutive rounds — a missed poll or a re-render must produce
+ * no answer rather than a wrong one. */
+export function teamsFromRoundChange(before, after) {
+  if (!before || !after) return null;
+  if (after.round !== before.round + 1) return null;
+  const completed = after.round - 1;
+  if (completed < 1) return null;
+  const teams = (after.pick - 1) / completed;
+  if (!Number.isInteger(teams) || teams < 2 || teams > 32) return null;
+  return teams;
+}
+
 /* Snake order: odd rounds run 1..N, even rounds run N..1. Counted the way the
  * room counts it — inclusive of the pick in progress — so the panel and
  * Yahoo's own "N picks until your turn" agree. */
@@ -247,6 +274,59 @@ export function findRosterSlots(text) {
     if (["QB", "RB", "WR", "TE", "K", "DEF", "BN", "IR"].includes(label)) slots.add(label);
   }
   return slots;
+}
+
+/* The league's whole starting construction, counted off the roster panel.
+ *
+ * Everything the engine decides rests on this — replacement level, the need
+ * gradient, which round kickers unlock, how many picks are left — and it has
+ * been supplied by hand, so a mock with a kicker and two flex slots gets
+ * scored as though it were the league being practised for. The room prints
+ * the format on every screen:
+ *
+ *     YOUR TEAM (0/15)
+ *     QB  WR  WR  RB  RB  TE  W R T  K  DEF  BN x6
+ *
+ * The flex is three lines rather than one — "W", "R", "T" — which is why a
+ * set of labels was never enough and these have to be counted in order.
+ *
+ * Returns null unless the panel is actually there and adds up, so a page that
+ * has not finished rendering produces no answer rather than a wrong one. */
+const ROSTER_SLOT_LABELS = new Set(["QB", "RB", "WR", "TE", "K", "DEF", "BN", "IR"]);
+
+export function parseRosterFormat(text) {
+  const start = String(text || "").search(/YOUR TEAM/i);
+  if (start === -1) return null;
+  const lines = text.slice(start, start + 2000).split("\n").map((l) => l.trim().toUpperCase());
+
+  const starters = {};
+  let bench = 0;
+  let ir = 0;
+  for (let i = 0; i < lines.length; i++) {
+    // "W" then "R" then "T": the W/R/T flex, written down the column.
+    if (lines[i] === "W" && lines[i + 1] === "R" && lines[i + 2] === "T") {
+      starters.FLEX = (starters.FLEX || 0) + 1;
+      i += 2;
+      continue;
+    }
+    const label = lines[i];
+    if (!ROSTER_SLOT_LABELS.has(label)) continue;
+    if (label === "BN") bench++;
+    else if (label === "IR") ir++;
+    else starters[label] = (starters[label] || 0) + 1;
+  }
+
+  const total = Object.values(starters).reduce((a, b) => a + b, 0) + bench;
+  if (total === 0) return null;
+
+  /* Cross-checked against the room's own count. The panel says "(0/15)", and
+   * a format that does not add up to it means the labels were misread — a
+   * player's position abbreviation counted as a slot, say — and a misread
+   * format is worse than none. */
+  const stated = /YOUR TEAM\s*\((\d+)\s*\/\s*(\d+)\)/i.exec(text.slice(start, start + 60));
+  if (stated && Number(stated[2]) !== total) return null;
+
+  return { starters, bench, ir, total };
 }
 
 /* The draft room states your roster outright, in a panel headed "YOUR TEAM
