@@ -24,6 +24,7 @@ const KEYS = {
   queueEnabled: "fm_queue_enabled",
   pool: "fm_pool",
   roomAdp: "fm_room_adp",
+  draftLog: "fm_draft_log",
   roomStatus: "fm_room_status",
   consensus: "fm_consensus_adp",
 };
@@ -168,6 +169,27 @@ export const Storage = {
   },
   async setRoomStatus(map) {
     return set(KEYS.roomStatus, map);
+  },
+
+  /* One record per pick, in order.
+   *
+   * Yahoo does not store mock drafts — its own confirmation email says so —
+   * so anything not written down here is gone the moment the room closes.
+   * That is what made every review of this engine a conversation rather than
+   * a measurement. */
+  async getDraftLog() {
+    return get(KEYS.draftLog, []);
+  },
+  async appendDraftLog(entry) {
+    const log = await get(KEYS.draftLog, []);
+    // Same pick twice is a re-detection, not a new decision.
+    if (log.some((e) => e.name === entry.name)) return log;
+    log.push(entry);
+    await set(KEYS.draftLog, log);
+    return log;
+  },
+  async clearDraftLog() {
+    return set(KEYS.draftLog, []);
   },
 
   async getRoomAdp() {

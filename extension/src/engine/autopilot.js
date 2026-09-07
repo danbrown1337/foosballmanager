@@ -98,6 +98,8 @@ export function scorePlayers(players, config, picksMade) {
   return scores;
 }
 
+const round1 = (n) => Math.round(n * 10) / 10;
+
 function minBy(list, keyFn) {
   let best = list[0];
   let bestKey = keyFn(best);
@@ -275,7 +277,7 @@ export function byePenalty(player, mine, config) {
 }
 
 /**
- * @returns {{player, score, reason, needOverride}|null}
+ * @returns {{player, score, reason, needOverride, components, alternatives}|null}
  */
 export function autoPick(players, config) {
   const mine = players.filter((p) => p.draftedBy === "mine");
@@ -289,14 +291,33 @@ export function autoPick(players, config) {
 
   const picksMade = players.filter((p) => p.draftedBy).length;
   const scores = scorePlayers(players, config, picksMade);
+  /* Kept per player rather than folded straight in, so a pick can say what
+   * decided it. Two days were spent reconstructing that from a roster after
+   * the fact; the engine knows it at the time and can simply write it down. */
+  const components = {};
   // Applied to every path below — a forced need pick should still prefer the
   // candidate who doesn't leave that position empty on the same week.
   for (const p of avail) {
-    scores[p.name] +=
-      byePenalty(p, mine, config) + surplusPenalty(p, mine, config) +
-      guessPenalty(p, config) + backupPenalty(p, mine, players, config) +
-      needBonus(p, mine, config, picksMade);
+    const parts = {
+      adp: scores[p.name],
+      bye: byePenalty(p, mine, config),
+      surplus: surplusPenalty(p, mine, config),
+      guessedAdp: guessPenalty(p, config),
+      backup: backupPenalty(p, mine, players, config),
+      need: needBonus(p, mine, config, picksMade),
+    };
+    components[p.name] = parts;
+    scores[p.name] = Object.values(parts).reduce((a, b) => a + b, 0);
   }
+
+  /* The nearest alternatives, so a decision record shows what was passed over
+   * and by how much — the question every post-draft argument turns on. */
+  const alternativesTo = (chosen) =>
+    avail
+      .filter((p) => p.name !== chosen.name)
+      .sort((a, b) => scores[a.name] - scores[b.name])
+      .slice(0, 3)
+      .map((p) => ({ name: p.name, pos: p.pos, score: round1(scores[p.name]) }));
 
   const starters = config.roster.starters;
   const benchCap = (config.autopilot || {}).max_bench_per_pos ?? 3;
@@ -375,7 +396,10 @@ export function autoPick(players, config) {
       const reason =
         `Roster-completion override: only ${myPicksRemaining} pick(s) left and ` +
         `${unfilledStarters.join(", ")} still unfilled — can't afford to punt this any further.`;
-      return { player: best, score: scores[best.name], reason, needOverride: true };
+      return {
+        player: best, score: scores[best.name], reason, needOverride: true,
+        components: components[best.name], alternatives: alternativesTo(best),
+      };
     }
   }
 
@@ -402,7 +426,10 @@ export function autoPick(players, config) {
         `Need override: ${best.pos} is ${repl[best.pos] - (draftedAtPos[best.pos] || 0)} ` +
         `picks from the replacement cliff league-wide and you have ` +
         `${have[best.pos] || 0} of ${starters[best.pos] || 0} rostered.`;
-      return { player: best, score: scores[best.name], reason, needOverride: true };
+      return {
+        player: best, score: scores[best.name], reason, needOverride: true,
+        components: components[best.name], alternatives: alternativesTo(best),
+      };
     }
   }
 
@@ -412,7 +439,10 @@ export function autoPick(players, config) {
     `Best available by adjusted value (raw ADP ${best.adp}, adjusted ${scores[best.name].toFixed(1)}).`,
   ];
   if (best.note) bits.push(`${best.noteTag}: ${best.note}`);
-  return { player: best, score: scores[best.name], reason: bits.join(" "), needOverride: false };
+  return {
+    player: best, score: scores[best.name], reason: bits.join(" "), needOverride: false,
+    components: components[best.name], alternatives: alternativesTo(best),
+  };
 }
 
 /* An ordered shortlist for the draft room's own queue, by greedy rollout:
