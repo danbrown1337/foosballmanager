@@ -28,6 +28,12 @@ function playersFromPool(pool) {
     // Yahoo's own ADP where it has one; list order otherwise, which is only a
     // stand-in for ordering and says nothing about whether he gets drafted.
     adp: typeof p.adp === "number" ? p.adp : p.rank,
+    /* Which of those it was. A rank standing in for an ADP is indistinguishable
+     * from a real one once it is in the field, and that is how a receiver
+     * nobody drafts anywhere — list position 113, ADP "-" in every room —
+     * came off the board looking like round-nine value and onto a roster with
+     * a D beside his name. */
+    adpSource: typeof p.adp === "number" ? "pool" : "rank",
   }));
 }
 
@@ -46,6 +52,11 @@ async function loadStaticData() {
 
 /* One place that decides where the board comes from, so every caller —
  * snapshot, shortlist, repair — sees the same players. */
+/* How much of the room has to have been read before a player's absence from
+ * its ADP column is taken as meaning the column shows a dash for him. */
+const MIN_ROOM_ADP_TO_JUDGE = 100;
+const ROOM_ADP_COVERAGE = 0.5;
+
 async function buildPlayers(adp, notes, byes) {
   const pool = await Storage.getPool();
   let rows = adp;
@@ -81,6 +92,7 @@ async function buildPlayers(adp, notes, byes) {
       const match = byName.get(p.name);
       if (!match) continue;
       p.adp = match.adp;
+      p.adpSource = "consensus";
       if (p.bye == null && match.bye != null) p.bye = match.bye;
     }
   }
@@ -96,10 +108,35 @@ async function buildPlayers(adp, notes, byes) {
   }
 
   const roomAdp = await Storage.getRoomAdp();
+  const roomAdpCount = roomAdp ? Object.keys(roomAdp).length : 0;
   if (roomAdp) {
     for (const p of players) {
       const value = roomAdp[p.name];
-      if (typeof value === "number" && value > 0) p.adp = value;
+      if (typeof value === "number" && value > 0) {
+        p.adp = value;
+        p.adpSource = "room";
+      }
+    }
+  }
+
+  /* Players whose only "ADP" is list position, once the room has been read
+   * widely enough for that to mean something.
+   *
+   * The league's own player list has no ADP column, and the consensus feed
+   * covers about four fifths of it, so the rest carry a rank in the ADP
+   * field — a receiver at list position 113 whom no room in the country
+   * drafts looks exactly like round-nine value. The room does publish the
+   * number, and recordRoomAdp collects it for every row a sweep passes,
+   * skipping the ones printed as "-". So a player still on "rank" after the
+   * room has been read broadly is a player the room shows a dash for.
+   *
+   * Same rule as everywhere else here: absence counts only once enough has
+   * been seen. Below that bar they are not excluded, only pushed down the
+   * board by the engine, which keeps them draftable in the last rounds when
+   * the alternative is an empty slot. */
+  if (roomAdpCount >= Math.max(MIN_ROOM_ADP_TO_JUDGE, players.length * ROOM_ADP_COVERAGE)) {
+    for (const p of players) {
+      if (p.adpSource === "rank") p.undrafted = true;
     }
   }
   if (pool?.players?.length) {
@@ -127,7 +164,8 @@ async function buildPlayers(adp, notes, byes) {
        * could not play were being drafted, and a pool import turned the whole
        * feature off again. */
       p.status = p.status ?? statusByName.get(p.name) ?? null;
-      p.undrafted = noAdp.has(p.name);
+      // Either reason is sufficient, so don't let one clear the other.
+      p.undrafted = p.undrafted || noAdp.has(p.name);
     }
     // Per-player byes from the league page beat a team lookup: a player who
     // changed team mid-season is right here and wrong in a static map.

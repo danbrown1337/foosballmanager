@@ -36,6 +36,10 @@ class Player:
     team: str
     pos: str
     adp: float
+    # Where .adp came from: "pool", "consensus", "room", or "rank" when it is
+    # really list position standing in for a number nobody published. None
+    # where the question doesn't arise — the bundled file is all real ADP.
+    adp_source: str | None = None
     tier: int = 0
     drafted_by: str | None = None  # None = available, "mine", or a rival name
     note_tag: str | None = None    # bust | injury_watch | breakout | value_note

@@ -1,0 +1,62 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { autoPick, guessPenalty, GUESSED_ADP_PENALTY } from "../src/engine/autopilot.js";
+import { makePlayer, assignTiers } from "../src/engine/board.js";
+
+const CONFIG = {
+  league: { num_teams: 10 },
+  roster: { starters: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DEF: 1 }, bench: 6 },
+  autopilot: { strategy: "best_player_available", risk_tolerance: "balanced" },
+};
+
+function board(rows) {
+  const players = rows.map((r) => makePlayer(r));
+  assignTiers(players);
+  return players;
+}
+
+test("a rank standing in for an ADP is charged; a real one isn't", () => {
+  assert.equal(guessPenalty({ adpSource: "rank" }, CONFIG), GUESSED_ADP_PENALTY);
+  for (const source of ["pool", "consensus", "room", null]) {
+    assert.equal(guessPenalty({ adpSource: source }, CONFIG), 0);
+  }
+});
+
+/* The pick this exists to prevent. A receiver at list position 113 whom no
+ * room drafts, sitting next to a back with a real ADP of 140: on the raw
+ * numbers the receiver looks like the better value by nearly thirty places. */
+test("a real ADP behind a guessed one still wins", () => {
+  const players = board([
+    { rank: 113, name: "Guessed Receiver", team: "DAL", pos: "WR", adp: 113, adpSource: "rank" },
+    { rank: 140, name: "Real Back", team: "DEN", pos: "RB", adp: 140, adpSource: "consensus" },
+  ]);
+  assert.equal(autoPick(players, CONFIG).player.name, "Real Back");
+});
+
+test("but he is still there at the end, rather than an empty slot", () => {
+  const players = board([
+    { rank: 113, name: "Guessed Receiver", team: "DAL", pos: "WR", adp: 113, adpSource: "rank" },
+  ]);
+  assert.equal(autoPick(players, CONFIG).player.name, "Guessed Receiver");
+});
+
+test("the penalty is not enough to pass over a genuinely better player", () => {
+  // Twenty places apart, and the guessed one is far better on the board: the
+  // charge is meant to break a near tie, not to blacklist him.
+  const players = board([
+    { rank: 20, name: "Guessed Star", team: "DAL", pos: "WR", adp: 20, adpSource: "rank" },
+    { rank: 95, name: "Real Journeyman", team: "DEN", pos: "RB", adp: 95, adpSource: "consensus" },
+  ]);
+  assert.equal(autoPick(players, CONFIG).player.name, "Guessed Star");
+});
+
+test("a player the room proves has no ADP is not offered at all", () => {
+  // undrafted is what buildPlayers sets once the room has been read widely
+  // enough for absence from its ADP column to mean a dash.
+  const players = board([
+    { rank: 113, name: "Proven Dash", team: "DAL", pos: "WR", adp: 113, adpSource: "rank" },
+    { rank: 300, name: "Deep Bench", team: "DEN", pos: "RB", adp: 300, adpSource: "consensus" },
+  ]);
+  players[0].undrafted = true;
+  assert.equal(autoPick(players, CONFIG).player.name, "Deep Bench");
+});
