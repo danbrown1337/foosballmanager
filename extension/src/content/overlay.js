@@ -287,6 +287,11 @@ async function main() {
   let turnHandled = false;  // already acted on this turn (reset when the phrase clears)
   const TURN_CONFIDENCE_TICKS = 2;
   let turnConfidence = 0;
+  /* Which pick number was acted on last. At the snake's turn you pick twice in
+   * a row and the banner never clears between them, so "already handled" has
+   * to mean this pick rather than this stretch of banner — otherwise the
+   * second pick is silently skipped. */
+  let handledPick = null;
 
   head.addEventListener("click", () => {
     body.classList.toggle("collapsed");
@@ -1363,10 +1368,17 @@ async function main() {
       }
       turnConfidence = Math.min(turnConfidence + 1, TURN_CONFIDENCE_TICKS);
       if (turnConfidence < TURN_CONFIDENCE_TICKS) return;
+
+      /* A new pick number under the same banner is a new turn. */
+      const here = parseDraftPosition ? parseDraftPosition(document.body.innerText) : null;
+      if (here && handledPick !== null && here.pick !== handledPick) {
+        turnHandled = false;
+      }
       if (turnActive && turnHandled) return; // already acted this turn, waiting for it to end
       turnActive = true;
 
       if (turnHandled) return;
+      if (here) handledPick = here.pick;
       /* Claim the turn before anything slow runs. Resolving can take several
        * seconds — it may search the room more than once — while polls come
        * every four, so two ticks were both clearing this check and acting on
