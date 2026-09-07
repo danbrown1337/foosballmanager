@@ -52,7 +52,19 @@ export const SURPLUS_PENALTY = { QB: 14, K: 20, DEF: 20, TE: 8, RB: 3, WR: 3 };
  * for their bye weeks. And nothing stopped a second kicker, which cannot be
  * played and cannot be needed.
  */
-export const DEPTH_TARGET = { RB: 2, WR: 2, TE: 1, QB: 1, K: 0, DEF: 0 };
+/* Bench spots wanted beyond the starters, by position.
+ *
+ * Revised after a 15-round mock came back with a second quarterback and a
+ * second tight end on the bench and only one every-week running back. In a
+ * one-quarterback league a QB2 never starts; behind a top-two tight end a TE2
+ * never starts either. Both were costing a round each while the backfield
+ * went unaddressed, so both targets are zero and the round goes to a back —
+ * the position where injuries and byes actually leave a lineup short, and the
+ * one whose waiver replacements are worst.
+ *
+ * A league that starts two quarterbacks says so in roster.starters, and this
+ * is counted on top of that, so superflex formats are unaffected. */
+export const DEPTH_TARGET = { RB: 3, WR: 2, TE: 0, QB: 0, K: 0, DEF: 0 };
 
 /* Beyond the target the charge stops being a nudge. A third quarterback or a
  * second kicker is a wasted roster spot in any week of the season. */
@@ -110,6 +122,7 @@ function minBy(list, keyFn) {
  * all of them — not one each, which is how a roster ended up with three tight
  * ends: each looked like it was filling the same empty flex. */
 const FLEX_ELIGIBLE = new Set(["RB", "WR", "TE"]);
+const FLEX_CLAIMS = new Set(["RB", "WR"]);
 
 export function surplusPenalty(player, mine, config) {
   const starters = config.roster?.starters || {};
@@ -118,7 +131,15 @@ export function surplusPenalty(player, mine, config) {
   if (have < need) return 0; // still filling the position
 
   let surplus = have - need + 1; // this player would be the nth spare
-  if (FLEX_ELIGIBLE.has(player.pos) && (starters.FLEX || 0) > 0) {
+  /* Who may claim the flex as "he starts there".
+   *
+   * A W/R/T flex will accept a tight end, and the engine used to let one
+   * claim the slot and walk away with no charge at all — which is how a
+   * second tight end landed on a roster behind the second-best tight end in
+   * the draft. It is legal and it is nearly always the worst use of the slot
+   * in PPR, where a third back or receiver plays more and scores more. So the
+   * discount is for the positions that would really start there. */
+  if (FLEX_CLAIMS.has(player.pos) && (starters.FLEX || 0) > 0) {
     const spares = Object.keys(starters)
       .filter((pos) => FLEX_ELIGIBLE.has(pos))
       .reduce((sum, pos) => sum + Math.max(0, mine.filter((p) => p.pos === pos).length - (starters[pos] || 0)), 0);
@@ -151,6 +172,46 @@ export function surplusPenalty(player, mine, config) {
  * end when the alternative is an empty roster spot. */
 export const GUESSED_ADP_PENALTY = 50;
 
+/* A player who sits behind a clearly better player of his own position on his
+ * own NFL team.
+ *
+ * A draft came back with three of its four running backs being other
+ * managers' handcuffs: Lloyd behind Jacobs, Rodriguez behind Tuten, Brian
+ * Robinson behind Bijan. ADP prices those players for the chance the starter
+ * gets hurt, and the engine had no idea any of them were backups, so it kept
+ * buying that chance without owning the thing it insures.
+ *
+ * No depth chart is needed to see it: a much better ADP at the same position
+ * on the same team is what being a backup looks like from here. Two rounds is
+ * the gap — closer than that is a committee, where both players play.
+ *
+ * The charge is by position, because "backup" means different things. A
+ * second running back or quarterback plays only if the man ahead is hurt. A
+ * team's second and third receivers play every week, so the idea barely
+ * applies to them. */
+export const BACKUP_ADP_GAP = 24;
+export const BACKUP_PENALTY = { QB: 30, RB: 25, TE: 12, WR: 4 };
+
+export function backupPenalty(player, mine, players, config) {
+  const weight = config.autopilot?.backup_penalty?.[player.pos] ??
+    BACKUP_PENALTY[player.pos];
+  if (!weight || !player.team) return 0;
+
+  const ahead = players.filter(
+    (p) => p.pos === player.pos && p.team === player.team && p.name !== player.name &&
+      player.adp - p.adp >= BACKUP_ADP_GAP
+  );
+  if (ahead.length === 0) return 0;
+
+  /* Handcuffing your own starter is the entire point of a handcuff: you hold
+   * the player whose injury would cost you, so the insurance pays out to you.
+   * Handcuffing somebody else's is a bet on an injury that helps you only if
+   * you then win a bidding war for the job. */
+  const mineNames = new Set(mine.map((p) => p.name));
+  if (ahead.some((p) => mineNames.has(p.name))) return 0;
+  return weight;
+}
+
 export function guessPenalty(player, config) {
   if (player.adpSource !== "rank") return 0;
   return config.autopilot?.guessed_adp_penalty ?? GUESSED_ADP_PENALTY;
@@ -182,7 +243,8 @@ export function autoPick(players, config) {
   // candidate who doesn't leave that position empty on the same week.
   for (const p of avail) {
     scores[p.name] +=
-      byePenalty(p, mine, config) + surplusPenalty(p, mine, config) + guessPenalty(p, config);
+      byePenalty(p, mine, config) + surplusPenalty(p, mine, config) +
+      guessPenalty(p, config) + backupPenalty(p, mine, players, config);
   }
 
   const starters = config.roster.starters;

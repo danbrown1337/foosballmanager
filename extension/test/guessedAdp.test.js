@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { autoPick, guessPenalty, GUESSED_ADP_PENALTY } from "../src/engine/autopilot.js";
+import { autoPick, guessPenalty, GUESSED_ADP_PENALTY, backupPenalty, BACKUP_PENALTY } from "../src/engine/autopilot.js";
 import { makePlayer, assignTiers } from "../src/engine/board.js";
 
 const CONFIG = {
@@ -59,4 +59,43 @@ test("a player the room proves has no ADP is not offered at all", () => {
   ]);
   players[0].undrafted = true;
   assert.equal(autoPick(players, CONFIG).player.name, "Deep Bench");
+});
+
+/* Handcuffs. A 15-round mock came back with three of its four running backs
+ * sitting behind somebody else's starter, bought at up to two rounds above
+ * market for the chance that starter gets hurt. */
+test("somebody else's backup is charged; your own handcuff is not", () => {
+  const players = board([
+    { rank: 2, name: "Bijan Robinson", team: "ATL", pos: "RB", adp: 2.3, adpSource: "consensus" },
+    { rank: 152, name: "Brian Robinson", team: "ATL", pos: "RB", adp: 152.9, adpSource: "consensus" },
+  ]);
+  const [starter, backup] = players;
+  assert.equal(backupPenalty(backup, [], players, CONFIG), BACKUP_PENALTY.RB);
+  // Once you hold the starter, the insurance pays out to you.
+  assert.equal(backupPenalty(backup, [starter], players, CONFIG), 0);
+  // And the starter himself is never a backup.
+  assert.equal(backupPenalty(starter, [], players, CONFIG), 0);
+});
+
+test("a committee is not a backup", () => {
+  // Twenty places apart: both of these play every week.
+  const players = board([
+    { rank: 40, name: "Lead Back", team: "GB", pos: "RB", adp: 40, adpSource: "consensus" },
+    { rank: 58, name: "Change Of Pace", team: "GB", pos: "RB", adp: 58, adpSource: "consensus" },
+  ]);
+  assert.equal(backupPenalty(players[1], [], players, CONFIG), 0);
+});
+
+test("a team's second receiver is barely charged, unlike its second back", () => {
+  const wrs = board([
+    { rank: 5, name: "WR1", team: "CIN", pos: "WR", adp: 5, adpSource: "consensus" },
+    { rank: 70, name: "WR2", team: "CIN", pos: "WR", adp: 70, adpSource: "consensus" },
+  ]);
+  const rbs = board([
+    { rank: 5, name: "RB1", team: "CIN", pos: "RB", adp: 5, adpSource: "consensus" },
+    { rank: 70, name: "RB2", team: "CIN", pos: "RB", adp: 70, adpSource: "consensus" },
+  ]);
+  const wrCharge = backupPenalty(wrs[1], [], wrs, CONFIG);
+  const rbCharge = backupPenalty(rbs[1], [], rbs, CONFIG);
+  assert.ok(rbCharge > wrCharge * 3, `${rbCharge} vs ${wrCharge}`);
 });

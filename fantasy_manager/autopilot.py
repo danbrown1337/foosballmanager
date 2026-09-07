@@ -69,7 +69,13 @@ SURPLUS_PENALTY = {"QB": 14, "K": 20, "DEF": 20, "TE": 8, "RB": 3, "WR": 3}
 # saying so, a bench filled with receivers left two running backs on a roster
 # that starts two and a flex, with no cover for their byes. And nothing stopped
 # a second kicker, which cannot be played and cannot be needed.
-DEPTH_TARGET = {"RB": 2, "WR": 2, "TE": 1, "QB": 1, "K": 0, "DEF": 0}
+# Bench spots wanted beyond the starters, by position. Revised after a
+# 15-round mock came back with a second quarterback and a second tight end on
+# the bench and one every-week running back. In a one-QB league a QB2 never
+# starts; behind a top-two tight end a TE2 never starts either. Both cost a
+# round while the backfield went unaddressed. A league that starts two
+# quarterbacks says so in roster.starters, and this counts on top of that.
+DEPTH_TARGET = {"RB": 3, "WR": 2, "TE": 0, "QB": 0, "K": 0, "DEF": 0}
 
 # Beyond the target the charge stops being a nudge.
 BEYOND_DEPTH_PENALTY = 60.0
@@ -79,6 +85,9 @@ BEYOND_DEPTH_PENALTY = 60.0
 # all of them — not one each, which is how a roster reached three tight ends:
 # each looked like it was filling the same empty flex.
 FLEX_ELIGIBLE = {"RB", "WR", "TE"}
+
+
+FLEX_CLAIMS = frozenset({"RB", "WR"})
 
 
 def surplus_penalty(player, mine, config):
@@ -91,7 +100,12 @@ def surplus_penalty(player, mine, config):
 
     surplus = have - need + 1
     flex_slots = starters.get("FLEX", 0)
-    if player.pos in FLEX_ELIGIBLE and flex_slots > 0:
+    # A W/R/T flex will take a tight end, and letting one claim the slot for
+    # free is how a second tight end reached a bench behind the second-best
+    # tight end in the draft. Legal, and nearly always the worst use of the
+    # slot in PPR, so only the positions that would really start there claim
+    # the discount.
+    if player.pos in FLEX_CLAIMS and flex_slots > 0:
         spares = sum(
             max(0, sum(1 for p in mine if p.pos == pos) - starters.get(pos, 0))
             for pos in starters
@@ -121,6 +135,43 @@ def surplus_penalty(player, mine, config):
 # twice; pushing him down keeps him out of the middle rounds while leaving him
 # available at the end, when the alternative is an empty roster spot.
 GUESSED_ADP_PENALTY = 50.0
+
+
+# A player sitting behind a clearly better player of his own position on his
+# own NFL team. A draft came back with three of its four backs being other
+# managers' handcuffs — Lloyd behind Jacobs, Rodriguez behind Tuten, Brian
+# Robinson behind Bijan. ADP prices those players for the chance the starter
+# gets hurt, and the engine kept buying that chance without owning the thing
+# it insures. No depth chart is needed: a much better ADP at the same position
+# on the same team is what a backup looks like from here, and two rounds is
+# the gap — closer than that is a committee, where both play. The charge is by
+# position, because a second back or quarterback plays only on an injury while
+# a team's second and third receivers play every week.
+BACKUP_ADP_GAP = 24.0
+BACKUP_PENALTY = {"QB": 30.0, "RB": 25.0, "TE": 12.0, "WR": 4.0}
+
+
+def backup_penalty(player, mine, players, config):
+    weights = config.get("autopilot", {}).get("backup_penalty", BACKUP_PENALTY)
+    weight = weights.get(player.pos, 0.0)
+    if not weight or not player.team:
+        return 0.0
+
+    ahead = [
+        p for p in players
+        if p.pos == player.pos and p.team == player.team and p.name != player.name
+        and player.adp - p.adp >= BACKUP_ADP_GAP
+    ]
+    if not ahead:
+        return 0.0
+
+    # Handcuffing your own starter is the point of a handcuff: the insurance
+    # pays out to you. Handcuffing somebody else's is a bet on an injury that
+    # helps you only if you then win the bidding war for the job.
+    mine_names = {p.name for p in mine}
+    if any(p.name in mine_names for p in ahead):
+        return 0.0
+    return weight
 
 
 def guess_penalty(player, config):
@@ -194,6 +245,7 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
             bye_penalty(p, mine, config)
             + surplus_penalty(p, mine, config)
             + guess_penalty(p, config)
+            + backup_penalty(p, mine, players, config)
         )
 
     starters = config["roster"]["starters"]
