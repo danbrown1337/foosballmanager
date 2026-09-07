@@ -1117,9 +1117,27 @@ async function main() {
     const label = poolBtn.textContent;
     poolBtn.textContent = "Reading Yahoo's player list\u2026";
     try {
-      const leagueId = leagueIdFromUrl(location.href);
+      /* Consensus ADP first, and unconditionally: it comes from outside Yahoo
+       * and needs no league at all. Nesting it inside the pool import meant a
+       * page without a league id in its address — a draft room reached from
+       * the lobby, say — skipped the ADP too, and the board went on ordering
+       * players by their position in a list. */
+      try {
+        const adp = await sendMessage({ type: "REFRESH_CONSENSUS_ADP" });
+        addLog(adp.ok
+          ? `Consensus ADP loaded for ${adp.count} players.`
+          : `Consensus ADP looked wrong (${adp.count} players) — keeping what we had.`);
+      } catch (err) {
+        addLog(`Couldn't load consensus ADP: ${String(err.message || err)}`);
+      }
+
+      /* The player pool does need one. Fall back to the league imported last
+       * time, since a draft room's own id has no players page behind it. */
+      const stored = await Storage.getPool();
+      const leagueId = leagueIdFromUrl(location.href) || stored?.leagueId || null;
       if (!leagueId) {
-        addLog("No league id in this page's address — open your league's Players page.");
+        addLog("Players not imported: no league id here, and none remembered. Open your league's Players page.");
+        await refresh();
         return;
       }
       const get = (url) =>
@@ -1138,18 +1156,6 @@ async function main() {
         return;
       }
       await Storage.setPool({ fetchedAt: Date.now(), leagueId, players });
-
-      /* Consensus ADP in the same press: Yahoo publishes ADP only inside a
-       * draft room, so without this the board has no idea where anyone goes
-       * until a draft is already under way. */
-      try {
-        const adp = await sendMessage({ type: "REFRESH_CONSENSUS_ADP" });
-        addLog(adp.ok
-          ? `Consensus ADP loaded for ${adp.count} players.`
-          : `Consensus ADP looked wrong (${adp.count} players) — keeping what we had.`);
-      } catch (err) {
-        addLog(`Couldn't load consensus ADP: ${String(err.message || err)}`);
-      }
       boardNameSet = null;
       boardPlayers = null;
       previousBoardNames = null;
