@@ -12,6 +12,7 @@ import {
   shortlist,
   repairBoard,
   recordRoomAdp,
+  recordRoomStatus,
   refreshConsensusAdp,
   markPick,
   undoPick,
@@ -51,7 +52,10 @@ async function handle(message, sender) {
       return shortlist(message.n || 5);
 
     case "REPAIR_BOARD":
-      return repairBoard(message.names);
+      return repairBoard(message.names, { markMissing: message.markMissing !== false });
+
+    case "RECORD_ROOM_STATUS":
+      return recordRoomStatus(message.entries);
 
     case "RECORD_ROOM_ADP":
       return recordRoomAdp(message.entries);

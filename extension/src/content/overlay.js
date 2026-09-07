@@ -180,7 +180,7 @@ async function main() {
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
-    findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp;
+    findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, defenceAliases } =
@@ -206,7 +206,8 @@ async function main() {
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-    looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, fetchPool, leagueIdFromUrl,
+    looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses, fetchPool,
+    leagueIdFromUrl,
   };
   const unbound = Object.keys(wired).filter((name) => typeof wired[name] !== "function");
   if (unbound.length > 0) {
@@ -1014,6 +1015,9 @@ async function main() {
    * every cycle marking drafted players instead of queueing anyone. Run it on
    * a timer as well, between picks, where it costs nothing. */
   let lastBoardUpdateAt = 0;
+  /* The fullest sweep this page has managed, as the yardstick for whether a
+   * later one is complete enough to mark players drafted from absence. */
+  let bestSweepSeen = 0;
   async function updateBoardFromRoom({ verify }) {
     const searchBox = findPlayerSearchBox(document.body);
     if (searchBox && searchBox.value) {
@@ -1044,6 +1048,7 @@ async function main() {
      * matcher that handles abbreviations, and anything ambiguous is dropped
      * rather than guessed at. */
     const adpByBoardName = {};
+    const statusByBoardName = {};
     detectionSuspended = true;
     try {
       await sweepList(() => {
@@ -1053,6 +1058,10 @@ async function main() {
         for (const [label, adp] of readRoomAdp(document.body)) {
           const resolved = findBoardNames(label, boardNameSet, boardPlayers);
           if (resolved.size === 1) adpByBoardName[[...resolved][0]] = adp;
+        }
+        for (const [label, status] of readRoomStatuses(document.body)) {
+          const resolved = findBoardNames(label, boardNameSet, boardPlayers);
+          if (resolved.size === 1) statusByBoardName[[...resolved][0]] = status;
         }
       });
     } finally {
@@ -1067,8 +1076,41 @@ async function main() {
         reason: `only ${seen.size} of about ${expected} available players read — too few to rewrite the board`,
       };
     }
-    const result = await sendMessage({ type: "REPAIR_BOARD", names: [...seen] });
+
+    /* Marking from absence needs a sweep as complete as the best one yet.
+     *
+     * How much of the list a sweep reaches varies with scroll timing and how
+     * fast the room re-renders, so consecutive sweeps see different subsets —
+     * and since the repair marks everything it didn't see as drafted, the
+     * board flip-flops: one refresh reported 147 players put back that an
+     * earlier one had buried. While they were buried the queue had nothing
+     * good to offer, which is where the D-grade picks came from.
+     *
+     * So a sweep only rewrites what it missed if it is within reach of the
+     * fullest view we have managed. A thinner one may still free players it
+     * saw — that direction cannot invent a pick. */
+    bestSweepSeen = Math.max(bestSweepSeen, seen.size);
+    const complete = seen.size >= bestSweepSeen * 0.95;
+    const result = await sendMessage({
+      type: "REPAIR_BOARD",
+      names: [...seen],
+      markMissing: complete,
+    });
     lastBoardUpdateAt = Date.now();
+    if (!complete) {
+      addLog(`Partial view (${seen.size} of ${bestSweepSeen} seen) — freeing only, not marking.`);
+    }
+
+    const outCount = Object.keys(statusByBoardName).length;
+    if (outCount > 0) {
+      const statusResult = await sendMessage({
+        type: "RECORD_ROOM_STATUS",
+        entries: statusByBoardName,
+      });
+      if (statusResult.changed > 0) {
+        addLog(`Marked ${statusResult.changed} players as out (IR/NA/PUP) from the room.`);
+      }
+    }
 
     const adpCount = Object.keys(adpByBoardName).length;
     if (adpCount > 0) {

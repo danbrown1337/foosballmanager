@@ -155,7 +155,7 @@ const PROBE_MODULE_SRC = `
 import { findPlayerClickTarget, findConfirmClickTarget, clickElement, DEFAULT_CONFIRM_PHRASES,
   findPlayerSearchBox, setInputValue, surnameOf, findQueueStar,
   findDraftButton, findQueueRemove, looksUnavailableOnPage,
-  rowShowsNoAdp, readRoomAdp } from "../src/lib/domActions.js";
+  rowShowsNoAdp, readRoomAdp, readRoomStatuses } from "../src/lib/domActions.js";
 import { parsePoolPage } from "../src/lib/yahooPool.js";
 
 export async function run(document) {
@@ -335,6 +335,11 @@ export async function run(document) {
   results.queuedNoAdp = rowShowsNoAdp(document.body, "Chase Brown");
   results.queuedHasAdp = rowShowsNoAdp(document.body, "Jahmyr Gibbs");
 
+  // Designations for the whole room, so they can go on the board itself.
+  const statuses = readRoomStatuses(document.body);
+  results.statusReed = statuses.get("J. Reed") ?? null;
+  results.statusHealthy = statuses.get("D. Achane") ?? null;
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
 
@@ -461,6 +466,8 @@ async function main() {
       ["finds the Draft button on a queued player's panel entry",
         result.queuedDraftClass === "q-draft"],
       ["spots a queued player whose entry shows no ADP", result.queuedNoAdp === true],
+      ["reads every out designation in the room at once", result.statusReed === "NA"],
+      ["and tags nobody who is playing", result.statusHealthy === null],
       ["and leaves a queued player who has one alone", result.queuedHasAdp === false],
       ["reads the room's ADP column", result.adpAchane === 15.3],
       ["skips rows whose ADP is a dash", result.adpSkipsDashes === true],
