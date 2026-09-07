@@ -1976,6 +1976,14 @@ async function main() {
     observerTick();
   });
 
+  /* The service worker's clock, for a room that has gone quiet. The observer
+   * above only fires when the page changes, and a room waiting on somebody
+   * else's pick can sit still for a minute at a time. */
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message?.type !== "HEARTBEAT" || !polling) return;
+    observerTick();
+  });
+
   const turnObserver = new MutationObserver(observerTick);
   turnObserver.observe(document.body, {
     subtree: true,

@@ -116,3 +116,39 @@ async function handle(message, sender) {
 // Chrome opens the popup instead of dispatching the click event. The badge
 // is cleared from popup.js on open instead.
 chrome.runtime.onInstalled.addListener(() => setBadge(""));
+
+
+/* A clock outside the tab.
+ *
+ * Chrome throttles a hidden tab's timers to roughly once a minute, which is
+ * longer than a pick clock — three gaps of 16, 52 and 28 seconds in one draft,
+ * every turn inside one handed to Yahoo's autodraft. The page's own
+ * MutationObserver covers a room that is still changing, but a room that has
+ * gone quiet while it waits for somebody mutates nothing, and a throttled
+ * timer will not notice the turn arrive.
+ *
+ * A service worker alarm is not a tab timer and is not throttled with one. It
+ * fires, finds any draft room we have a content script in, and tells it to
+ * look. What the page can then do while hidden is still limited — rendering
+ * is suspended, so scrolling the list reveals nothing — but noticing your turn
+ * and clicking a player already on screen needs neither.
+ */
+const HEARTBEAT = "fm-heartbeat";
+const HEARTBEAT_MINUTES = 0.5; // the shortest period Chrome will honour
+
+chrome.alarms.create(HEARTBEAT, { periodInMinutes: HEARTBEAT_MINUTES });
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name !== HEARTBEAT) return;
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: "https://*.fantasysports.yahoo.com/draftclient/*" });
+  } catch {
+    return; // no matching tabs, or the query is not permitted here
+  }
+  for (const tab of tabs) {
+    // A tab whose content script has gone (navigated away, discarded) rejects
+    // this, and there is nothing useful to do about it.
+    chrome.tabs.sendMessage(tab.id, { type: "HEARTBEAT" }).catch(() => {});
+  }
+});
