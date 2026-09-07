@@ -19,6 +19,8 @@ import {
   autopickCommit,
   resetDraft,
   recordDetectedPicks,
+  recordDecision,
+  gradeDraft,
 } from "./lib/snapshot.js";
 
 async function setBadge(text) {
@@ -50,6 +52,12 @@ async function handle(message, sender) {
 
     case "GET_SHORTLIST":
       return shortlist(message.n || 5);
+
+    case "RECORD_DECISION":
+      return recordDecision(message.entry);
+
+    case "GRADE_DRAFT":
+      return gradeDraft();
 
     case "REPAIR_BOARD":
       return repairBoard(message.names, { markMissing: message.markMissing !== false });

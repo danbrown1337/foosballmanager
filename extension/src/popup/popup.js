@@ -172,3 +172,62 @@ document.getElementById("genOffers").addEventListener("click", async () => {
     showErr(String(err.message || err));
   }
 })();
+
+
+/* Grading, in the panel rather than in a conversation.
+ *
+ * Yahoo does not store mock drafts, so the only record of one is the decision
+ * log this extension keeps. Grading it here is what turns a mock into a
+ * measurement — the same numbers every time, against the same board the
+ * engine drafted from. */
+document.getElementById("gradeBtn").addEventListener("click", async () => {
+  const out = document.getElementById("gradeOut");
+  out.textContent = "Grading…";
+  try {
+    const report = await sendMessage({ type: "GRADE_DRAFT" });
+    const order = ["QB", "RB", "WR", "TE", "K", "DEF"];
+    const lines = order
+      .filter((pos) => report.grades[pos])
+      .map((pos) => `${pos} ${report.grades[pos]}`)
+      .join("  ·  ");
+    out.innerHTML = "";
+
+    const overall = document.createElement("div");
+    overall.textContent = `Overall ${report.grades.overall} (${report.scores.overall})`;
+    overall.style.fontWeight = "600";
+    out.appendChild(overall);
+
+    const byPos = document.createElement("div");
+    byPos.textContent = lines;
+    out.appendChild(byPos);
+
+    if (report.constructionFlags.length) {
+      const flags = document.createElement("div");
+      flags.textContent = `Flags: ${report.constructionFlags.join(", ")}`;
+      out.appendChild(flags);
+    }
+    if (report.strengths.length) {
+      const good = document.createElement("div");
+      good.textContent = `Strengths: ${report.strengths.join(", ")}`;
+      out.appendChild(good);
+    }
+    if (!report.log?.length) {
+      const note = document.createElement("div");
+      note.textContent = "No decision log for this draft — flags about when a pick was made need one.";
+      out.appendChild(note);
+    }
+  } catch (err) {
+    out.textContent = `Couldn't grade: ${err.message}`;
+  }
+});
+
+document.getElementById("copyLog").addEventListener("click", async () => {
+  const out = document.getElementById("gradeOut");
+  try {
+    const report = await sendMessage({ type: "GRADE_DRAFT" });
+    await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+    out.textContent = `Copied ${report.log.length} decision(s) to the clipboard.`;
+  } catch (err) {
+    out.textContent = `Couldn't copy: ${err.message}`;
+  }
+});

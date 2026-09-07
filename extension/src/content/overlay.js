@@ -294,6 +294,8 @@ async function main() {
   const queuedByUs = new Set();
   const reportedAmbiguous = new Set();
   let currentRecName = null;
+  let currentRecReason = null;
+  let currentAlternatives = null;
   let turnPhrases = [];
   let confirmPhrases = [];
   let turnActive = false;   // was the "your turn" phrase present last poll
@@ -436,6 +438,9 @@ async function main() {
     practiceToggle.checked = !!snapshot.practice;
     const rec = snapshot.recommendation;
     currentRecName = rec ? rec.name : null;
+    // Kept for the decision record: what was chosen, why, and over whom.
+    currentRecReason = rec ? rec.reason : null;
+    currentAlternatives = rec?.alternatives ?? null;
     recName.textContent = rec ? `${rec.name} — ${rec.pos}, ${rec.team}` : "Board is empty";
     recWhy.textContent = rec ? rec.reason : "";
     recFlag.hidden = !(rec && rec.needOverride);
@@ -728,6 +733,35 @@ async function main() {
   const markedByAbsence = new Set();
   let absenceReversals = 0;
   let missingMeansDrafted = true;
+
+  /* Write down what was decided, at the moment it was decided.
+   *
+   * Yahoo does not keep mock drafts — its own confirmation email says so — so
+   * a roster looked at afterwards has been the only evidence available, and
+   * every question about this engine took a conversation to answer instead of
+   * a lookup. The record is what the panel knew: which player, at which pick,
+   * for what stated reason, and what it was choosing between. */
+  function recordPickDecision(name) {
+    const meta = (boardPlayers || []).find((p) => p.name === name) || null;
+    const here = parseDraftPosition ? parseDraftPosition(document.body.innerText) : null;
+    const teams = lastConfig?.league?.num_teams;
+    sendMessage({
+      type: "RECORD_DECISION",
+      entry: {
+        name,
+        pos: meta?.pos ?? null,
+        team: meta?.team ?? null,
+        adp: meta?.adp ?? null,
+        adpSource: meta?.adpSource ?? null,
+        pick: here?.pick ?? null,
+        round: here && teams ? Math.floor((here.pick - 1) / teams) + 1 : null,
+        reason: currentRecReason || null,
+        alternatives: currentAlternatives,
+      },
+    }).catch(() => {
+      // A missed record is not worth interrupting a draft over.
+    });
+  }
 
   /* Why a control could not be found, and what that means.
    *
@@ -1706,6 +1740,7 @@ async function main() {
       await wait(jitterDelay());
       clickElement(draftBtn);
       addLog(`Drafted ${currentRecName}.`);
+      recordPickDecision(currentRecName);
       await clearSearch();
     } catch (err) {
       // A throw mid-search would otherwise leave detection suspended for the

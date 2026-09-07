@@ -9,6 +9,7 @@ import { loadPlayers, applyNotes, assignTiers, applyDraftState, applyByes, scarc
 import { autoPick, topPicks } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
 import { adpUrl, parseAdpFeed } from "./consensusAdp.js";
+import { gradeRoster } from "../engine/grade.js";
 
 let cachedAdp = null;
 let cachedNotes = null;
@@ -203,6 +204,9 @@ export async function buildSnapshot() {
     recommendation: decision && {
       name: decision.player.name, pos: decision.player.pos, team: decision.player.team,
       tier: decision.player.tier, reason: decision.reason, needOverride: decision.needOverride,
+      // For the decision record: what this pick was chosen over, and by how much.
+      alternatives: decision.alternatives ?? null,
+      components: decision.components ?? null,
     },
     // Surfaced so every front end can say, unmissably, that the settings
     // driving these recommendations are mock settings and not the league's.
@@ -279,7 +283,36 @@ export async function autopickCommit(commit) {
 
 export async function resetDraft() {
   await Storage.resetDraftState();
+  await Storage.clearDraftLog();
   return buildSnapshot();
+}
+
+/* One decision, written down at the moment it is made.
+ *
+ * Yahoo does not keep mock drafts, so a roster reviewed afterwards is all
+ * anyone has had to go on — which is why every question about this engine
+ * ("why three tight ends?", "why no backs?") took a conversation to answer
+ * instead of a lookup. */
+export async function recordDecision(entry) {
+  const log = await Storage.appendDraftLog({
+    at: new Date().toISOString(),
+    ...entry,
+  });
+  return { logged: log.length };
+}
+
+/* The draft graded against itself: what the engine drafted, scored by the
+ * same board it drafted from. */
+export async function gradeDraft() {
+  const [{ adp, notes, byes }, config, draftState, log] = await Promise.all([
+    loadStaticData(),
+    Storage.getConfig(),
+    Storage.getDraftState(),
+    Storage.getDraftLog(),
+  ]);
+  const players = await buildPlayers(adp, notes, byes);
+  applyDraftState(players, draftState);
+  return { ...gradeRoster(players, config, log), log };
 }
 
 /** Record newly-detected picks from a content script poll, defaulting to
