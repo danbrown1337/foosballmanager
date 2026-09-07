@@ -181,7 +181,7 @@ async function main() {
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
     findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
-    sweepTrust;
+    sweepTrust, Attempts;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, defenceAliases } =
@@ -190,6 +190,7 @@ async function main() {
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
   ({ isMyTurn, looksLikeAFutureTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
   ({ sweepTrust } = await import(chrome.runtime.getURL("src/lib/sweepTrust.js")));
+  ({ Attempts } = await import(chrome.runtime.getURL("src/lib/attempts.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -209,7 +210,7 @@ async function main() {
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses, fetchPool,
-    leagueIdFromUrl, sweepTrust,
+    leagueIdFromUrl, sweepTrust, Attempts,
   };
   const unbound = Object.keys(wired).filter((name) => typeof wired[name] !== "function");
   if (unbound.length > 0) {
@@ -663,6 +664,29 @@ async function main() {
     return new RegExp(`(?<!\\w)${parts[0][0]}\\.\\s?${last}(?!\\w)`, "i").test(text);
   }
 
+  /* Targets the room would not confirm, and when to try them again.
+   *
+   * Every loop here is bounded inside one cycle and none of that helped: the
+   * cycle restarts every few seconds against the same board and re-derives
+   * the same candidates, so bounded inner loops composed into an unbounded
+   * outer one. A whole draft went by cycling Jeanty, Smith, Olave and
+   * Williams — a full sweep of the player list for each — with the queue
+   * empty and Yahoo autodrafting. Concluding "drafted" used to end it, and
+   * that conclusion was wrong often enough to be worth removing, which left
+   * nothing to stop the cycle.
+   *
+   * The ledger is what carries a failure from one cycle to the next. The
+   * reasoning and its tests live in src/lib/attempts.js. */
+  const unconfirmed = new Attempts({ tries: 3, restMs: 90_000 });
+  function noteUnconfirmed(name) {
+    if (unconfirmed.fail(name)) {
+      addLog(`${name} can't be found in the room after 3 tries — resting him for 90s so the queue can move on.`);
+    }
+  }
+  function restingUnconfirmed(name) {
+    return unconfirmed.resting(name);
+  }
+
   /* The fullest sweep this page has managed, as the yardstick for whether a
    * later one is complete enough to mark players drafted from absence. */
   let bestSweepSeen = 0;
@@ -791,7 +815,12 @@ async function main() {
     for (let attempt = 0; attempt <= maxSkips; attempt++) {
       const snapshot = await sendMessage({ type: "GET_SNAPSHOT" });
       const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2 });
-      const candidate = shortlist.find((p) => !unusable.has(p.name));
+      /* Skip what is resting as well as what this turn has already ruled
+       * out, so a name the room would not produce a moment ago doesn't cost
+       * another walk of the list now. */
+      const candidate = shortlist.find(
+        (p) => !unusable.has(p.name) && !restingUnconfirmed(p.name)
+      );
       if (!candidate) {
         return { snapshot, name: null, el: null, searchBox, skipped, exhausted: true };
       }
@@ -812,6 +841,7 @@ async function main() {
       const located = await locatePlayer(candidate.name, meta, { keepScroll: true });
       searchBox = located.searchBox || searchBox; // never lose the handle
       if (located.el) {
+        unconfirmed.succeed(candidate.name); // found him: no longer suspect
         return { snapshot, name: candidate.name, el: located.el, searchBox, skipped, exhausted: false };
       }
 
@@ -820,8 +850,12 @@ async function main() {
         await sendMessage({ type: "IMPORT_PICKS", names: [candidate.name], by: "rival" });
         skipped++;
       } else {
-        // Can't confirm him either way: change nothing, but don't stall here.
+        // Can't confirm him either way: change nothing, but don't stall here,
+        // and put it on the same ledger the queue uses. A name the room will
+        // not produce is not worth a full sweep of the list at every turn as
+        // well as every queue cycle.
         unusable.add(candidate.name);
+        noteUnconfirmed(candidate.name);
       }
     }
     return { snapshot: null, name: null, el: null, searchBox, skipped, exhausted: true };
@@ -954,7 +988,8 @@ async function main() {
 
     const wanted = shortlistNow;
         const pick = wanted.find(
-          (p) => !inRoom.has(p.name) && !queuedByUs.has(p.name) && !tried.has(p.name)
+          (p) => !inRoom.has(p.name) && !queuedByUs.has(p.name) && !tried.has(p.name) &&
+            !restingUnconfirmed(p.name)
         );
         if (!pick) {
           if (attempts === 1) noteQueueIdle(wanted.length === 0
@@ -972,6 +1007,7 @@ async function main() {
             // Couldn't confirm him either way: don't touch the board, and try
             // the next name rather than ending the cycle.
             tried.add(pick.name);
+            noteUnconfirmed(pick.name);
             noteQueueIdle(`queue: couldn't confirm ${pick.name} in the room — trying the next name`);
             continue;
           }
