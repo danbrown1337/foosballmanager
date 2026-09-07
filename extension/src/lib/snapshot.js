@@ -85,6 +85,16 @@ async function buildPlayers(adp, notes, byes) {
     }
   }
 
+  /* The room's designations win over the pool's: they are what this draft is
+   * showing now, and a board imported earlier may carry none at all. */
+  const roomStatus = await Storage.getRoomStatus();
+  if (roomStatus) {
+    for (const p of players) {
+      const status = roomStatus[p.name];
+      if (status) p.status = status;
+    }
+  }
+
   const roomAdp = await Storage.getRoomAdp();
   if (roomAdp) {
     for (const p of players) {
@@ -368,6 +378,20 @@ export async function refreshConsensusAdp() {
   return { ok: true, count: players.length };
 }
 
+/* Injury designations observed in the room, by board name. Kept separately
+ * from the pool's, which are only as good as the last import. */
+export async function recordRoomStatus(entries) {
+  const existing = (await Storage.getRoomStatus()) || {};
+  let changed = 0;
+  for (const [name, status] of Object.entries(entries)) {
+    if (!status || existing[name] === status) continue;
+    existing[name] = status;
+    changed++;
+  }
+  if (changed > 0) await Storage.setRoomStatus(existing);
+  return { changed, total: Object.keys(existing).length };
+}
+
 export async function recordRoomAdp(entries) {
   const existing = (await Storage.getRoomAdp()) || {};
   let changed = 0;
@@ -381,7 +405,7 @@ export async function recordRoomAdp(entries) {
   return { changed, total: Object.keys(existing).length };
 }
 
-export async function repairBoard(availableNames) {
+export async function repairBoard(availableNames, { markMissing = true } = {}) {
   const available = new Set(availableNames);
   const { adp, notes, byes } = await loadStaticData();
   // Same source as everywhere else: repairing against a different set of
@@ -398,7 +422,9 @@ export async function repairBoard(availableNames) {
         delete state.drafted[player.name];
         freed++;
       }
-    } else if (!(player.name in state.drafted)) {
+    } else if (markMissing && !(player.name in state.drafted)) {
+      // Only when the caller says its view of the room was complete: marking
+      // from absence is the one direction that can invent a pick.
       state.drafted[player.name] = "rival";
       markedDrafted++;
     }

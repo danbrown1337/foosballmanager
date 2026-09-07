@@ -351,7 +351,7 @@ export function readRoomAdp(root) {
     for (const row of table.querySelectorAll("tbody tr")) {
       const nameEl = row.querySelector(".ysf-player-name a") || row.querySelector("a");
       const label = (nameEl?.textContent || "").trim();
-      const abbrev = label || (row.textContent || "").match(/[A-Za-z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/)?.[0];
+      const abbrev = label || (row.textContent || "").match(ABBREV_LABEL)?.[0];
       if (!abbrev) continue;
       const value = Number((row.children[adpCol]?.textContent || "").trim());
       if (Number.isFinite(value) && value > 0) out.set(abbrev, value);
@@ -378,6 +378,42 @@ function textMentions(text, forms) {
     }
   }
   return false;
+}
+
+/* Every name-and-designation pair the room is showing.
+ *
+ * Guards that ask "is this one player out?" have failed three times, each by
+ * treating a player it could not see as fine. Reading the whole room instead
+ * puts the designations on the board itself, where the engine drops them from
+ * consideration — so no path can draft them, rather than every path needing
+ * its own check. */
+/* An initial and a surname, stopping at the next capital. Cells run together
+ * in textContent, so a greedy surname swallows the columns after it and
+ * "J. Reed" becomes "J. ReedNAWRCar". Handles the room's two spellings: title
+ * case in the list, upper case in the pick feed. */
+const ABBREV_LABEL = /[A-Za-z]\.\s?(?:[A-Z][a-z'\u2019-]+|[A-Z]{2,})/;
+
+export function readRoomStatuses(root) {
+  const doc = root.ownerDocument || root;
+  const out = new Map();
+  for (const row of doc.querySelectorAll("tbody tr")) {
+    /* The players page links the name; the draft room prints it in a span.
+     * Requiring a link would have read nothing at all in the one place this
+     * matters. */
+    const nameEl = row.querySelector(".ysf-player-name a") || row.querySelector("a");
+    const label = (nameEl?.textContent || "").trim() ||
+      ((row.querySelector(".ysf-player-name") || row).textContent || "")
+        .match(ABBREV_LABEL)?.[0] || "";
+    if (!label) continue;
+    for (const cell of row.querySelectorAll("td, span, abbr, div")) {
+      const value = (cell.textContent || "").trim();
+      if (value.length <= 5 && OUT_TAGS.test(value)) {
+        out.set(label, value.toUpperCase());
+        break;
+      }
+    }
+  }
+  return out;
 }
 
 /* Does the room show this player with no average draft position?

@@ -24,6 +24,7 @@ const KEYS = {
   queueEnabled: "fm_queue_enabled",
   pool: "fm_pool",
   roomAdp: "fm_room_adp",
+  roomStatus: "fm_room_status",
   consensus: "fm_consensus_adp",
 };
 
@@ -160,6 +161,13 @@ export const Storage = {
   },
   async setConsensus(value) {
     return set(KEYS.consensus, value);
+  },
+
+  async getRoomStatus() {
+    return get(KEYS.roomStatus, null);
+  },
+  async setRoomStatus(map) {
+    return set(KEYS.roomStatus, map);
   },
 
   async getRoomAdp() {
