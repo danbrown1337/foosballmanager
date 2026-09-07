@@ -286,17 +286,25 @@ export function findDraftButton(root, playerName, { player = null } = {}) {
  * existed — or never imported at all — carries none. The room prints the tag
  * on the row regardless, so read it there too: an NA player reached the queue
  * of a live draft because the board it came from had no statuses in it. */
-const OUT_TAGS = /(?<!\w)(IR|IR-R|PUP-R|NFI-R|SUSP|NA)(?!\w)/i;
+const OUT_TAGS = /^(IR|IR-R|PUP|PUP-R|NFI|NFI-R|SUSP|NA|O)$|(?<!\w)(IR-R|PUP-R|NFI-R|SUSP)(?!\w)/i;
 
 export function looksUnavailableOnPage(root, playerName) {
   const doc = root.ownerDocument || root;
   const forms = [playerName, ...abbrevForms(playerName)];
-  const res = forms.map((f) => new RegExp(`(?<!\\w)${escapeRegExp(f)}(?!\\w)`, "i"));
   for (const row of doc.querySelectorAll("tr, [role='row']")) {
     const text = row.textContent || "";
     if (text.length > 400) continue;
-    if (!res.some((re) => re.test(text))) continue;
-    return OUT_TAGS.test(text);
+    if (!textMentions(text, forms)) continue;
+
+    /* Cell by cell, and by innerText, because textContent runs the cells
+     * together: a row reads "J. ReedNAWRCar", and a word-boundary search for
+     * NA then fails against the letters either side of it. An NA player was
+     * queued twice on the strength of that. */
+    for (const cell of row.querySelectorAll("td, th, span, div, abbr")) {
+      const value = (cell.textContent || "").trim();
+      if (value.length <= 5 && OUT_TAGS.test(value)) return true;
+    }
+    return OUT_TAGS.test(row.innerText || "");
   }
   return false;
 }
@@ -331,6 +339,26 @@ export function readRoomAdp(root) {
   return out;
 }
 
+/* Does this row's text mention the player?
+ *
+ * Written out rather than done with a lookahead, because the obvious
+ * expression is wrong in a way that reads as correct: (?![a-z]) inside a
+ * case-insensitive regex also rejects capitals, so it turned away the very
+ * rows it was meant to allow. The trailing character is checked here, case
+ * intact — a capital may follow, since textContent runs cells together into
+ * "J. ReedNAWRCar", but a lowercase letter may not, or "Reeder" would match.
+ */
+function textMentions(text, forms) {
+  for (const form of forms) {
+    const re = new RegExp(`(?<!\\w)${escapeRegExp(form)}`, "gi");
+    for (const match of text.matchAll(re)) {
+      const next = text[match.index + match[0].length];
+      if (!next || !/[a-z]/.test(next)) return true;
+    }
+  }
+  return false;
+}
+
 /* Does the room show this player with no average draft position?
  *
  * The draft room has an ADP column even though the league player list does
@@ -340,7 +368,7 @@ export function readRoomAdp(root) {
 export function rowShowsNoAdp(root, playerName) {
   const doc = root.ownerDocument || root;
   const forms = [playerName, ...abbrevForms(playerName)];
-  const res = forms.map((f) => new RegExp(`(?<!\\w)${escapeRegExp(f)}(?!\\w)`, "i"));
+
 
   for (const table of doc.querySelectorAll("table")) {
     const headerRows = [...table.querySelectorAll("thead tr")];
@@ -351,7 +379,7 @@ export function rowShowsNoAdp(root, playerName) {
     for (const row of table.querySelectorAll("tbody tr")) {
       const text = row.textContent || "";
       if (text.length > 400) continue;
-      if (!res.some((re) => re.test(text))) continue;
+      if (!textMentions(text, forms)) continue;
       const cell = (row.children[adpCol]?.textContent || "").trim();
       return cell === "-" || cell === "" || cell === "\u2014";
     }
