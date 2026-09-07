@@ -177,7 +177,7 @@ function buildPanel() {
 async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
-    teamCountBounds, defenceAliases,
+    teamCountBounds, defenceAliases, parseDraftResults,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
@@ -186,7 +186,7 @@ async function main() {
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
-     defenceAliases } =
+     defenceAliases, parseDraftResults } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -208,7 +208,8 @@ async function main() {
   const wired = {
     findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
-    parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases, isMyTurn,
+    parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases,
+    parseDraftResults, isMyTurn,
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -856,6 +857,10 @@ async function main() {
    * they are unit tested; both callers here go through it so the two cannot
    * drift apart again. */
   function sweepCanMarkMissing(seenCount, reachedEnd) {
+    /* The room has stated which players are drafted, so there is nothing for
+     * an inference from absence to contribute — and every way it has gone
+     * wrong is still available to it. */
+    if (resultsAuthoritative) return false;
     const trust = sweepTrust(seenCount, reachedEnd, availableOnBoard(), bestSweepSeen);
     bestSweepSeen = trust.best;
     return trust.mark;
@@ -1489,6 +1494,53 @@ async function main() {
     addLog(`Pick ${slot} of ${teams} — your next turn is ${away} pick${away === 1 ? "" : "s"} away.`);
   }
 
+  /* Yahoo's own statement of what has been drafted, taken over every
+   * inference the panel can make.
+   *
+   * The results and roster views list picks by full name with a round and a
+   * pick number. That is the same question the sweeps have been answering
+   * badly all along — who is gone — except stated rather than deduced, with
+   * no abbreviation to resolve and nothing concluded from silence. When it is
+   * on the page, it wins: absence-marking is skipped entirely for that cycle,
+   * because there is nothing left for it to add.
+   *
+   * Ownership still comes from the roster panel. This says a player is drafted,
+   * not whose he is, and importPicks lets "mine" outrank a "rival" recorded
+   * earlier — so reading these as rivals' picks and correcting our own from
+   * the roster is the right order. */
+  const resultsSeen = new Set();
+  let resultsAuthoritative = false;
+
+  async function importDraftResults(text) {
+    if (!parseDraftResults) return 0;
+    const picks = parseDraftResults(text);
+    if (picks.length === 0) {
+      resultsAuthoritative = false;
+      return 0;
+    }
+    resultsAuthoritative = true;
+
+    const fresh = picks.filter((pick) => !resultsSeen.has(pick.name));
+    for (const pick of fresh) resultsSeen.add(pick.name);
+    if (fresh.length === 0) return picks.length;
+
+    const known = fresh.filter((pick) => !boardNameSet || boardNameSet.has(pick.name));
+    if (known.length > 0) {
+      await sendMessage({
+        type: "IMPORT_PICKS", names: known.map((p) => p.name), by: "rival",
+      });
+    }
+    /* Named individually rather than counted, because a name here that the
+     * board does not recognise is a join failure worth seeing — the room
+     * spells him one way and our sources another. */
+    const unknown = fresh.filter((pick) => boardNameSet && !boardNameSet.has(pick.name));
+    if (unknown.length > 0) {
+      addLog(`Room results name ${unknown.length} player(s) our board doesn't know: ${unknown.map((p) => p.name).join(", ")}`);
+    }
+    addLog(`Read ${fresh.length} pick(s) from the room's own results — ${picks.length} total, stated rather than inferred.`);
+    return picks.length;
+  }
+
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;
     const mine = [...findMyTeamNames(text, boardNameSet, boardPlayers)];
@@ -1612,6 +1664,7 @@ async function main() {
         boardPlayers = snapshot.board;
       }
       const text = document.body.innerText;
+      await importDraftResults(text);
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
       reportDraftPosition(text, lastConfig);
