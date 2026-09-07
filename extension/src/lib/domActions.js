@@ -301,6 +301,36 @@ export function looksUnavailableOnPage(root, playerName) {
   return false;
 }
 
+/* Every name-and-ADP pair the room is currently showing.
+ *
+ * The league player list has no ADP column, so the board falls back to list
+ * order — which orders players correctly but says nothing about where they
+ * actually go. The draft room does have the column, and the sweep already
+ * visits every row, so the real number costs one more read per row.
+ *
+ * Names come back abbreviated, as the room writes them; the caller resolves
+ * them against the board the same way it resolves everything else. */
+export function readRoomAdp(root) {
+  const doc = root.ownerDocument || root;
+  const out = new Map();
+  for (const table of doc.querySelectorAll("table")) {
+    const headerRows = [...table.querySelectorAll("thead tr")];
+    const headers = headerRows.length ? [...headerRows[headerRows.length - 1].children] : [];
+    const adpCol = headers.findIndex((th) => /^adp$/i.test((th.textContent || "").trim()));
+    if (adpCol < 0) continue;
+
+    for (const row of table.querySelectorAll("tbody tr")) {
+      const nameEl = row.querySelector(".ysf-player-name a") || row.querySelector("a");
+      const label = (nameEl?.textContent || "").trim();
+      const abbrev = label || (row.textContent || "").match(/[A-Za-z]\.\s?[A-Za-z][A-Za-z'\u2019-]+/)?.[0];
+      if (!abbrev) continue;
+      const value = Number((row.children[adpCol]?.textContent || "").trim());
+      if (Number.isFinite(value) && value > 0) out.set(abbrev, value);
+    }
+  }
+  return out;
+}
+
 /* Does the room show this player with no average draft position?
  *
  * The draft room has an ADP column even though the league player list does
