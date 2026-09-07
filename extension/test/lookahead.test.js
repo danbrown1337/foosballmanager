@@ -8,7 +8,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  autoPick, tierCliffBonus, urgencyBonus, CLIFF_CAP, URGENCY_BONUS, PATIENCE_PENALTY,
+  autoPick, tierCliffBonus, urgencyBonus, availabilityNextPick,
+  CLIFF_CAP, URGENCY_BONUS, PATIENCE_PENALTY,
 } from "../src/engine/autopilot.js";
 import { makePlayer, assignTiers } from "../src/engine/board.js";
 
@@ -74,4 +75,46 @@ test("between two equal players, take the one whose position won't keep", () => 
   const board = [...players, ...rivals];
   assignTiers(board);
   assert.equal(autoPick(board, withTurn).player.name, "Scarce Back");
+});
+
+
+/* The survival probability that goes in the decision record. It decides
+ * nothing — the urgency term above carries that — but "would he have lasted?"
+ * is the question every argument about an early-looking pick turns on, and a
+ * number written down at the time settles it where a recollection cannot. */
+test("a stated chance of surviving to the next turn", () => {
+  const withTurn = { autopilot: { picks_until_turn: 19 } };
+  const at = (adp, spread = 0) =>
+    availabilityNextPick({ ...p("X", "TE", adp), adpSpread: spread }, withTurn, 60);
+
+  assert.equal(at(55), 0.04);  // goes well before our turn comes round
+  assert.equal(at(80), 0.5);   // even money, right on the deadline
+  assert.equal(at(120), 0.99); // nobody is taking him that early
+});
+
+test("disagreement between sources flattens the curve", () => {
+  // A player two boards place fifty picks apart is exactly the case where a
+  // market average predicts worst, so the estimate should be less confident.
+  const withTurn = { autopilot: { picks_until_turn: 19 } };
+  const settled = availabilityNextPick({ ...p("A", "RB", 100), adpSpread: 0 }, withTurn, 60);
+  const contested = availabilityNextPick({ ...p("B", "RB", 100), adpSpread: 48 }, withTurn, 60);
+  assert.ok(contested < settled, `${contested} should be less certain than ${settled}`);
+});
+
+test("no turn context means no estimate, rather than a made-up one", () => {
+  assert.equal(availabilityNextPick(p("X", "TE", 80), { autopilot: {} }, 60), null);
+});
+
+test("it is recorded beside the score, never added to it", () => {
+  const withTurn = { ...CONFIG, autopilot: { ...CONFIG.autopilot, picks_until_turn: 10 } };
+  const players = [p("Only Option", "RB", 50)];
+  assignTiers(players);
+  const decision = autoPick(players, withTurn);
+  assert.ok("availabilityNextPick" in decision.components);
+  // The score is the sum of the scoring terms alone; a probability in the
+  // range 0-1 added to a total measured in draft places would be nonsense.
+  const scored = Object.entries(decision.components)
+    .filter(([k]) => k !== "availabilityNextPick")
+    .reduce((sum, [, v]) => sum + v, 0);
+  assert.equal(decision.score, scored);
 });
