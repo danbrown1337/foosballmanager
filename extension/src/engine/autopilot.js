@@ -217,6 +217,56 @@ export function guessPenalty(player, config) {
   return config.autopilot?.guessed_adp_penalty ?? GUESSED_ADP_PENALTY;
 }
 
+/* The cost of not having filled a starting slot yet, rising as the draft goes
+ * on.
+ *
+ * A mock reached round 6 with no running backs at all and never repaired the
+ * position. Nothing in the engine objected, because need was a cliff: a
+ * guardrail fires only once a position is within a few players of running dry
+ * league-wide, by which point the good ones are gone. Wanting a back in round
+ * 4 and needing one in round 6 are different states and scored identically.
+ *
+ * So an unfilled starting slot pulls candidates at that position forward, by
+ * more each round, and by more again when several slots are empty. It is a
+ * gradient rather than a rule: nothing here says "take a back by round 5",
+ * and the cap is deliberately no larger than one clear tier, so a genuinely
+ * elite player at another position still wins. Rounds one and two are
+ * untouched — the opening is where value matters most and need matters least.
+ *
+ * Per position, because the positions are not alike: a missing back is the
+ * expensive hole, since replacement backs are the worst on the waiver wire,
+ * while receivers are deep enough that waiting costs less. */
+export const NEED_START_ROUND = 3;
+export const NEED_ESCALATION = { RB: 12, WR: 8, TE: 6, QB: 6, K: 0, DEF: 0 };
+export const NEED_CAP = 60;
+
+/* Every slot a draft actually fills: the starters plus the bench. */
+export function draftableSpotsFor(config) {
+  const starters = config.roster?.starters || {};
+  return Object.values(starters).reduce((a, b) => a + b, 0) + (config.roster?.bench || 0);
+}
+
+export function needBonus(player, mine, config, picksMade) {
+  const starters = config.roster?.starters || {};
+  const need = starters[player.pos] || 0;
+  const have = mine.filter((p) => p.pos === player.pos).length;
+  if (have >= need) return 0; // the slot is filled; surplusPenalty takes over
+
+  const teams = config.league?.num_teams || 10;
+  const round = Math.floor(picksMade / teams) + 1;
+  const elapsed = round - (config.autopilot?.need_start_round ?? NEED_START_ROUND);
+  if (elapsed < 0) return 0;
+
+  const step = config.autopilot?.need_escalation?.[player.pos] ??
+    NEED_ESCALATION[player.pos] ?? 0;
+  if (!step) return 0;
+
+  const cap = config.autopilot?.need_cap ?? NEED_CAP;
+  // elapsed + 1 so the round it switches on is worth something, not zero.
+  const pull = step * (elapsed + 1) * (need - have);
+  return -Math.min(pull, cap); // negative: lower score is a better pick
+}
+
 export function byePenalty(player, mine, config) {
   const weight = config.autopilot?.bye_penalty ?? DEFAULT_BYE_PENALTY;
   if (!weight || !player.bye) return 0;
@@ -244,7 +294,8 @@ export function autoPick(players, config) {
   for (const p of avail) {
     scores[p.name] +=
       byePenalty(p, mine, config) + surplusPenalty(p, mine, config) +
-      guessPenalty(p, config) + backupPenalty(p, mine, players, config);
+      guessPenalty(p, config) + backupPenalty(p, mine, players, config) +
+      needBonus(p, mine, config, picksMade);
   }
 
   const starters = config.roster.starters;
@@ -263,8 +314,19 @@ export function autoPick(players, config) {
   const coreFilled = corePositions.every((pos) => (have[pos] || 0) >= starters[pos]);
   const lateEnough = Math.floor(picksMade / config.league.num_teams) >= totalStarters - 1;
 
+  /* And a hard floor besides. Core-slots-filled releases kickers around round
+   * eight in a nine-starter league, and ADP is all that has kept them later
+   * than that — a kicker priced at 87 beats a receiver at 95 on the board,
+   * which is a bench spot spent on a position whose replacement is free all
+   * season. The floor is the last two rounds of the roster, whatever its
+   * size. The roster-completion override below reads the unfiltered pool, so
+   * a draft that somehow reaches its end still fills the slot. */
+  const roundNow = Math.floor(picksMade / config.league.num_teams) + 1;
+  const onesieFloor = config.autopilot?.onesie_min_round ??
+    Math.max(1, draftableSpotsFor(config) - 1);
+
   let pool = avail;
-  if (!(coreFilled || lateEnough)) {
+  if (!(coreFilled || lateEnough) || roundNow < onesieFloor) {
     pool = pool.filter((p) => p.pos !== "K" && p.pos !== "DEF");
   }
 
@@ -286,9 +348,7 @@ export function autoPick(players, config) {
   // empty starter slot. IR is deliberately excluded from draftable spots —
   // it's filled from waivers, not drafted, so counting it would delay this
   // override past the final pick.
-  const rosterCfg = config.roster;
-  const draftableSpots =
-    Object.values(starters).reduce((a, b) => a + b, 0) + (rosterCfg.bench || 0);
+  const draftableSpots = draftableSpotsFor(config);
   const myPicksRemaining = draftableSpots - mine.length;
   const allPositions = Object.keys(starters).filter((pos) => pos !== "FLEX");
   const unfilledStarters = allPositions.filter((pos) => (have[pos] || 0) < starters[pos]);

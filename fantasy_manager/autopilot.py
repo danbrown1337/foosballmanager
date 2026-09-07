@@ -180,6 +180,51 @@ def guess_penalty(player, config):
     return config.get("autopilot", {}).get("guessed_adp_penalty", GUESSED_ADP_PENALTY)
 
 
+# The cost of not having filled a starting slot yet, rising as the draft goes
+# on. A mock reached round 6 with no running backs and never repaired it:
+# need was a cliff, firing only once a position was within a few players of
+# running dry league-wide, by which point the good ones are gone. Wanting a
+# back in round 4 and needing one in round 6 scored identically.
+#
+# A gradient, not a rule. Nothing here says "take a back by round 5", the cap
+# is no larger than one clear tier so an elite player elsewhere still wins,
+# and rounds one and two are untouched. Per position, because a missing back
+# is the expensive hole — replacement backs are the worst on waivers — while
+# receivers are deep enough that waiting costs less.
+NEED_START_ROUND = 3
+NEED_ESCALATION = {"RB": 12.0, "WR": 8.0, "TE": 6.0, "QB": 6.0, "K": 0.0, "DEF": 0.0}
+NEED_CAP = 60.0
+
+
+def draftable_spots_for(config):
+    """Every slot a draft actually fills: the starters plus the bench."""
+    starters = config["roster"]["starters"]
+    return sum(starters.values()) + config["roster"].get("bench", 0)
+
+
+def need_bonus(player, mine, config, picks_made):
+    starters = config["roster"]["starters"]
+    need = starters.get(player.pos, 0)
+    have = sum(1 for p in mine if p.pos == player.pos)
+    if have >= need:
+        return 0.0  # the slot is filled; surplus_penalty takes over
+
+    ap = config.get("autopilot", {})
+    teams = config["league"]["num_teams"]
+    round_now = picks_made // teams + 1
+    elapsed = round_now - ap.get("need_start_round", NEED_START_ROUND)
+    if elapsed < 0:
+        return 0.0
+
+    step = ap.get("need_escalation", NEED_ESCALATION).get(player.pos, 0.0)
+    if not step:
+        return 0.0
+
+    # elapsed + 1 so the round it switches on is worth something, not zero.
+    pull = step * (elapsed + 1) * (need - have)
+    return -min(pull, ap.get("need_cap", NEED_CAP))  # negative: lower is better
+
+
 def bye_penalty(player, mine, config):
     """Cost of stacking this player's bye with players already rostered.
 
@@ -246,6 +291,7 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
             + surplus_penalty(p, mine, config)
             + guess_penalty(p, config)
             + backup_penalty(p, mine, players, config)
+            + need_bonus(p, mine, config, picks_made)
         )
 
     starters = config["roster"]["starters"]
@@ -261,7 +307,18 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     late_enough = (picks_made // config["league"]["num_teams"]) >= (total_starters - 1)
 
     pool = avail
-    if not (core_filled or late_enough):
+    # And a hard floor besides. Core-slots-filled releases kickers around round
+    # eight in a nine-starter league, and only ADP has kept them later — a
+    # kicker priced at 87 beats a receiver at 95 on the board, which spends a
+    # bench spot on a position whose replacement is free all season. The floor
+    # is the last two rounds of the roster, whatever its size; the
+    # roster-completion override below reads the unfiltered pool, so a draft
+    # that reaches its end still fills the slot.
+    round_now = picks_made // config["league"]["num_teams"] + 1
+    onesie_floor = config.get("autopilot", {}).get(
+        "onesie_min_round", max(1, draftable_spots_for(config) - 1)
+    )
+    if not (core_filled or late_enough) or round_now < onesie_floor:
         pool = [p for p in pool if p.pos not in ("K", "DEF")]
 
     # --- Guardrail 2: don't overdraft bench depth at one position.

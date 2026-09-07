@@ -101,21 +101,40 @@ class TestGuardrailKickerDefense:
         ]
         assert auto_pick(players, config).player.name == "Real Back"
 
-    def test_kicker_allowed_once_the_draft_is_late_enough(self):
+    def test_kicker_allowed_in_the_last_rounds_of_the_roster(self):
         """Deep into the draft the K/DEF block lifts even with starting spots
         still open. The drafted players here are WRs so that no *core* need is
         at its replacement cliff, which would otherwise take priority."""
         config = make_config(starters={"QB": 1, "RB": 1, "K": 1, "DEF": 1}, num_teams=10)
-        # 30 picks in a 10-team league = round 3, reaching (4 starters - 1).
-        players = [make_player(f"Gone{i}", "WR", 10.0 + i, drafted_by="rival") for i in range(30)]
+        # 4 starters + 6 bench = 10 spots, so the onesie floor is round 9.
+        players = [make_player(f"Gone{i}", "WR", 10.0 + i, drafted_by="rival") for i in range(90)]
         players += [make_player("Cheap Kicker", "K", 1.0), make_player("Late Back", "RB", 200.0)]
         assert auto_pick(players, config).player.name == "Cheap Kicker"
 
-    def test_kicker_allowed_once_every_core_starter_is_filled(self):
+    def test_a_cheap_kicker_is_still_blocked_early_with_every_core_slot_filled(self):
+        """Core-slots-filled used to release kickers on its own, which in a
+        nine-starter league means about round eight, and only ADP kept them
+        later than that. A kicker priced at 1.0 beats everything on the board,
+        and the bench spot is spent on a position whose replacement is free
+        every week of the season."""
         config = make_config(starters={"QB": 1, "RB": 1, "K": 1, "DEF": 1}, num_teams=10)
         mine = [
             make_player("My QB", "QB", 40.0, drafted_by="mine"),
             make_player("My Back", "RB", 20.0, drafted_by="mine"),
+        ]
+        players = mine + [make_player("Cheap Kicker", "K", 1.0),
+                          make_player("Spare Back", "RB", 200.0)]
+        assert auto_pick(players, config).player.name == "Spare Back"
+
+    def test_but_the_floor_never_leaves_the_slot_empty(self):
+        """The roster-completion override reads the unfiltered pool, so a draft
+        that reaches its final picks still fills the kicker slot."""
+        config = make_config(starters={"QB": 1, "RB": 1, "K": 1, "DEF": 1},
+                             bench=0, num_teams=10)
+        mine = [
+            make_player("My QB", "QB", 40.0, drafted_by="mine"),
+            make_player("My Back", "RB", 20.0, drafted_by="mine"),
+            make_player("My Defense", "DEF", 90.0, drafted_by="mine"),
         ]
         players = mine + [make_player("Cheap Kicker", "K", 1.0),
                           make_player("Spare Back", "RB", 200.0)]
