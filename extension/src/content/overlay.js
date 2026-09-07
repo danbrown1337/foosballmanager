@@ -180,7 +180,8 @@ async function main() {
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
-    findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses;
+    findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
+    sweepTrust;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, defenceAliases } =
@@ -188,6 +189,7 @@ async function main() {
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
   ({ isMyTurn, looksLikeAFutureTurn } = await import(chrome.runtime.getURL("src/lib/turnDetect.js")));
+  ({ sweepTrust } = await import(chrome.runtime.getURL("src/lib/sweepTrust.js")));
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -207,7 +209,7 @@ async function main() {
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses, fetchPool,
-    leagueIdFromUrl,
+    leagueIdFromUrl, sweepTrust,
   };
   const unbound = Object.keys(wired).filter((name) => typeof wired[name] !== "function");
   if (unbound.length > 0) {
@@ -252,6 +254,7 @@ async function main() {
   let polling = true;
   let contextGone = false;
   let timers = [];
+  let observers = [];
   let lastPollAt = Date.now();
   let previousBoardNames = null;
   let boardNameSet = null;
@@ -402,6 +405,10 @@ async function main() {
     polling = false;
     for (const t of timers) clearInterval(t);
     timers = [];
+    // The observer drives the turn check too, so a dead context has to stop
+    // it as well or the panel keeps acting on a board it can no longer read.
+    for (const o of observers) o.disconnect();
+    observers = [];
     takeBtn.disabled = true;
     autoEnableBox.disabled = true;
     autoFullBox.disabled = true;
@@ -656,22 +663,28 @@ async function main() {
     return new RegExp(`(?<!\\w)${parts[0][0]}\\.\\s?${last}(?!\\w)`, "i").test(text);
   }
 
-  const LIST_COMPLETE_ROWS = 60;
-  function missingFromFullList(name) {
-    const scroller = findListScroller(document.body);
-    if (!scroller || !boardNameSet) return false;
-    const text = scroller.innerText || "";
+  /* The fullest sweep this page has managed, as the yardstick for whether a
+   * later one is complete enough to mark players drafted from absence. */
+  let bestSweepSeen = 0;
+  // Once per page, not once per turn: it is the same advice every time.
+  let warnedHiddenTurn = false;
 
-    /* Count players from OUR board, not name-shaped text. A scrolling list of
-     * something else — managers, pick history, anything — clears a raw
-     * pattern count easily, and then every candidate looks absent. That
-     * marked Jahmyr Gibbs drafted in a room where the draft had not started
-     * and no player had been taken at all. */
-    const present = findBoardNames(text, boardNameSet, boardPlayers);
-    if (present.size < LIST_COMPLETE_ROWS) return false;
-    if (present.has(name)) return false;
-    // Ambiguous is not absent.
-    return !nameAppears(name, text);
+  /* How many players the board still believes are available. Marking from
+   * absence is measured against this rather than a flat row count. It only
+   * ever shrinks, and a stale value is therefore too large, which makes
+   * marking harder — the safe direction. */
+  function availableOnBoard() {
+    return (boardPlayers || []).filter((p) => !p.draftedBy).length;
+  }
+
+  /* May a sweep conclude that a player it did not see has been drafted? The
+   * rule and the reasoning behind it live in src/lib/sweepTrust.js, where
+   * they are unit tested; both callers here go through it so the two cannot
+   * drift apart again. */
+  function sweepCanMarkMissing(seenCount, reachedEnd) {
+    const trust = sweepTrust(seenCount, reachedEnd, availableOnBoard(), bestSweepSeen);
+    bestSweepSeen = trust.best;
+    return trust.mark;
   }
 
   async function locatePlayer(name, meta, { keepScroll = false } = {}) {
@@ -692,6 +705,7 @@ async function main() {
      * drafted. */
     let found = null;
     let sawName = false;
+    let sweep = { reachedEnd: false };
     const seen = new Set();
     /* One row carrying his abbreviation is him. findPlayerClickTarget also
      * demands the row show his team, which is there to separate two players
@@ -711,7 +725,7 @@ async function main() {
     };
     detectionSuspended = true;
     try {
-      await sweepList((text) => {
+      sweep = await sweepList((text) => {
         if (!found) found = findPlayerClickTarget(document.body, name, { player: meta }) || onlyRowFor();
         // Identifying him and merely seeing his name are different questions.
         // The click target insists the row shows his team, which fails when
@@ -727,7 +741,10 @@ async function main() {
       previousBoardNames = null;
     }
 
-    const sawWholeBoard = seen.size >= LIST_COMPLETE_ROWS;
+    /* The same rule the board repair uses. This path is the one that actually
+     * writes phantom picks — it marks the player drafted outright — so it gets
+     * the stricter reading of absence, not a looser one. */
+    const sawWholeBoard = sweepCanMarkMissing(seen.size, sweep.reachedEnd);
     return {
       el: found,
       searchBox: null,
@@ -1008,16 +1025,12 @@ async function main() {
    *
    * Read the list, set the board to match it, then confirm the recommendation
    * that comes out is a player the room can still produce. */
-  const MIN_ROWS_TO_TRUST = 60;
   /* The sweep is the only thing that makes the board true, and leaving it to
    * a button meant it was pressed once at the start and never again — so the
    * shortlist went stale within a round or two and queue maintenance spent
    * every cycle marking drafted players instead of queueing anyone. Run it on
    * a timer as well, between picks, where it costs nothing. */
   let lastBoardUpdateAt = 0;
-  /* The fullest sweep this page has managed, as the yardstick for whether a
-   * later one is complete enough to mark players drafted from absence. */
-  let bestSweepSeen = 0;
   async function updateBoardFromRoom({ verify }) {
     const searchBox = findPlayerSearchBox(document.body);
     if (searchBox && searchBox.value) {
@@ -1070,8 +1083,7 @@ async function main() {
       previousBoardNames = null;
     }
 
-    const floor = Math.max(MIN_ROWS_TO_TRUST, Math.round(expected * 0.5));
-    if (seen.size < floor) {
+    if (!sweepTrust(seen.size, sweep.reachedEnd, expected, bestSweepSeen).free) {
       return {
         ok: false,
         reason: `only ${seen.size} of about ${expected} available players read — too few to rewrite the board`,
@@ -1090,10 +1102,7 @@ async function main() {
      * So a sweep only rewrites what it missed if it is within reach of the
      * fullest view we have managed. A thinner one may still free players it
      * saw — that direction cannot invent a pick. */
-    bestSweepSeen = Math.max(bestSweepSeen, seen.size);
-    // Both: it walked to the bottom, and it saw about as much as the best view
-    // so far. Either alone has let a partial view rewrite the board.
-    const complete = sweep.reachedEnd && seen.size >= bestSweepSeen * 0.95;
+    const complete = sweepCanMarkMissing(seen.size, sweep.reachedEnd);
     const result = await sendMessage({
       type: "REPAIR_BOARD",
       names: [...seen],
@@ -1101,7 +1110,7 @@ async function main() {
     });
     lastBoardUpdateAt = Date.now();
     if (!complete) {
-      addLog(`Partial view (${seen.size} of ${bestSweepSeen} seen) — freeing only, not marking.`);
+      addLog(`Partial view (${seen.size} seen, board has ${availableOnBoard()} available) — freeing only, not marking.`);
     }
 
     const outCount = Object.keys(statusByBoardName).length;
@@ -1438,6 +1447,15 @@ async function main() {
       turnActive = true;
 
       if (turnHandled) return;
+      /* Say it at the moment it costs something. Chrome slows a hidden tab's
+       * timers to about once a minute and every wait inside a list sweep with
+       * them, so a turn that needs scrolling will not finish inside the pick
+       * clock and Yahoo autodrafts instead. The queue is what covers that,
+       * which is the other reason to keep it full. */
+      if (document.hidden && !warnedHiddenTurn) {
+        warnedHiddenTurn = true;
+        addLog("Your turn, but this tab is in the background — Chrome slows the panel to a crawl there. Yahoo will autodraft from the queue if the panel can't finish in time.");
+      }
       if (here) handledPick = here.pick;
       /* Claim the turn before anything slow runs. Resolving can take several
        * seconds — it may search the room more than once — while polls come
@@ -1514,12 +1532,44 @@ async function main() {
     }
   }
 
+  /* Chrome throttles a hidden tab's timers to roughly once a minute, which is
+   * longer than a pick clock. One draft logged three such gaps — 16s, 52s,
+   * 28s — and every turn that fell inside one went to Yahoo's autodraft.
+   *
+   * Mutation callbacks are not throttled that way, and the room rewrites the
+   * turn banner's countdown every second, so the page itself can drive the
+   * check. The gate is a timestamp rather than a debounce timer, because a
+   * setTimeout here would be throttled by the very mechanism this works
+   * around. Sweeps still crawl in a hidden tab — every scroll step waits —
+   * but a player already rendered can be drafted without one. */
+  const OBSERVER_MIN_GAP_MS = 750;
+  let observerPollAt = 0;
+  let observerPollRunning = false;
+  function observerTick() {
+    const now = Date.now();
+    if (now - observerPollAt < OBSERVER_MIN_GAP_MS) return;
+    observerPollAt = now;
+    if (observerPollRunning) return;
+    observerPollRunning = true;
+    Promise.resolve()
+      .then(pollForTurn)
+      .catch(() => {}) // pollForTurn logs its own failures
+      .finally(() => { observerPollRunning = false; });
+  }
+  const turnObserver = new MutationObserver(observerTick);
+  turnObserver.observe(document.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+  });
+
   refresh();
   timers = [
     setInterval(refresh, POLL_INTERVAL_MS * 2),
     setInterval(pollPage, POLL_INTERVAL_MS),
     setInterval(pollForTurn, POLL_INTERVAL_MS),
   ];
+  observers = [turnObserver];
 }
 
 if (document.readyState === "loading") {
