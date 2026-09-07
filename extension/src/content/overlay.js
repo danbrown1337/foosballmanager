@@ -178,7 +178,7 @@ async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
     teamCountBounds, defenceAliases, parseDraftResults, teamsFromRoundChange,
-    parseRosterFormat, draftRoomId,
+    parseRosterFormat, draftRoomId, parseLastPick,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
@@ -188,7 +188,7 @@ async function main() {
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
      defenceAliases, parseDraftResults, teamsFromRoundChange, parseRosterFormat,
-     draftRoomId } =
+     draftRoomId, parseLastPick } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -211,7 +211,8 @@ async function main() {
     findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
     parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases,
-    parseDraftResults, teamsFromRoundChange, parseRosterFormat, draftRoomId, isMyTurn,
+    parseDraftResults, teamsFromRoundChange, parseRosterFormat, draftRoomId,
+    parseLastPick, isMyTurn,
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -1654,6 +1655,40 @@ async function main() {
     return picks.length;
   }
 
+  /* The pick the room just announced, taken as fact.
+   *
+   * This is the source everything else here has been a substitute for. The
+   * board learned who was drafted by watching names leave a virtualised list,
+   * which fails whenever the tab is throttled or the rows will not render —
+   * and a draft reached round five still recommending four players who had
+   * been gone for twenty picks, because nothing had told it otherwise. The
+   * room says each pick out loud, with the position and team that separate
+   * two players sharing an abbreviation.
+   *
+   * Recorded as a rival's, since the announcement does not say whose it is;
+   * the roster panel corrects our own, and "mine" outranks "rival". */
+  let lastAnnounced = null;
+  async function importAnnouncedPick(text) {
+    if (!parseLastPick || !boardNameSet) return;
+    const last = parseLastPick(text);
+    if (!last || last.block === lastAnnounced) return;
+    lastAnnounced = last.block;
+
+    const names = findBoardNames(last.block, boardNameSet, boardPlayers);
+    if (names.size === 1) {
+      const [name] = [...names];
+      const { changed } = await sendMessage({
+        type: "IMPORT_PICKS", names: [name], by: "rival",
+      });
+      if (changed) addLog(`Room announced ${name} drafted.`);
+      return;
+    }
+    /* Said once per player rather than counted: a name the room announces and
+     * the board cannot place is a join failure, and it is the difference
+     * between a board that keeps up and one that quietly falls behind. */
+    addLog(`Room announced ${last.label} (${last.pos} · ${last.team}) — couldn't match him to the board.`);
+  }
+
   async function importMyTeam(text) {
     if (!boardNameSet || !findMyTeamNames) return false;
     const mine = [...findMyTeamNames(text, boardNameSet, boardPlayers)];
@@ -1784,6 +1819,7 @@ async function main() {
       }
       const text = document.body.innerText;
       await importDraftResults(text);
+      await importAnnouncedPick(text);
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
       reportDraftPosition(text, lastConfig);
@@ -1987,6 +2023,10 @@ async function main() {
     const now = Date.now();
     if (now - observerPollAt < OBSERVER_MIN_GAP_MS) return;
     observerPollAt = now;
+    /* Cheap, and the reason this runs off mutations rather than a timer: the
+     * room announces a pick by changing the DOM, so the announcement is seen
+     * as it happens even when timers are throttled to once a minute. */
+    importAnnouncedPick(document.body.innerText).catch(() => {});
     if (observerPollRunning) return;
     observerPollRunning = true;
     Promise.resolve()
