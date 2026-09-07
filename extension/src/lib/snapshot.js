@@ -10,6 +10,7 @@ import { autoPick, topPicks } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
 import { adpUrl, parseAdpFeed } from "./consensusAdp.js";
 import { gradeRoster } from "../engine/grade.js";
+import { buildIndex, resolve } from "./identity.js";
 
 let cachedAdp = null;
 let cachedNotes = null;
@@ -99,9 +100,16 @@ async function buildPlayers(adp, notes, byes) {
    * people in this room are drafting toward. */
   const consensus = await Storage.getConsensus();
   if (consensus?.players?.length) {
-    const byName = new Map(consensus.players.map((p) => [p.name, p]));
+    /* Joined on identity, not on the display string.
+     *
+     * This was a plain name-to-name map, and the feed and the league list do
+     * not spell players the same way: "A.J. Brown" against "AJ Brown",
+     * "Travis Etienne Jr." against "Travis Etienne". Every mismatch dropped
+     * that player's real ADP and left him on list position instead, which is
+     * the exact input the guessed-ADP rule then has to clean up after. */
+    const index = buildIndex(consensus.players);
     for (const p of players) {
-      const match = byName.get(p.name);
+      const match = resolve(index, p);
       if (!match) continue;
       p.adp = match.adp;
       p.adpSource = "consensus";
