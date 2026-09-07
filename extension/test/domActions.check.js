@@ -66,6 +66,8 @@ const PAGE_HTML = `<!doctype html><html><body>
        name. Anything scoped to the name's own cell cannot reach the star. -->
   <div id="pick-feed">Last: D. ACHANE (RB · Mia)</div>
   <div id="queue-panel">Autodraft will pick from queue
+    <div class="q-entry"><button class="q-draft">Draft</button>
+      <span>J. Gibbs</span><span>RB</span><span>Det</span></div>
     <div class="q-entry"><button class="q-remove"><svg data-icon="star-filled"></svg></button>
       <span>J. Hurts</span> <span>QB</span> <span>Phi</span></div>
     <div class="q-entry"><button class="q-remove"><svg data-icon="star-filled"></svg></button>
@@ -322,6 +324,11 @@ export async function run(document) {
   results.adpAchane = roomAdp.get("D. Achane") ?? null;
   results.adpSkipsDashes = !roomAdp.has("J. Reed");
 
+  // A queued player has no row in the list; his Draft button is in the panel.
+  const queuedDraft = findDraftButton(document.body, "Jahmyr Gibbs",
+    { player: { pos: "RB", team: "DET" } });
+  results.queuedDraftClass = queuedDraft ? queuedDraft.className : null;
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
 
@@ -445,6 +452,8 @@ async function main() {
       ["reads an out designation off the row itself", result.naOnPage === true],
       ["spots a row whose ADP column is a dash", result.noAdpRow === true],
       ["finds a defence by its team nickname", result.defenceRow === "row-defence"],
+      ["finds the Draft button on a queued player's panel entry",
+        result.queuedDraftClass === "q-draft"],
       ["reads the room's ADP column", result.adpAchane === 15.3],
       ["skips rows whose ADP is a dash", result.adpSkipsDashes === true],
       ["and leaves a row with a real ADP alone", result.hasAdpRow === false],
