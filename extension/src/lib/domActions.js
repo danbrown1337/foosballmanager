@@ -307,7 +307,7 @@ export function findDraftButton(root, playerName, { player = null } = {}) {
  * existed — or never imported at all — carries none. The room prints the tag
  * on the row regardless, so read it there too: an NA player reached the queue
  * of a live draft because the board it came from had no statuses in it. */
-const OUT_TAGS = /^(IR|IR-R|PUP|PUP-R|NFI|NFI-R|SUSP|NA|O)$|(?<!\w)(IR-R|PUP-R|NFI-R|SUSP)(?!\w)/i;
+const OUT_TAGS = /^(IR|IR-R|PUP|PUP-R|NFI|NFI-R|SUSP|NA|O|CEL|DNR)$|(?<!\w)(IR-R|PUP-R|NFI-R|SUSP)(?!\w)/i;
 
 export function looksUnavailableOnPage(root, playerName) {
   const doc = root.ownerDocument || root;
