@@ -382,6 +382,27 @@ export function tierCliffBonus(player, players, config) {
 export const URGENCY_BONUS = 6;
 export const PATIENCE_PENALTY = 4;
 
+/* The chance this player is still there at the next turn, as a number rather
+ * than a verdict.
+ *
+ * The scoring rule above deliberately answers a narrower question — whether
+ * the *position* keeps — because a player's own survival odds are already
+ * most of what ADP order says. This is for the decision record: when a pick
+ * looks early afterwards, the argument is always about whether he would have
+ * lasted, and a stated probability settles it where a recollection cannot.
+ *
+ * A logistic on the gap between his ADP and the last pick before our turn:
+ * even money at the deadline, and the curve widens for a player his sources
+ * disagree about, since disagreement is exactly the case where the market
+ * average predicts least well. */
+export function availabilityNextPick(player, config, picksMade) {
+  const window = config.autopilot?.picks_until_turn;
+  if (!Number.isFinite(window) || window <= 0) return null;
+  const margin = player.adp - (picksMade + 1 + window);
+  const scale = 8 + (player.adpSpread || 0) / 2;
+  return Math.round((1 / (1 + Math.exp(-margin / scale))) * 100) / 100;
+}
+
 export function urgencyBonus(player, players, config, picksMade) {
   const window = config.autopilot?.picks_until_turn;
   if (!Number.isFinite(window) || window <= 0) return 0; // no turn context
@@ -438,8 +459,13 @@ export function autoPick(players, config) {
       cliff: tierCliffBonus(p, players, config),
       urgency: urgencyBonus(p, players, config, picksMade),
     };
+    // Recorded beside the score, not added to it: this is evidence for the
+    // log, and the urgency term above already carries the decision.
+    parts.availabilityNextPick = availabilityNextPick(p, config, picksMade);
     components[p.name] = parts;
-    scores[p.name] = Object.values(parts).reduce((a, b) => a + b, 0);
+    scores[p.name] = Object.entries(parts)
+      .filter(([key]) => key !== "availabilityNextPick")
+      .reduce((sum, [, value]) => sum + value, 0);
   }
 
   /* The nearest alternatives, so a decision record shows what was passed over
