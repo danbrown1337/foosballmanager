@@ -225,6 +225,91 @@ def need_bonus(player, mine, config, picks_made):
     return -min(pull, ap.get("need_cap", NEED_CAP))  # negative: lower is better
 
 
+# How much less sure to be about a player his sources disagree about.
+# MarShawn Lloyd was 69th on one fresh board and 117th on another two days
+# later, while the back ahead of him had a court date move forward and stayed
+# on the commissioner's exempt list. Neither board is wrong; his role is
+# unsettled, and averaging 69 and 117 into 93 hides the thing worth knowing.
+# The charge is small on purpose: it decides between players who are otherwise
+# close, and a contested player can still be the right pick.
+DISPERSION_BANDS = ((36, 20.0), (21, 10.0), (11, 4.0))
+
+
+def dispersion_penalty(player, config):
+    spread = getattr(player, "adp_spread", 0) or 0
+    bands = config.get("autopilot", {}).get("dispersion_bands", DISPERSION_BANDS)
+    for floor, weight in bands:
+        if spread >= floor:
+            return weight
+    return 0.0
+
+
+# What is actually lost by waiting one more player at this position. A rank
+# difference of one or two inside a tier is noise; the gap between the last
+# player of a strong tier and the first of the next is the whole decision. The
+# draft room publishes projected points per player, so this is a measurement
+# rather than an inference. A missing projection means no information, and the
+# rule contributes nothing rather than guessing.
+CLIFF_PLACES_PER_POINT = 0.5
+CLIFF_CAP = 30.0
+
+
+def tier_cliff_bonus(player, players, config):
+    proj = getattr(player, "proj", None)
+    if not isinstance(proj, (int, float)):
+        return 0.0
+    ap = config.get("autopilot", {})
+    rate = ap.get("cliff_places_per_point", CLIFF_PLACES_PER_POINT)
+    cap = ap.get("cliff_cap", CLIFF_CAP)
+
+    later = [
+        p for p in players
+        if p.pos == player.pos and not p.drafted_by and p.name != player.name
+        and isinstance(getattr(p, "proj", None), (int, float)) and p.adp > player.adp
+    ]
+    if not later:
+        return 0.0
+    next_up = min(later, key=lambda p: p.adp)
+
+    drop = proj - next_up.proj
+    if drop <= 0:
+        return 0.0  # the next man up is as good; nothing is lost by waiting
+    return -min(drop * rate, cap)  # negative: a cliff pulls him forward
+
+
+# Whether this position can wait until the next turn. Raw ADP already answers
+# "who is best", so scoring a player by his own chance of surviving would only
+# restate it. What ADP order does not say is what happens to the position: if
+# the next comparable back is gone before your next pick too, waiting costs
+# you the tier; if he will still be sitting there, waiting costs nothing.
+# Pairs with the tier cliff, which measures how much is lost — this measures
+# how likely you are to lose it, and stays small because both are estimates
+# built on a market average.
+URGENCY_BONUS = 6.0
+PATIENCE_PENALTY = 4.0
+
+
+def urgency_bonus(player, players, config, picks_made):
+    ap = config.get("autopilot", {})
+    window = ap.get("picks_until_turn")
+    if not isinstance(window, (int, float)) or window <= 0:
+        return 0.0  # no turn context
+
+    later = [
+        p for p in players
+        if p.pos == player.pos and not p.drafted_by and p.name != player.name
+        and p.adp > player.adp
+    ]
+    if not later:
+        return -ap.get("urgency_bonus", URGENCY_BONUS)  # last of his kind
+    next_up = min(later, key=lambda p: p.adp)
+
+    deadline = picks_made + 1 + window
+    if next_up.adp <= deadline:
+        return -ap.get("urgency_bonus", URGENCY_BONUS)  # his replacement goes too
+    return ap.get("patience_penalty", PATIENCE_PENALTY)  # the position keeps
+
+
 def bye_penalty(player, mine, config):
     """Cost of stacking this player's bye with players already rostered.
 
@@ -292,6 +377,9 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
             + guess_penalty(p, config)
             + backup_penalty(p, mine, players, config)
             + need_bonus(p, mine, config, picks_made)
+            + dispersion_penalty(p, config)
+            + tier_cliff_bonus(p, players, config)
+            + urgency_bonus(p, players, config, picks_made)
         )
 
     starters = config["roster"]["starters"]

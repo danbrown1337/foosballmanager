@@ -12,6 +12,7 @@ import {
   shortlist,
   repairBoard,
   recordRoomAdp,
+  recordRoomProjection,
   recordRoomStatus,
   refreshConsensusAdp,
   markPick,
@@ -38,7 +39,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handle(message, sender) {
   switch (message.type) {
     case "GET_SNAPSHOT":
-      return buildSnapshot();
+      return buildSnapshot({ picksUntilTurn: message.picksUntilTurn ?? null });
 
     case "IMPORT_PICKS": {
       // Explicit attribution, unlike DETECTED_PICKS which is always "rival".
@@ -51,7 +52,7 @@ async function handle(message, sender) {
       return setPracticeMode(!!message.active);
 
     case "GET_SHORTLIST":
-      return shortlist(message.n || 5);
+      return shortlist(message.n || 5, { picksUntilTurn: message.picksUntilTurn ?? null });
 
     case "RECORD_DECISION":
       return recordDecision(message.entry);
@@ -64,6 +65,9 @@ async function handle(message, sender) {
 
     case "RECORD_ROOM_STATUS":
       return recordRoomStatus(message.entries);
+
+    case "RECORD_ROOM_PROJECTION":
+      return recordRoomProjection(message.entries);
 
     case "RECORD_ROOM_ADP":
       return recordRoomAdp(message.entries);

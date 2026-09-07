@@ -449,13 +449,28 @@ export function looksUnavailableOnPage(root, playerName) {
  *
  * Names come back abbreviated, as the room writes them; the caller resolves
  * them against the board the same way it resolves everything else. */
+/* Every name-and-projection pair the room shows.
+ *
+ * The spec that asked for VORP and tier cliffs assumed a projections API and
+ * an API key. The draft room prints a "Proj Pts" column on every row, and the
+ * sweep already walks every row to read ADP, so the number costs one more
+ * read and no provider at all. */
+export function readRoomProjections(root) {
+  return readNumericColumn(root, /^proj\s*pts$/i);
+}
+
+/* Every name-and-ADP pair the room is currently showing. */
 export function readRoomAdp(root) {
+  return readNumericColumn(root, /^adp$/i);
+}
+
+function readNumericColumn(root, headerPattern) {
   const doc = root.ownerDocument || root;
   const out = new Map();
   for (const table of doc.querySelectorAll("table")) {
     const headerRows = [...table.querySelectorAll("thead tr")];
     const headers = headerRows.length ? [...headerRows[headerRows.length - 1].children] : [];
-    const adpCol = headers.findIndex((th) => /^adp$/i.test((th.textContent || "").trim()));
+    const adpCol = headers.findIndex((th) => headerPattern.test((th.textContent || "").trim()));
     if (adpCol < 0) continue;
 
     for (const row of table.querySelectorAll("tbody tr")) {

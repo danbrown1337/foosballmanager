@@ -40,6 +40,12 @@ class Player:
     # really list position standing in for a number nobody published. None
     # where the question doesn't arise — the bundled file is all real ADP.
     adp_source: str | None = None
+    # How far apart the sources are for this player. A player two boards
+    # disagree about by fifty places is not the same bet as one they agree on.
+    adp_spread: float = 0.0
+    # Projected season points, when the source publishes them. None elsewhere,
+    # and every rule that uses it treats None as "no information".
+    proj: float | None = None
     tier: int = 0
     drafted_by: str | None = None  # None = available, "mine", or a rival name
     note_tag: str | None = None    # bust | injury_watch | breakout | value_note
