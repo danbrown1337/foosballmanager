@@ -118,7 +118,15 @@ async function buildPlayers(adp, notes, byes) {
       anyAdp ? pool.players.filter((p) => p.adp === null).map((p) => p.name) : []
     );
     for (const p of players) {
-      p.status = statusByName.get(p.name) ?? null;
+      /* The room's designation first, and only then the pool's.
+       *
+       * This used to assign the pool's outright, which silently undid the
+       * block above: every status read from the live room was replaced, and
+       * for players the pool doesn't flag it was replaced with null. Reading
+       * designations out of the room was added precisely because players who
+       * could not play were being drafted, and a pool import turned the whole
+       * feature off again. */
+      p.status = p.status ?? statusByName.get(p.name) ?? null;
       p.undrafted = noAdp.has(p.name);
     }
     // Per-player byes from the league page beat a team lookup: a player who
