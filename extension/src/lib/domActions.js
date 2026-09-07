@@ -405,6 +405,21 @@ export function rowShowsNoAdp(root, playerName) {
       return cell === "-" || cell === "" || cell === "\u2014";
     }
   }
+
+  /* No row in the list means he is in the queue, where entries are divs and
+   * carry their own "ADP: -" text. That is exactly where this mattered: a
+   * player with no ADP was queued, had no row left to inspect, and this
+   * returned "fine" because it could not see him. */
+  for (const entry of doc.querySelectorAll("li, div")) {
+    const text = entry.textContent || "";
+    if (text.length > 160) continue;
+    // Exactly one, so this is a single entry rather than the panel around
+    // them: a wrapper holding several would let one player's missing ADP be
+    // read as another's.
+    if ((text.match(/ADP:/gi) || []).length !== 1) continue;
+    if (!textMentions(text, forms)) continue;
+    return /ADP:\s*[-\u2014]?\s*$/i.test(text.trim()) || /ADP:\s*[-\u2014](?!\d)/i.test(text);
+  }
   return false;
 }
 
