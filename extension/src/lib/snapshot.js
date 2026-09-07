@@ -6,7 +6,7 @@
  * different platforms.
  */
 import { loadPlayers, applyNotes, assignTiers, applyDraftState, applyByes, scarcityReport } from "../engine/board.js";
-import { autoPick, topPicks } from "../engine/autopilot.js";
+import { autoPick, topPicks, defaultOnesieFloor } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
 import { adpUrl, parseAdpFeed } from "./consensusAdp.js";
 import { gradeRoster } from "../engine/grade.js";
@@ -435,9 +435,19 @@ export async function shortlist(n = 5, { picksUntilTurn = null } = {}) {
     (pos) => pos !== "FLEX" && mine.filter((p) => p.pos === pos).length < starters[pos]
   );
 
+  /* The queue is what Yahoo drafts from when we are not watching, so anything
+   * reserved here is a pick the engine never gets to vote on. It therefore
+   * has to respect the same floor the engine does: reserving a kicker in
+   * round twelve hands over a pick that autoPick would have refused, and the
+   * two disagreeing is worse than either rule alone. */
+  const picksMade = players.filter((p) => p.draftedBy).length;
+  const roundNow = Math.floor(picksMade / (config.league?.num_teams || 10)) + 1;
+  const onesieFloor = config.autopilot?.onesie_min_round ?? defaultOnesieFloor(config);
+
   const reserved = [];
   if (unfilled.length > 0 && remaining <= unfilled.length + 3) {
     for (const pos of unfilled) {
+      if ((pos === "K" || pos === "DEF") && roundNow < onesieFloor) continue;
       const best = players
         .filter((p) => !p.draftedBy && p.pos === pos)
         .sort((a, b) => a.adp - b.adp)[0];

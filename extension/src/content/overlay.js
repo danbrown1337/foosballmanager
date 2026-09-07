@@ -300,6 +300,9 @@ async function main() {
    * filtering — which is how pressing Update mid-cycle got told to clear a
    * search the user never typed. */
   let roomBusy = false;
+  // Set when a refresh attempt cannot succeed here, as opposed to simply not
+  // having run yet. See the queue's staleness gate.
+  let boardRefreshBlocked = false;
   /* What we put in the room's queue. Yahoo removes a player from the queue
    * when someone drafts him, so anything that leaves this set without us
    * drafting him is a pick we never saw — the cheapest, most reliable pick
@@ -1073,9 +1076,23 @@ async function main() {
     if (roomBusy) return noteQueueIdle("queue: waiting — a board update is using the search");
     lastQueueRunAt = Date.now();
 
+    /* Waiting for a refresh that cannot happen is worse than working from a
+     * stale board.
+     *
+     * This gate existed so the queue never stars players from an out-of-date
+     * board. But when the refresh is impossible rather than merely late — a
+     * hidden tab, where sweeps are skipped because rendering is suspended, or
+     * a room showing anything but its Players list — the gate never lifts,
+     * and a live draft spent twenty minutes logging this same line while
+     * Yahoo drafted the whole roster on its own rankings. Keeping the queue
+     * full is the entire mitigation for an unattended turn; blocking it
+     * because the board might be stale gets the trade exactly backwards. */
     if (Date.now() - lastBoardUpdateAt > BOARD_REFRESH_MS) {
-      noteQueueIdle("queue: waiting for the board refresh to finish");
-      return;
+      if (!boardRefreshBlocked) {
+        noteQueueIdle("queue: waiting for the board refresh to finish");
+        return;
+      }
+      noteQueueIdle("queue: can't refresh the board here, so queueing from the board as it stands — an empty queue is worse than a stale one.");
     }
 
     if (!boardNameSet) return noteQueueIdle("queue: waiting — the board hasn't loaded yet");
@@ -1637,6 +1654,11 @@ async function main() {
     roomBusy = true;
     try {
       const out = await updateBoardFromRoom({ verify: false });
+      /* Whether a refresh is currently achievable at all. A failure here is
+       * usually not an error — it is the sweep correctly declining to trust a
+       * view it could not take — but something downstream is waiting on it,
+       * and needs to know the difference between late and impossible. */
+      boardRefreshBlocked = !out.ok;
       if (out.ok) {
         addLog(`Board refreshed: ${out.result.seen} available, ${out.result.markedDrafted} newly drafted, ${out.result.freed} put back.`);
       }
