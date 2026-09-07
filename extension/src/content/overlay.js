@@ -773,6 +773,17 @@ async function main() {
         return { snapshot, name: null, el: null, searchBox, skipped, exhausted: true };
       }
 
+      /* The room's own designation decides, whatever the board thinks. An IR
+       * player was drafted at a turn because this check existed only in the
+       * queue path — so a player the queue would refuse to star could still
+       * be pressed straight into the roster. */
+      if (looksUnavailableOnPage(document.body, candidate.name) ||
+          rowShowsNoAdp(document.body, candidate.name)) {
+        addLog(`${candidate.name} is listed out in this room — taking the next name.`);
+        unusable.add(candidate.name);
+        continue;
+      }
+
       const meta = (boardPlayers || []).find((p) => p.name === candidate.name) || null;
       await closeSearch(searchBox);
       const located = await locatePlayer(candidate.name, meta);
