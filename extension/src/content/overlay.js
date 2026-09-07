@@ -191,7 +191,7 @@ async function main() {
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp } =
+     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   /* Every helper this panel uses is destructured from a dynamic import, and a
