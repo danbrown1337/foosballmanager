@@ -191,9 +191,32 @@ def guess_penalty(player, config):
 # and rounds one and two are untouched. Per position, because a missing back
 # is the expensive hole — replacement backs are the worst on waivers — while
 # receivers are deep enough that waiting costs less.
+# How much of an open flex slot each position is expected to fill. A W/R/T
+# flex is a starting slot like any other, and a league that starts two of them
+# starts six flex-eligible players, not four. The gradient used to count only
+# a position's own slots, so it fell silent once a roster held two backs and
+# two receivers — two starting slots still empty and nothing objecting. Tight
+# ends get no share, for the same reason they cannot claim a flex in
+# surplus_penalty: legal, and the worst use of the slot.
+FLEX_NEED_SHARE = {"RB": 0.65, "WR": 0.35, "TE": 0.0}
+
 NEED_START_ROUND = 3
 NEED_ESCALATION = {"RB": 12.0, "WR": 8.0, "TE": 6.0, "QB": 6.0, "K": 0.0, "DEF": 0.0}
 NEED_CAP = 60.0
+
+
+def default_onesie_floor(config):
+    """First round a kicker or defence may be taken: exactly enough rounds at
+    the end to fill them and no more. Two of them in a fifteen-round draft
+    means rounds fourteen and fifteen; one means round fifteen alone. A league
+    with no kicker slot should not inherit a window sized for a league that
+    has one and give up a round of bench upside to a defence that would have
+    cost the same later."""
+    starters = config["roster"]["starters"]
+    onesies = starters.get("K", 0) + starters.get("DEF", 0)
+    if onesies == 0:
+        return float("inf")  # this league starts neither
+    return max(1, draftable_spots_for(config) - onesies + 1)
 
 
 def draftable_spots_for(config):
@@ -202,14 +225,30 @@ def draftable_spots_for(config):
     return sum(starters.values()) + config["roster"].get("bench", 0)
 
 
+def open_flex_slots(mine, config):
+    """Flex slots not yet covered by a spare at any flex-eligible position."""
+    starters = config["roster"]["starters"]
+    flex = starters.get("FLEX", 0)
+    if not flex:
+        return 0
+    spares = sum(
+        max(0, sum(1 for p in mine if p.pos == pos) - starters.get(pos, 0))
+        for pos in FLEX_ELIGIBLE
+    )
+    return max(0, flex - spares)
+
+
 def need_bonus(player, mine, config, picks_made):
     starters = config["roster"]["starters"]
     need = starters.get(player.pos, 0)
     have = sum(1 for p in mine if p.pos == player.pos)
-    if have >= need:
-        return 0.0  # the slot is filled; surplus_penalty takes over
 
     ap = config.get("autopilot", {})
+    shares = ap.get("flex_need_share", FLEX_NEED_SHARE)
+    missing = max(0, need - have) + open_flex_slots(mine, config) * shares.get(player.pos, 0.0)
+    if missing <= 0:
+        return 0.0  # nothing unfilled this player could start in
+
     teams = config["league"]["num_teams"]
     round_now = picks_made // teams + 1
     elapsed = round_now - ap.get("need_start_round", NEED_START_ROUND)
@@ -221,7 +260,7 @@ def need_bonus(player, mine, config, picks_made):
         return 0.0
 
     # elapsed + 1 so the round it switches on is worth something, not zero.
-    pull = step * (elapsed + 1) * (need - have)
+    pull = step * (elapsed + 1) * missing
     return -min(pull, ap.get("need_cap", NEED_CAP))  # negative: lower is better
 
 
@@ -404,7 +443,7 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     # that reaches its end still fills the slot.
     round_now = picks_made // config["league"]["num_teams"] + 1
     onesie_floor = config.get("autopilot", {}).get(
-        "onesie_min_round", max(1, draftable_spots_for(config) - 1)
+        "onesie_min_round", default_onesie_floor(config)
     )
     if not (core_filled or late_enough) or round_now < onesie_floor:
         pool = [p for p in pool if p.pos not in ("K", "DEF")]

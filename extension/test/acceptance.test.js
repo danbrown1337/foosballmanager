@@ -6,7 +6,9 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { autoPick } from "../src/engine/autopilot.js";
+import {
+  autoPick, needBonus, openFlexSlots, defaultOnesieFloor,
+} from "../src/engine/autopilot.js";
 import { makePlayer, assignTiers } from "../src/engine/board.js";
 
 const CONFIG = {
@@ -152,4 +154,65 @@ test("E — and the kicker does arrive at the end", () => {
     p("Bench Back", "RB", 150),
   ]);
   assert.equal(autoPick(players, CONFIG).player.name, "Cheap Kicker");
+});
+
+/* The league this is actually for: no kicker at all, and two W/R/T flex
+ * slots instead of the usual one. Both are the kind of shape that a rule
+ * written for the common case gets quietly wrong. */
+const NO_KICKER_TWO_FLEX = {
+  league: { num_teams: 10 },
+  roster: { starters: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 2, DEF: 1 }, bench: 6 },
+  autopilot: { strategy: "best_player_available", risk_tolerance: "balanced" },
+};
+
+test("two flex slots keep the need gradient alive past the second back", () => {
+  // Two backs and two receivers fills RB and WR, and leaves two starting
+  // slots empty. The gradient used to stop dead here.
+  const mine = [
+    p("My RB1", "RB", 12, { draftedBy: "mine" }),
+    p("My RB2", "RB", 30, { draftedBy: "mine" }),
+    p("My WR1", "WR", 7, { draftedBy: "mine" }),
+    p("My WR2", "WR", 24, { draftedBy: "mine" }),
+  ];
+  assert.equal(openFlexSlots(mine, NO_KICKER_TWO_FLEX), 2);
+  const bonus = needBonus(p("Third Back", "RB", 60), mine, NO_KICKER_TWO_FLEX, 40);
+  assert.ok(bonus < 0, `a third back should still be pulled forward, got ${bonus}`);
+});
+
+test("and a one-flex league is unaffected by that", () => {
+  const oneFlex = {
+    ...NO_KICKER_TWO_FLEX,
+    roster: { ...NO_KICKER_TWO_FLEX.roster,
+              starters: { ...NO_KICKER_TWO_FLEX.roster.starters, FLEX: 1 } },
+  };
+  const mine = [
+    p("My RB1", "RB", 12, { draftedBy: "mine" }),
+    p("My RB2", "RB", 30, { draftedBy: "mine" }),
+    p("My WR1", "WR", 7, { draftedBy: "mine" }),
+    p("My WR2", "WR", 24, { draftedBy: "mine" }),
+    p("My FLEX", "WR", 50, { draftedBy: "mine" }),
+  ];
+  assert.equal(openFlexSlots(mine, oneFlex), 0);
+  assert.equal(needBonus(p("Third Back", "RB", 60), mine, oneFlex, 40), 0);
+});
+
+test("with only a defence to fill, it waits for the final round", () => {
+  // Two onesies want the last two rounds; one wants the last one. A league
+  // with no kicker should not give up a round of bench upside to a defence
+  // that would have cost the same a round later.
+  assert.equal(defaultOnesieFloor(NO_KICKER_TWO_FLEX), 15);
+  const withKicker = {
+    ...NO_KICKER_TWO_FLEX,
+    roster: { ...NO_KICKER_TWO_FLEX.roster,
+              starters: { ...NO_KICKER_TWO_FLEX.roster.starters, K: 1 }, bench: 5 },
+  };
+  assert.equal(defaultOnesieFloor(withKicker), 14);
+});
+
+test("a league that starts neither never drafts one", () => {
+  const noOnesies = {
+    ...NO_KICKER_TWO_FLEX,
+    roster: { starters: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 2 }, bench: 6 },
+  };
+  assert.equal(defaultOnesieFloor(noOnesies), Infinity);
 });
