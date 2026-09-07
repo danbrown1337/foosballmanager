@@ -207,6 +207,32 @@ export function teamCountBounds(position) {
   return { min, max };
 }
 
+/* The pick the room has just announced.
+ *
+ * The board has been learning who is drafted by inference — names vanishing
+ * from a virtualised list, sweeps concluding from silence — and all of it
+ * fails the moment the tab is throttled or the list will not render. A draft
+ * reached round five still offering A.J. Brown, Drake London, Trey McBride
+ * and Derrick Henry, every one of them long gone, and the picks it settled
+ * for instead were the D+ grades.
+ *
+ * The room states each pick outright as it happens:
+ *
+ *     Last:
+ *     J. DANIELS
+ *     (QB · WAS)
+ *
+ * An abbreviation, and beside it the position and team that tell two players
+ * with the same abbreviation apart. It is positive evidence, it costs no
+ * scrolling, it does not need the Players tab open, and a MutationObserver
+ * sees it arrive whether or not timers are being throttled. */
+export function parseLastPick(text) {
+  const m = /Last:\s*\n?\s*([A-Za-z]\.\s?[A-Za-z'\u2019-]+)\s*\n?\s*\(\s*([A-Za-z/]{1,4})\s*[\u00b7\u2022|-]\s*([A-Za-z]{2,3})\s*\)/
+    .exec(String(text || ""));
+  if (!m) return null;
+  return { label: m[1], pos: m[2].toUpperCase(), team: m[3].toUpperCase(), block: m[0] };
+}
+
 /* Which draft room this is: the id out of a draft client URL, as in
  * /draftclient/f1/10984414/12. Facts learned about a room are stored against
  * it, so what a mock says about itself can never be mistaken for the league
