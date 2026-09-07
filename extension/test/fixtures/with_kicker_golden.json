@@ -1375,7 +1375,7 @@
       "team": 0,
       "player": "Jacksonville Defense",
       "pos": "DEF",
-      "reason": "Best available by adjusted value (raw ADP 156.8, adjusted 176.8).",
+      "reason": "Best available by adjusted value (raw ADP 156.8, adjusted 216.8).",
       "needOverride": false
     },
     {
@@ -1383,7 +1383,7 @@
       "team": 1,
       "player": "Chris Boswell",
       "pos": "K",
-      "reason": "Best available by adjusted value (raw ADP 157.3, adjusted 177.3).",
+      "reason": "Best available by adjusted value (raw ADP 157.3, adjusted 217.3).",
       "needOverride": false
     },
     {
@@ -1391,7 +1391,7 @@
       "team": 2,
       "player": "Chimere Dike",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 133.8, adjusted 160.8).",
+      "reason": "Best available by adjusted value (raw ADP 133.8, adjusted 193.8).",
       "needOverride": false
     },
     {
@@ -1399,7 +1399,7 @@
       "team": 3,
       "player": "Denzel Boston",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 136.7, adjusted 163.7).",
+      "reason": "Best available by adjusted value (raw ADP 136.7, adjusted 196.7).",
       "needOverride": false
     },
     {
@@ -1407,7 +1407,7 @@
       "team": 4,
       "player": "Cyrus Allen",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 145.1, adjusted 172.1).",
+      "reason": "Best available by adjusted value (raw ADP 145.1, adjusted 205.1).",
       "needOverride": false
     },
     {
@@ -1415,7 +1415,7 @@
       "team": 5,
       "player": "Jauan Jennings",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 146.7, adjusted 173.7).",
+      "reason": "Best available by adjusted value (raw ADP 146.7, adjusted 206.7).",
       "needOverride": false
     },
     {
@@ -1423,7 +1423,7 @@
       "team": 6,
       "player": "Calvin Ridley",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 148.1, adjusted 175.1).",
+      "reason": "Best available by adjusted value (raw ADP 148.1, adjusted 208.1).",
       "needOverride": false
     },
     {
@@ -1431,7 +1431,7 @@
       "team": 7,
       "player": "Jonah Coleman",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 148.3, adjusted 175.3).",
+      "reason": "Best available by adjusted value (raw ADP 148.3, adjusted 208.3).",
       "needOverride": false
     },
     {
@@ -1439,7 +1439,7 @@
       "team": 8,
       "player": "Malik Washington",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 149.3, adjusted 176.3).",
+      "reason": "Best available by adjusted value (raw ADP 149.3, adjusted 209.3).",
       "needOverride": false
     },
     {
@@ -1447,7 +1447,7 @@
       "team": 9,
       "player": "Emmett Johnson",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 151.7, adjusted 178.7).",
+      "reason": "Best available by adjusted value (raw ADP 151.7, adjusted 211.7).",
       "needOverride": false
     },
     {
@@ -1455,7 +1455,7 @@
       "team": 10,
       "player": "Alvin Kamara",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 151.9, adjusted 178.9).",
+      "reason": "Best available by adjusted value (raw ADP 151.9, adjusted 211.9).",
       "needOverride": false
     },
     {
@@ -1463,7 +1463,7 @@
       "team": 11,
       "player": "Isiah Pacheco",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 152.0, adjusted 179.0).",
+      "reason": "Best available by adjusted value (raw ADP 152.0, adjusted 212.0).",
       "needOverride": false
     }
   ]

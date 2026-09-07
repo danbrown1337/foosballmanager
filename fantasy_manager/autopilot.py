@@ -62,6 +62,16 @@ UNAVAILABLE = {"IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O", "NA"}
 
 SURPLUS_PENALTY = {"QB": 14, "K": 20, "DEF": 20, "TE": 8, "RB": 3, "WR": 3}
 
+# How many of each position a full roster wants beyond its starters. A bench
+# exists to cover byes and injuries at the positions played every week; without
+# saying so, a bench filled with receivers left two running backs on a roster
+# that starts two and a flex, with no cover for their byes. And nothing stopped
+# a second kicker, which cannot be played and cannot be needed.
+DEPTH_TARGET = {"RB": 2, "WR": 2, "TE": 1, "QB": 1, "K": 0, "DEF": 0}
+
+# Beyond the target the charge stops being a nudge.
+BEYOND_DEPTH_PENALTY = 60.0
+
 
 # Positions a W/R/T flex can start. The flex absorbs exactly one spare across
 # all of them — not one each, which is how a roster reached three tight ends:
@@ -89,6 +99,13 @@ def surplus_penalty(player, mine, config):
             surplus -= 1  # this one starts in the flex
     if surplus <= 0:
         return 0.0
+
+    # Past the depth this roster wants, the player is bench filler at a
+    # position already covered, and the spot is one not spent covering a bye.
+    targets = config.get("autopilot", {}).get("depth_target", DEPTH_TARGET)
+    extra = targets.get(player.pos, 1)
+    if have >= need + extra:
+        return BEYOND_DEPTH_PENALTY * (have - need - extra + 1)
 
     weights = config.get("autopilot", {}).get("surplus_penalty", SURPLUS_PENALTY)
     # Squared: a second spare is a nudge, a third is a wall. A flat charge was

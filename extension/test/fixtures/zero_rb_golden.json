@@ -1349,193 +1349,193 @@
     {
       "pickNo": 166,
       "team": 11,
-      "player": "Jalen McMillan",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 135.7, adjusted 154.7). breakout: Direct beneficiary of Mike Evans leaving Tampa; strong college production profile",
-      "needOverride": false
-    },
-    {
-      "pickNo": 167,
-      "team": 12,
-      "player": "Jerry Jeudy",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 129.1, adjusted 156.1).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 168,
-      "team": 13,
       "player": "Mike Washington Jr.",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 146.8, adjusted 158.8).",
       "needOverride": false
     },
     {
-      "pickNo": 169,
-      "team": 0,
-      "player": "Tre Tucker",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 132.0, adjusted 159.0).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 170,
-      "team": 1,
+      "pickNo": 167,
+      "team": 12,
       "player": "Jonah Coleman",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 148.3, adjusted 160.3).",
       "needOverride": false
     },
     {
-      "pickNo": 171,
-      "team": 2,
-      "player": "Keenan Allen",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 133.5, adjusted 160.5).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 172,
-      "team": 3,
-      "player": "Chimere Dike",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 133.8, adjusted 160.8).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 173,
-      "team": 4,
-      "player": "Denzel Boston",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 136.7, adjusted 163.7).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 174,
-      "team": 5,
+      "pickNo": 168,
+      "team": 13,
       "player": "Emmett Johnson",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 151.7, adjusted 163.7).",
       "needOverride": false
     },
     {
-      "pickNo": 175,
-      "team": 6,
-      "player": "Cyrus Allen",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 145.1, adjusted 172.1).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 176,
-      "team": 7,
-      "player": "Jauan Jennings",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 146.7, adjusted 173.7).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 177,
-      "team": 8,
-      "player": "Calvin Ridley",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 148.1, adjusted 175.1).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 178,
-      "team": 9,
-      "player": "Malik Washington",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 149.3, adjusted 176.3).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 179,
-      "team": 10,
+      "pickNo": 169,
+      "team": 0,
       "player": "Alvin Kamara",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 151.9, adjusted 178.9).",
+      "reason": "Best available by adjusted value (raw ADP 151.9, adjusted 163.9).",
       "needOverride": false
     },
     {
-      "pickNo": 180,
-      "team": 11,
+      "pickNo": 170,
+      "team": 1,
       "player": "Isiah Pacheco",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 152.0, adjusted 164.0).",
       "needOverride": false
     },
     {
-      "pickNo": 181,
-      "team": 12,
+      "pickNo": 171,
+      "team": 2,
       "player": "Jordan James",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 152.0, adjusted 164.0).",
       "needOverride": false
     },
     {
-      "pickNo": 182,
-      "team": 13,
+      "pickNo": 172,
+      "team": 3,
       "player": "Brian Robinson",
       "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 152.9, adjusted 179.9).",
+      "reason": "Best available by adjusted value (raw ADP 152.9, adjusted 164.9).",
       "needOverride": false
     },
     {
-      "pickNo": 183,
-      "team": 0,
+      "pickNo": 173,
+      "team": 4,
       "player": "Samaje Perine",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 153.3, adjusted 165.3).",
       "needOverride": false
     },
     {
-      "pickNo": 184,
-      "team": 1,
-      "player": "Jalen Nailor",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 154.2, adjusted 181.2).",
-      "needOverride": false
-    },
-    {
-      "pickNo": 185,
-      "team": 2,
+      "pickNo": 174,
+      "team": 5,
       "player": "Tyler Allgeier",
       "pos": "RB",
       "reason": "Best available by adjusted value (raw ADP 154.7, adjusted 166.7).",
       "needOverride": false
     },
     {
+      "pickNo": 175,
+      "team": 6,
+      "player": "Jalen McMillan",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 135.7, adjusted 187.7). breakout: Direct beneficiary of Mike Evans leaving Tampa; strong college production profile",
+      "needOverride": false
+    },
+    {
+      "pickNo": 176,
+      "team": 7,
+      "player": "Jerry Jeudy",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 129.1, adjusted 189.1).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 177,
+      "team": 8,
+      "player": "Tre Tucker",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 132.0, adjusted 192.0).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 178,
+      "team": 9,
+      "player": "Keenan Allen",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 133.5, adjusted 193.5).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 179,
+      "team": 10,
+      "player": "Chimere Dike",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 133.8, adjusted 193.8).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 180,
+      "team": 11,
+      "player": "Denzel Boston",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 136.7, adjusted 196.7).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 181,
+      "team": 12,
+      "player": "Cyrus Allen",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 145.1, adjusted 205.1).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 182,
+      "team": 13,
+      "player": "Jauan Jennings",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 146.7, adjusted 206.7).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 183,
+      "team": 0,
+      "player": "Calvin Ridley",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 148.1, adjusted 208.1).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 184,
+      "team": 1,
+      "player": "Malik Washington",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 149.3, adjusted 209.3).",
+      "needOverride": false
+    },
+    {
+      "pickNo": 185,
+      "team": 2,
+      "player": "Jalen Nailor",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 154.2, adjusted 214.2).",
+      "needOverride": false
+    },
+    {
       "pickNo": 186,
       "team": 3,
-      "player": "Tyrone Tracy Jr.",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 155.9, adjusted 167.9).",
+      "player": "Rashod Bateman",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 154.6, adjusted 214.6).",
       "needOverride": false
     },
     {
       "pickNo": 187,
       "team": 4,
-      "player": "Chris Rodriguez Jr.",
-      "pos": "RB",
-      "reason": "Best available by adjusted value (raw ADP 156.5, adjusted 168.5).",
+      "player": "Cooper Kupp",
+      "pos": "WR",
+      "reason": "Best available by adjusted value (raw ADP 155.5, adjusted 215.5).",
       "needOverride": false
     },
     {
       "pickNo": 188,
       "team": 5,
-      "player": "Rashod Bateman",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 154.6, adjusted 181.6).",
+      "player": "Tyrone Tracy Jr.",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 155.9, adjusted 215.9).",
       "needOverride": false
     },
     {
       "pickNo": 189,
       "team": 6,
-      "player": "Cooper Kupp",
-      "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 155.5, adjusted 203.5).",
+      "player": "Chris Rodriguez Jr.",
+      "pos": "RB",
+      "reason": "Best available by adjusted value (raw ADP 156.5, adjusted 216.5).",
       "needOverride": false
     },
     {
@@ -1543,7 +1543,7 @@
       "team": 7,
       "player": "Jordyn Tyson",
       "pos": "WR",
-      "reason": "Best available by adjusted value (raw ADP 157.1, adjusted 227.1). injury_watch: Chronic hamstring \u2014 expected out into October, meaningful missed-game risk",
+      "reason": "Best available by adjusted value (raw ADP 157.1, adjusted 299.1). injury_watch: Chronic hamstring \u2014 expected out into October, meaningful missed-game risk",
       "needOverride": false
     }
   ]

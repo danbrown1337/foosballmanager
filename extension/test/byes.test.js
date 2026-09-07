@@ -90,11 +90,12 @@ describe("surplusPenalty", () => {
   });
 
   test("grows steeply with each additional spare", () => {
-    // Squared, so the fourth is far worse than the third rather than
-    // marginally worse — a flat charge was simply out-ranked twice over.
+    // Below the depth this roster wants the charge is squared; past it, each
+    // further one costs a full extra bench spot. Either way the fourth is at
+    // least twice the third — a flat charge was out-ranked twice over.
     const third = surplusPenalty(te("C", 5), [te("A", 6), te("B", 5)], CONFIG);
     const fourth = surplusPenalty(te("D", 5), [te("A", 6), te("B", 5), te("C", 5)], CONFIG);
-    assert.ok(fourth > third * 2, `${fourth} should be well over ${third}`);
+    assert.ok(fourth >= third * 2, `${fourth} should be at least double ${third}`);
   });
 });
 
@@ -125,5 +126,30 @@ describe("unavailable players", () => {
       { ...makePlayer({ rank: 2, name: "Fit Guy", team: "DET", pos: "RB", adp: 40 }), status: null },
     ];
     assert.equal(autoPick(players, CONFIG).player.name, "Iffy Guy");
+  });
+});
+
+describe("roster depth", () => {
+  const rb = (n) => ({ ...makePlayer({ rank: 1, name: n, team: "DET", pos: "RB", adp: 30 }), bye: 6 });
+  const wr = (n) => ({ ...makePlayer({ rank: 1, name: n, team: "CIN", pos: "WR", adp: 30 }), bye: 7 });
+  const k = (n) => ({ ...makePlayer({ rank: 1, name: n, team: "SEA", pos: "K", adp: 30 }), bye: 9 });
+
+  test("a second kicker is priced out of the draft entirely", () => {
+    // It cannot be played in any week, so it is never worth a roster spot.
+    const cost = surplusPenalty(k("B"), [k("A")], CONFIG);
+    assert.ok(cost >= 60, `second kicker cost ${cost}`);
+  });
+
+  test("bench depth at a weekly position stays affordable", () => {
+    // Two starting RBs plus one spare: still wanted, for byes and injuries.
+    const mine = [rb("A"), rb("B"), rb("C")];
+    assert.ok(surplusPenalty(rb("D"), mine, CONFIG) < 60);
+  });
+
+  test("but a sixth receiver is not", () => {
+    // A roster that starts two and a flex does not need six, and every extra
+    // one is a bench spot not covering a running back's bye.
+    const mine = [wr("A"), wr("B"), wr("C"), wr("D"), wr("E")];
+    assert.ok(surplusPenalty(wr("F"), mine, CONFIG) >= 60);
   });
 });
