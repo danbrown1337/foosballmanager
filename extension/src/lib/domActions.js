@@ -284,6 +284,34 @@ function nameOccurrences(root, playerName) {
   return out;
 }
 
+/* What the page actually shows for this player, for a panel that has to
+ * explain why it could not act.
+ *
+ * "found X but no star on his row" and "no Draft button on his row" have two
+ * quite different causes that want opposite treatment. Either the player is
+ * gone — taken players leave the available list while their names stay in the
+ * pick feed and the Last banner, so the name resolves with no row behind it
+ * at all — or his row is right there and the control did not render. The
+ * first is evidence of a pick. The second must never be treated as one. This
+ * says which, so the difference stops being a guess. */
+export function describeRow(root, playerName, { player = null } = {}) {
+  const el = findPlayerClickTarget(root, playerName, { player });
+  if (!el) return { found: false, inTable: false, cells: 0, icons: [], controls: 0 };
+  const row = el.closest?.("tr, [role='row']");
+  if (!row) {
+    return { found: true, inTable: false, cells: 0, icons: [], controls: 0 };
+  }
+  return {
+    found: true,
+    inTable: true,
+    cells: row.children?.length ?? 0,
+    icons: [...row.querySelectorAll("svg")]
+      .map((s) => s.getAttribute("data-icon") || "?")
+      .slice(0, 6),
+    controls: row.querySelectorAll(CLICKABLE_SELECTOR).length,
+  };
+}
+
 export function findQueueStar(root, playerName, { player = null } = {}) {
   /* Look at every row this player appears in, not just the first place the
    * name turns up. */
