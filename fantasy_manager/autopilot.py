@@ -57,8 +57,10 @@ DEFAULT_BYE_PENALTY = 6.0
 # Designations meaning the player will not play this season. Drafting one
 # spends a roster spot on nobody, so they are removed from consideration
 # entirely — the same treatment a position the league doesn't start gets.
-# NA is Yahoo's "Not Active".
-UNAVAILABLE = {"IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O", "NA"}
+# NA is Yahoo's "Not Active". CEL is the NFL's Commissioner Exempt List —
+# paid leave during a legal or league investigation, so neither injured nor
+# suspended, but no practice and no return date. DNR is "Did Not Report".
+UNAVAILABLE = {"IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O", "NA", "CEL", "DNR"}
 
 SURPLUS_PENALTY = {"QB": 14, "K": 20, "DEF": 20, "TE": 8, "RB": 3, "WR": 3}
 

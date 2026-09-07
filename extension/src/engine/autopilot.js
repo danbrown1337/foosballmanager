@@ -34,6 +34,12 @@ export const UNAVAILABLE = new Set([
   "IR", "IR-R", "PUP-R", "NFI-R", "SUSP", "O",
   // NA is Yahoo's "Not Active". Two were queued before this was here.
   "NA",
+  // CEL is the NFL's Commissioner Exempt List — paid leave during a legal or
+  // league investigation. Not injured, not suspended, so nothing else here
+  // catches it, but the player does not practise and has no return date.
+  "CEL",
+  // DNR is "Did Not Report": under contract, never turned up.
+  "DNR",
 ]);
 
 export const SURPLUS_PENALTY = { QB: 14, K: 20, DEF: 20, TE: 8, RB: 3, WR: 3 };

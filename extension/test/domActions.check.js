@@ -96,6 +96,11 @@ const PAGE_HTML = `<!doctype html><html><body>
       <td><span>J. Reed</span><span>NA</span><span>WR</span><span>Car</span></td>
       <td>-</td>
     </tr>
+    <tr id="row-exempt">
+      <td><button class="star-btn"><svg data-icon="star-unfilled"></svg></button></td>
+      <td><span>J. Jacobs</span><span>CEL</span><span>RB</span><span>GB</span></td>
+      <td>30.0</td>
+    </tr>
     <tr id="row-queued">
       <td><button class="star-btn"><svg data-icon="star-filled"></svg></button></td>
       <td><span>P. Nacua</span> <span>WR</span> <span>LAR</span> <span>Bye 11</span></td>
@@ -339,8 +344,12 @@ export async function run(document) {
   const statuses = readRoomStatuses(document.body);
   results.statusReed = statuses.get("J. Reed") ?? null;
   results.statusHealthy = statuses.get("D. Achane") ?? null;
+  results.statusExempt = statuses.get("J. Jacobs") ?? null;
 
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
+  // CEL, the commissioner exempt list: neither injured nor suspended, and
+  // carrying an ordinary ADP, so nothing else on the row gives him away.
+  results.celOnPage = looksUnavailableOnPage(document.body, "Josh Jacobs");
   results.fitOnPage = looksUnavailableOnPage(document.body, "Travis Kelce");
 
   return results;
@@ -467,6 +476,8 @@ async function main() {
         result.queuedDraftClass === "q-draft"],
       ["spots a queued player whose entry shows no ADP", result.queuedNoAdp === true],
       ["reads every out designation in the room at once", result.statusReed === "NA"],
+      ["including the commissioner exempt list", result.statusExempt === "CEL"],
+      ["and flags an exempt player on the page", result.celOnPage === true],
       ["and tags nobody who is playing", result.statusHealthy === null],
       ["and leaves a queued player who has one alone", result.queuedHasAdp === false],
       ["reads the room's ADP column", result.adpAchane === 15.3],
