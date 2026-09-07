@@ -6,7 +6,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { makePlayer, applyByes } from "../src/engine/board.js";
-import { autoPick, byePenalty, surplusPenalty, DEFAULT_BYE_PENALTY } from "../src/engine/autopilot.js";
+import { autoPick, byePenalty, surplusPenalty, DEFAULT_BYE_PENALTY, BEYOND_DEPTH_PENALTY } from "../src/engine/autopilot.js";
 
 const CONFIG = {
   league: { name: "T", num_teams: 12, scoring: "ppr" },
@@ -63,10 +63,18 @@ describe("surplusPenalty", () => {
     assert.equal(surplusPenalty(te("A", 5), [], CONFIG), 0);
   });
 
-  test("a second tight end is free while the flex is open", () => {
-    // He starts at W/R/T. Charging for him would have the engine avoid a
-    // player it can actually field.
-    assert.equal(surplusPenalty(te("B", 5), [te("A", 6)], CONFIG), 0);
+  test("a second tight end is charged even though the flex would take him", () => {
+    /* This asserted the opposite until a 15-round mock came back with a
+     * second tight end on the bench behind the second-best tight end in the
+     * draft, and one every-week running back. A W/R/T flex will accept a
+     * tight end and it is nearly always the worst thing to put there: a third
+     * back or receiver plays more and scores more in PPR. Being fieldable is
+     * not the same as being worth a round. */
+    assert.ok(surplusPenalty(te("B", 5), [te("A", 6)], CONFIG) > 0);
+  });
+
+  test("a third running back is still free, because he really does start there", () => {
+    assert.equal(surplusPenalty(rb("C"), [rb("A"), rb("B")], CONFIG), 0);
   });
 
   test("but a third is charged, because the flex only holds one", () => {
@@ -89,13 +97,18 @@ describe("surplusPenalty", () => {
     assert.ok(spareQb > thirdRb, `${spareQb} should exceed ${thirdRb}`);
   });
 
-  test("grows steeply with each additional spare", () => {
-    // Below the depth this roster wants the charge is squared; past it, each
-    // further one costs a full extra bench spot. Either way the fourth is at
-    // least twice the third — a flat charge was out-ranked twice over.
+  test("grows with each additional spare, by a whole bench spot at a time", () => {
+    /* Past the depth a roster wants, each further one costs another full
+     * bench spot. The assertion used to be that the fourth was double the
+     * third, which held while the first spares were charged on a squared
+     * curve; with a tight end depth target of zero both are already in the
+     * linear region, so the step is what matters, not the ratio. A flat
+     * charge was out-ranked twice over, which is what this guards. */
+    const second = surplusPenalty(te("B", 5), [te("A", 6)], CONFIG);
     const third = surplusPenalty(te("C", 5), [te("A", 6), te("B", 5)], CONFIG);
     const fourth = surplusPenalty(te("D", 5), [te("A", 6), te("B", 5), te("C", 5)], CONFIG);
-    assert.ok(fourth >= third * 2, `${fourth} should be at least double ${third}`);
+    assert.ok(third - second >= BEYOND_DEPTH_PENALTY, `${third} vs ${second}`);
+    assert.ok(fourth - third >= BEYOND_DEPTH_PENALTY, `${fourth} vs ${third}`);
   });
 });
 
