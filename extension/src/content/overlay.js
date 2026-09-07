@@ -274,6 +274,9 @@ async function main() {
    * queue maintenance had scrolled down to star someone and the next poll
    * found the list back at the top. */
   let previousScrollTop = null;
+  /* How many picks one poll may believe in. Four seconds, one room, one pick
+   * at a time — anything past this is the page changing under us. */
+  const MAX_PICKS_PER_POLL = 3;
   let boardNameSet = null;
   let boardPlayers = null;
   let lastConfig = null;
@@ -1724,13 +1727,28 @@ async function main() {
         addLog(`"${abbrev}" matches two players — mark it by hand if it was drafted.`);
       }
 
+      /* An unknown scroll position is not a matching one. When the list
+       * scroller cannot be found, both samples record null, and null === null
+       * let the comparison through with no idea whether the view had moved —
+       * which is how the same fourteen bottom-of-the-list players were
+       * detected as drafted again after the fix meant to stop it. */
       const scrollNow = findListScroller(document.body)?.scrollTop ?? null;
-      const sameView = previousScrollTop === scrollNow;
+      const sameView = scrollNow !== null && previousScrollTop === scrollNow;
       if (previousBoardNames && sameView) {
         // "appear": a picks feed — names show up as taken.
         // "disappear": an available-player pool — names leave it as taken.
         const newlyDrafted = inferDraftedFromPoll(previousBoardNames, found, modeSelect.value);
-        if (newlyDrafted.size > 0) {
+        /* A backstop that does not depend on spotting the scroll at all.
+         *
+         * Polls are four seconds apart and a room drafts one player at a
+         * time, so a handful of names changing at once is a draft and a dozen
+         * is the page showing something else. Every version of this bug has
+         * arrived as a burst — fourteen names, seventeen names — and every
+         * real detection has been one or two. Whatever the cause, a burst is
+         * never evidence of a burst of picks. */
+        if (newlyDrafted.size > MAX_PICKS_PER_POLL) {
+          noteQueueIdle(`Ignored ${newlyDrafted.size} players vanishing at once — that is the list moving, not ${newlyDrafted.size} picks.`);
+        } else if (newlyDrafted.size > 0) {
           const names = [...newlyDrafted];
           const { changed } = await sendMessage({ type: "DETECTED_PICKS", names });
           if (changed) {
