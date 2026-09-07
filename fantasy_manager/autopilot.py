@@ -115,6 +115,20 @@ def surplus_penalty(player, mine, config):
     return surplus * surplus * weights.get(player.pos, 5)
 
 
+# A board ADP that is really list position, before the room has been read
+# widely enough to prove the player has no ADP at all. Excluding him on that
+# suspicion alone would repeat the mistake that left a kicker slot empty
+# twice; pushing him down keeps him out of the middle rounds while leaving him
+# available at the end, when the alternative is an empty roster spot.
+GUESSED_ADP_PENALTY = 50.0
+
+
+def guess_penalty(player, config):
+    if getattr(player, "adp_source", None) != "rank":
+        return 0.0
+    return config.get("autopilot", {}).get("guessed_adp_penalty", GUESSED_ADP_PENALTY)
+
+
 def bye_penalty(player, mine, config):
     """Cost of stacking this player's bye with players already rostered.
 
@@ -176,7 +190,11 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     # ranks players in isolation. Applied to every path below, so even a
     # forced need pick prefers the candidate who doesn't empty the same week.
     for p in avail:
-        scores[p.name] += bye_penalty(p, mine, config) + surplus_penalty(p, mine, config)
+        scores[p.name] += (
+            bye_penalty(p, mine, config)
+            + surplus_penalty(p, mine, config)
+            + guess_penalty(p, config)
+        )
 
     starters = config["roster"]["starters"]
     bench_cap = config.get("autopilot", {}).get("max_bench_per_pos", 3)

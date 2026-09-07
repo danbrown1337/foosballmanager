@@ -140,6 +140,22 @@ export function surplusPenalty(player, mine, config) {
   return surplus * surplus * weight;
 }
 
+/* A board ADP that is really list position, before the room has been read
+ * widely enough to prove the player has no ADP at all.
+ *
+ * Excluding him on that suspicion alone would repeat the mistake that left a
+ * kicker slot empty twice — the imported pool simply lacks numbers for a long
+ * tail of players, some of whom are perfectly ordinary picks. Pushing him
+ * down the board instead keeps him out of the middle rounds, where a D-graded
+ * receiver at list position 113 came from, while leaving him available at the
+ * end when the alternative is an empty roster spot. */
+export const GUESSED_ADP_PENALTY = 50;
+
+export function guessPenalty(player, config) {
+  if (player.adpSource !== "rank") return 0;
+  return config.autopilot?.guessed_adp_penalty ?? GUESSED_ADP_PENALTY;
+}
+
 export function byePenalty(player, mine, config) {
   const weight = config.autopilot?.bye_penalty ?? DEFAULT_BYE_PENALTY;
   if (!weight || !player.bye) return 0;
@@ -165,7 +181,8 @@ export function autoPick(players, config) {
   // Applied to every path below — a forced need pick should still prefer the
   // candidate who doesn't leave that position empty on the same week.
   for (const p of avail) {
-    scores[p.name] += byePenalty(p, mine, config) + surplusPenalty(p, mine, config);
+    scores[p.name] +=
+      byePenalty(p, mine, config) + surplusPenalty(p, mine, config) + guessPenalty(p, config);
   }
 
   const starters = config.roster.starters;

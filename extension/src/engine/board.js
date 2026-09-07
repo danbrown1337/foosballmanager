@@ -20,13 +20,17 @@ export function normalizePos(pos) {
   return POS_ALIASES[pos] || pos;
 }
 
-export function makePlayer({ rank, name, team, pos, adp }) {
+export function makePlayer({ rank, name, team, pos, adp, adpSource = null }) {
   return {
     rank,
     name,
     team,
     pos: normalizePos(pos),
     adp,
+    /* Where .adp came from: "pool", "consensus", "room", or "rank" when it is
+     * really list position standing in for a number nobody published. Null
+     * where the question doesn't arise — the bundled file is all real ADP. */
+    adpSource,
     tier: 0,
     draftedBy: null, // null | "mine" | "rival"
     noteTag: null,
