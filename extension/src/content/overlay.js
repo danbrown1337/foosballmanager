@@ -191,8 +191,27 @@ async function main() {
   ({ findPlayerClickTarget, findConfirmClickTarget, highlightElement, clickElement,
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
-     looksUnavailableOnPage, rowShowsNoAdp } =
+     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
+
+  /* Every helper this panel uses is destructured from a dynamic import, and a
+   * name added to the declaration but missed in the assignment stays
+   * undefined until the moment it is needed — mid-draft, inside a catch that
+   * says nothing useful. Three separate debugging rounds went that way. Check
+   * once, at load, and say which one is missing. */
+  const wired = {
+    findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
+    findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
+    parseDraftPosition, picksUntilMyTurn, defenceAliases, isMyTurn,
+    looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
+    highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
+    findListScroller, findQueueStar, findDraftButton, findQueueRemove,
+    looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, fetchPool, leagueIdFromUrl,
+  };
+  const unbound = Object.keys(wired).filter((name) => typeof wired[name] !== "function");
+  if (unbound.length > 0) {
+    console.error("Fantasy Manager: unbound helpers —", unbound.join(", "));
+  }
 
   const root = buildPanel();
   const body = root.querySelector("#fm-body");

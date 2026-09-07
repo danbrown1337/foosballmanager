@@ -374,6 +374,18 @@ async function main() {
       .map((d) => d.textContent)
       .filter((s) => /^Your turn|it's your turn/i.test(s))
   );
+  // A helper declared but never assigned is undefined until something needs
+  // it, which has meant mid-draft failures inside a silent catch. The panel
+  // reports them at load; the check fails on any.
+  const unbound = await roomPage.evaluate(() =>
+    (window.__fmUnbound || []).slice(0, 5)
+  ).catch(() => []);
+  const consoleUnbound = roomErrors.filter((e) => /unbound helpers/.test(e));
+  if (consoleUnbound.length > 0) {
+    console.error(`FAIL: ${consoleUnbound[0]}`);
+    failed = true;
+  }
+
   console.log(`\n--- turn detection ---`);
   console.log(`  turn claims with only the list divider present: ${turnClaims.length}`);
   if (turnClaims.length > 0) {
