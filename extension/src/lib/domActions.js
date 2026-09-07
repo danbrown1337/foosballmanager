@@ -265,16 +265,37 @@ export function findQueueStar(root, playerName, { player = null } = {}) {
  * same careful way as the queue star: scoped to that player's row, and null
  * rather than a guess. */
 export function findDraftButton(root, playerName, { player = null } = {}) {
+  const isDraft = (el) => {
+    if (isInsideOwnOverlay(el)) return false;
+    const text = (el.textContent || "").trim();
+    const label = el.getAttribute("aria-label") || "";
+    return /^draft$/i.test(text) || /^draft\b/i.test(label);
+  };
+
   // Same reasoning as the star: his name is in the feed and the queue panel
   // too, and only one of its occurrences has a Draft button beside it.
   for (const el of nameOccurrences(root, playerName)) {
     const row = el.closest?.("tr, [role='row']");
-    if (!row) continue;
-    for (const candidate of row.querySelectorAll(CLICKABLE_SELECTOR)) {
-      if (isInsideOwnOverlay(candidate)) continue;
-      const text = (candidate.textContent || "").trim();
-      const label = candidate.getAttribute("aria-label") || "";
-      if (/^draft$/i.test(text) || /^draft\b/i.test(label)) return candidate;
+    if (row) {
+      for (const candidate of row.querySelectorAll(CLICKABLE_SELECTOR)) {
+        if (isDraft(candidate)) return candidate;
+      }
+      continue;
+    }
+
+    /* No table row: he is in the queue panel, where entries are plain divs.
+     * Queued players are pulled out of the available list, so for anyone in
+     * the queue this is the only Draft button that exists — and without this
+     * the panel reported "no Draft button on his row" for the very player it
+     * had queued itself. Bounded walk, so it stays within one entry. */
+    let scope = el;
+    for (let depth = 0; depth < 4 && scope.parentElement; depth++) {
+      const parent = scope.parentElement;
+      if ((parent.textContent || "").length > 200) break;
+      scope = parent;
+      for (const candidate of scope.querySelectorAll(CLICKABLE_SELECTOR)) {
+        if (isDraft(candidate)) return candidate;
+      }
     }
   }
   return null;
