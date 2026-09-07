@@ -38,6 +38,20 @@ export const UNAVAILABLE = new Set([
 
 export const SURPLUS_PENALTY = { QB: 14, K: 20, DEF: 20, TE: 8, RB: 3, WR: 3 };
 
+/* How many of each position a full roster wants, over and above its starters.
+ *
+ * A bench exists to cover byes and injuries at the positions you start every
+ * week. Without saying so, the engine filled a bench with receivers and left
+ * two running backs on a roster that starts two and a flex — no cover at all
+ * for their bye weeks. And nothing stopped a second kicker, which cannot be
+ * played and cannot be needed.
+ */
+export const DEPTH_TARGET = { RB: 2, WR: 2, TE: 1, QB: 1, K: 0, DEF: 0 };
+
+/* Beyond the target the charge stops being a nudge. A third quarterback or a
+ * second kicker is a wasted roster spot in any week of the season. */
+export const BEYOND_DEPTH_PENALTY = 60;
+
 function strategyBias(pos, strategy, picksMade) {
   if (strategy === "best_player_available" || picksMade >= STRATEGY_TAPER_PICKS) return 0.0;
   const taper = 1 - picksMade / STRATEGY_TAPER_PICKS;
@@ -105,6 +119,13 @@ export function surplusPenalty(player, mine, config) {
     if (spares < (starters.FLEX || 0)) surplus -= 1; // this one starts in the flex
   }
   if (surplus <= 0) return 0;
+
+  /* Past the depth this roster wants, the player is bench filler at a
+   * position already covered — and every one of those spots is one not spent
+   * covering a bye at a position played weekly. */
+  const targets = config.autopilot?.depth_target ?? DEPTH_TARGET;
+  const extra = targets[player.pos] ?? 1;
+  if (have >= need + extra) return BEYOND_DEPTH_PENALTY * (have - need - extra + 1);
 
   const weight = config.autopilot?.surplus_penalty?.[player.pos] ?? SURPLUS_PENALTY[player.pos] ?? 5;
   /* Squared, so a second spare is a nudge and a third is a wall. A linear
