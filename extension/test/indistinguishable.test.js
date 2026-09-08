@@ -9,7 +9,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { autoPick } from "../src/engine/autopilot.js";
+import { autoPick, isDraftable } from "../src/engine/autopilot.js";
 import { makePlayer, assignTiers } from "../src/engine/board.js";
 
 const CONFIG = {
@@ -54,4 +54,33 @@ test("he stays on the board so a rival taking him is still recognised", () => {
   ];
   assert.ok(players.some((x) => x.name === "Brian Robinson"),
     "the ambiguous player must remain part of the board");
+});
+
+/* Every path that can put a player in front of you, not just autoPick.
+ *
+ * The queue's endgame reservation checked only that a player was undrafted
+ * and played the right position, so it could reserve someone on injured
+ * reserve, someone no room drafts at all, or the worse of two players written
+ * identically — and Yahoo drafts whatever is reserved the moment the panel
+ * misses a turn. One predicate now, shared. */
+test("the shared test refuses everyone the engine refuses", () => {
+  const ok = p("Fine Player", "RB", "DEN", 40);
+  assert.equal(isDraftable(ok), true);
+
+  assert.equal(isDraftable({ ...ok, draftedBy: "rival" }), false);
+  assert.equal(isDraftable({ ...ok, status: "IR-R" }), false);
+  assert.equal(isDraftable({ ...ok, status: "CEL" }), false);
+  assert.equal(isDraftable({ ...ok, undrafted: true }), false);
+  assert.equal(isDraftable({ ...ok, ambiguous: true }), false);
+});
+
+test("and it is what autoPick uses, so the two cannot drift", () => {
+  const players = [
+    p("Injured Back", "RB", "CAR", 30, { status: "IR-R" }),
+    p("Wrong Robinson", "RB", "ATL", 152.9, { ambiguous: true }),
+    p("Unlisted Receiver", "WR", "DAL", 113, { undrafted: true }),
+    p("Ordinary Back", "RB", "DEN", 160),
+  ];
+  assignTiers(players);
+  assert.equal(autoPick(players, CONFIG).player.name, "Ordinary Back");
 });

@@ -392,6 +392,23 @@ class PickDecision:
     need_override: bool
 
 
+def is_draftable(player):
+    """Whether a player may be drafted at all, in one place.
+
+    This test lived inside auto_pick and nowhere else, and every other path
+    that picks a player re-implemented some subset of it — the queue's endgame
+    reservation checked only that a player was undrafted and played the right
+    position, so it could reserve an injured player, one nobody drafts
+    anywhere, or the worse of two players the room writes identically.
+    """
+    return (
+        player.drafted_by is None
+        and getattr(player, "status", None) not in UNAVAILABLE
+        and not getattr(player, "undrafted", False)
+        and not getattr(player, "ambiguous", False)
+    )
+
+
 def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
     mine = [p for p in players if p.drafted_by == "mine"]
     avail = [

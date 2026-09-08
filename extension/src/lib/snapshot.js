@@ -9,7 +9,7 @@ import {
   loadPlayers, applyNotes, assignTiers, applyDraftState, applyByes, scarcityReport,
   makePlayer, normalizePos,
 } from "../engine/board.js";
-import { autoPick, topPicks, defaultOnesieFloor } from "../engine/autopilot.js";
+import { autoPick, topPicks, defaultOnesieFloor, isDraftable } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
 import { adpUrl, parseAdpFeed } from "./consensusAdp.js";
 import { gradeRoster } from "../engine/grade.js";
@@ -609,8 +609,13 @@ export async function shortlist(n = 5, {
   if (unfilled.length > 0 && remaining <= unfilled.length + 3) {
     for (const pos of unfilled) {
       if ((pos === "K" || pos === "DEF") && roundNow < onesieFloor) continue;
+      /* The same test the engine uses. This checked only that a player was
+       * undrafted and played the position, so it could reserve someone on
+       * injured reserve, someone no room drafts at all, or the worse of two
+       * players written identically — and Yahoo drafts whatever is reserved
+       * the moment the panel misses a turn. */
       const best = players
-        .filter((p) => !p.draftedBy && p.pos === pos)
+        .filter((p) => isDraftable(p) && p.pos === pos)
         .sort((a, b) => a.adp - b.adp)[0];
       if (best) {
         reserved.push({
