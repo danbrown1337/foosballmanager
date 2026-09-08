@@ -118,6 +118,19 @@ test("an entry never repeats a starting slot the entry above it just filled", as
   assert.ok(qbs <= 1, `queued ${qbs} quarterbacks: ${JSON.stringify(plan.map((p) => `${p.name} (${p.pos})`))}`);
 });
 
+test("an over-counted roster still gets a plan", async () => {
+  /* The board read a fifteen-spot roster as seventeen in a live draft — one
+   * name recorded twice under two spellings does it — and the plan came back
+   * empty for the rest of the night. The queue had nothing to hold and the
+   * turn fallback had nothing to walk, so both remaining turns were lost to
+   * "board has no available players". An over-full roster is a board that has
+   * lost count, not a draft that has stopped needing picks. */
+  await setBoard([...NEARLY_DONE, "Josh Downs", "Rico Dowdle", "Stefon Diggs", "Mike Evans"], 120);
+  const plan = await queuePlan(5, { round: 14 });
+  assert.ok(plan.length > 0, "an over-full roster emptied the plan");
+  assert.equal(new Set(plan.map((p) => p.name)).size, plan.length, "the same player twice");
+});
+
 test("the plan is a private walk — it never writes the simulated picks back", async () => {
   const before = await setBoard(NEARLY_DONE, 120);
   await queuePlan(5, { round: 14 });
