@@ -435,7 +435,7 @@ export function autoPick(players, config) {
    * at all is waiver material, and the board's fallback ordering would
    * otherwise present him as an ordinary late pick. */
   const avail = players.filter(
-    (p) => !p.draftedBy && !UNAVAILABLE.has(p.status) && !p.undrafted
+    (p) => !p.draftedBy && !UNAVAILABLE.has(p.status) && !p.undrafted && !p.ambiguous
   );
   if (avail.length === 0) return null;
 

@@ -46,6 +46,9 @@ class Player:
     # Projected season points, when the source publishes them. None elsewhere,
     # and every rule that uses it treats None as "no information".
     proj: float | None = None
+    # Set when another player is written identically in the draft room and is
+    # far better: the room cannot tell them apart, so neither can we.
+    ambiguous: bool = False
     tier: int = 0
     drafted_by: str | None = None  # None = available, "mine", or a rival name
     note_tag: str | None = None    # bust | injury_watch | breakout | value_note

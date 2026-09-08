@@ -55,7 +55,7 @@ export function defenceAliases(player) {
   return nickname ? [nickname] : [];
 }
 
-function abbrevKey(name) {
+export function abbrevKey(name) {
   const parts = name.trim().split(/\s+/);
   if (parts.length < 2) return null;
   const surname = parts[parts.length - 1].replace(/[.,]/g, "");

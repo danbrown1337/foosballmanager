@@ -399,6 +399,7 @@ def auto_pick(players: list[Player], config: dict) -> PickDecision | None:
         if p.drafted_by is None
         and getattr(p, "status", None) not in UNAVAILABLE
         and not getattr(p, "undrafted", False)
+        and not getattr(p, "ambiguous", False)
     ]
     if not avail:
         return None

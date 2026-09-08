@@ -37,6 +37,9 @@ export function makePlayer({ rank, name, team, pos, adp, adpSource = null }) {
     /* Projected season points, when the room publishes them. Null elsewhere,
      * and every rule that uses it treats null as "no information". */
     proj: null,
+    /* Set when another player is written identically in the draft room and is
+     * far better: the room cannot tell them apart, so neither can we. */
+    ambiguous: false,
     adpBySource: {},
     adpSpread: 0,
     tier: 0,
