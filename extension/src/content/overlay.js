@@ -835,6 +835,88 @@ async function main() {
    * panel made four of fifteen looked in the record like a four-pick draft.
    * The eleven it lost left nothing behind, and the reasons had to be
    * reconstructed afterwards from a log that keeps twenty lines. */
+  /* Draft the next name in the plan, when the recommendation cannot be taken.
+   *
+   * The queue holds the engine's own next picks in order, and every entry in
+   * it was found in this room in order to be starred — so it is both the
+   * right sequence and the best-confirmed set of names available at a turn.
+   * Walking it costs one search per candidate against a clock measured in
+   * tens of seconds, so the budget is small on purpose: a few good names
+   * beats an exhaustive hunt that runs out of time.
+   *
+   * Draft buttons also render late. A row showed none at 16:52:06 and the
+   * same player was drafted at 16:52:11, five seconds later, so each
+   * candidate gets a second look before being written off.
+   *
+   * Records the turn as drafted, because it was — with `wanted` still naming
+   * the player the engine actually asked for, so the gap between wanted and
+   * detail is exactly the record of how often this path is carrying the
+   * draft. */
+  const PLAN_FALLBACK_TRIES = 4;
+
+  async function draftFromPlan(skipNames) {
+    let plan = null;
+    try {
+      plan = await sendMessage({
+        type: "GET_QUEUE_PLAN", n: queueDepth(), picksUntilTurn,
+        teams: detectedTeams, format: detectedFormat,
+        exclude: unconfirmed.restingKeys(), round: roomRound,
+      });
+    } catch {
+      return false;
+    }
+    if (!Array.isArray(plan) || plan.length === 0) return false;
+
+    let tried = 0;
+    for (const entry of plan) {
+      if (tried >= PLAN_FALLBACK_TRIES) break;
+      if (!entry?.name || skipNames.has(entry.name)) continue;
+      if (restingUnconfirmed(entry.name)) continue;
+      if (looksUnavailableOnPage(document.body, entry.name) ||
+          rowShowsNoAdp(document.body, entry.name)) {
+        addLog(`${entry.name} is listed out in this room — taking the next name.`);
+        skipNames.add(entry.name);
+        continue;
+      }
+      tried++;
+
+      const meta = (boardPlayers || []).find((p) => p.name === entry.name) || null;
+      const located = await locatePlayer(entry.name, meta, { keepScroll: true });
+      if (!located.el) {
+        noteUnconfirmed(entry.name, located.sawList);
+        continue;
+      }
+      let btn = findDraftButton(document.body, entry.name, { player: meta });
+      if (!btn) {
+        await wait(700);
+        btn = findDraftButton(document.body, entry.name, { player: meta });
+      }
+      if (!btn) {
+        if (explainMissingControl(entry.name, meta, "Draft button")) {
+          noteUnconfirmed(entry.name, true);
+        }
+        continue;
+      }
+
+      await wait(jitterDelay());
+      clickElement(btn);
+      try {
+        await sendMessage({ type: "IMPORT_PICKS", names: [entry.name], by: "mine" });
+      } catch (err) {
+        addLog(`Drafted ${entry.name} but couldn't record him: ${String(err.message || err)}`);
+      }
+      // Recorded before currentRecName moves, so `wanted` keeps the name the
+      // engine asked for and `detail` says who was actually taken.
+      recordTurnOutcome("drafted", entry.name);
+      addLog(`Drafted ${entry.name} from the queue — ${currentRecName} couldn't be drafted.`);
+      currentRecName = entry.name;
+      currentRecReason = entry.reason || currentRecReason;
+      recordPickDecision(entry.name);
+      return true;
+    }
+    return false;
+  }
+
   function recordTurnOutcome(outcome, detail) {
     const here = parseDraftPosition ? parseDraftPosition(document.body.innerText) : null;
     const teams = detectedTeams ?? lastConfig?.league?.num_teams;
@@ -2346,7 +2428,26 @@ async function main() {
         if (explainMissingControl(currentRecName, recMeta, "Draft button")) {
           noteUnconfirmed(currentRecName, true);
         }
-        addLog(`Found ${currentRecName} but no Draft button on his row — draft him manually.`);
+        /* Losing the name is not losing the turn.
+         *
+         * This used to end here, and it is the single largest cause of missed
+         * picks in every draft measured: Tee Higgins, Rhamondre Stevenson and
+         * Jared Goff on one night, and the panel had already worked out that
+         * all three were drafted — it logged "he has been drafted" and rested
+         * them in the same second it gave up on the turn.
+         *
+         * The queue is the place to go next. Its names come from the same
+         * plan, in order, and every one of them has been located in this room
+         * already to be starred, so they are the best-confirmed players
+         * available — far better than re-searching a shortlist that may be
+         * full of ghosts, which is what put a drafted receiver in front of
+         * this turn in the first place. */
+        const skip = new Set([currentRecName]);
+        if (await draftFromPlan(skip)) {
+          await clearSearch();
+          return;
+        }
+        addLog(`Found ${currentRecName} but no Draft button, and nothing in the queue could be drafted either — take this one manually.`);
         recordTurnOutcome("no-draft-button");
         await clearSearch();
         return;
