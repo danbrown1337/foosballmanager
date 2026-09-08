@@ -11,6 +11,7 @@ import { Storage, MOCK_STARTERS } from "./storage.js";
 import { adpUrl, parseAdpFeed } from "./consensusAdp.js";
 import { gradeRoster } from "../engine/grade.js";
 import { buildIndex, resolve } from "./identity.js";
+import { abbrevKey } from "./textMatch.js";
 
 let cachedAdp = null;
 let cachedNotes = null;
@@ -56,6 +57,11 @@ async function loadStaticData() {
  * snapshot, shortlist, repair — sees the same players. */
 /* How much of the room has to have been read before a player's absence from
  * its ADP column is taken as meaning the column shows a dash for him. */
+/* How far apart two identically-written players must be before the worse one
+ * is taken out of contention. Wide, because the cost of removing a player is
+ * real and only a large gap makes the mix-up expensive. */
+const INDISTINGUISHABLE_ADP_GAP = 60;
+
 const MIN_ROOM_ADP_TO_JUDGE = 100;
 const ROOM_ADP_COVERAGE = 0.5;
 
@@ -170,6 +176,36 @@ async function buildPlayers(adp, notes, byes) {
   if (roomAdpCount >= Math.max(MIN_ROOM_ADP_TO_JUDGE, players.length * ROOM_ADP_COVERAGE)) {
     for (const p of players) {
       if (p.adpSource === "rank") p.undrafted = true;
+    }
+  }
+
+  /* Players the draft room writes identically to a much better player.
+   *
+   * The room shows an initial and a surname — "B. ROBINSON" — and beside it a
+   * position and a team. Bijan and Brian Robinson are both Atlanta running
+   * backs, so all four fields match and nothing on the page distinguishes
+   * them. Every attempt to tell them apart has been a heuristic over their
+   * ADPs, and the wrong one has been drafted in four separate drafts.
+   *
+   * So the worse one stops being draftable. He stays on the board, because a
+   * rival taking him still has to be recognised, but he is never offered to
+   * us. The trade is plainly worth it: a player a hundred and fifty places
+   * down the board is worth less than the risk of spending an early pick on
+   * him by mistake. Only a wide gap qualifies — two players genuinely close
+   * in value are both acceptable picks, so a mix-up there costs nothing worth
+   * protecting against. */
+  const byLook = new Map();
+  for (const p of players) {
+    const key = `${abbrevKey(p.name) || p.name}|${p.pos}|${(p.team || "").toUpperCase()}`;
+    if (!byLook.has(key)) byLook.set(key, []);
+    byLook.get(key).push(p);
+  }
+  for (const group of byLook.values()) {
+    if (group.length < 2) continue;
+    const ranked = [...group].sort((a, b) => a.adp - b.adp);
+    const best = ranked[0];
+    for (const other of ranked.slice(1)) {
+      if (other.adp - best.adp >= INDISTINGUISHABLE_ADP_GAP) other.ambiguous = true;
     }
   }
 
