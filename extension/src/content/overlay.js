@@ -286,6 +286,7 @@ async function main() {
   // Often enough to stay current, rarely enough that the queue panel is
   // almost always the one on screen.
   const PICKS_SYNC_MS = 45000;
+  const PICKS_SYNC_ENABLED = false;
   let boardNameSet = null;
   let boardPlayers = null;
   let lastConfig = null;
@@ -1748,14 +1749,21 @@ async function main() {
       await wait(160); // let the list render the rows it just revealed
       collect(document.body.innerText);
 
-      /* A tab whose rendering is suspended scrolls without mounting anything,
-       * so the page text stops changing. Two steps of that and the walk is
-       * reading a frozen list: stop, and leave reachedEnd false so nothing
-       * downstream treats it as a complete view. */
+      /* Frozen only when the tab is hidden as well.
+       *
+       * This used to call it frozen on unchanged page text alone, and that
+       * fires on a list which is rendering perfectly well — a short list, a
+       * scroll step that overshoots, a scroller that is not the one being
+       * measured. It abandoned sweeps on a visible page showing a hundred
+       * rows, left the board stale, and had the panel reporting it could not
+       * confirm players whose rows were on screen at the time.
+       *
+       * Unchanged text is only evidence of freezing when there is a reason to
+       * expect freezing, so both have to hold. */
       const height = document.body.innerText.length;
       stale = height === lastHeight ? stale + 1 : 0;
       lastHeight = height;
-      if (stale >= 2) {
+      if (stale >= 2 && document.hidden) {
         noteFrozen();
         break;
       }
@@ -1811,6 +1819,14 @@ async function main() {
    * while anything else is using the room. */
   let lastPicksSyncAt = 0;
   async function syncFromPicksPanel() {
+    /* Disabled. Reading the Picks panel means swapping the side panel over
+     * and swapping it back, and in a live draft it did not always swap back —
+     * the room was left showing Picks, which is where queue maintenance reads
+     * what is queued, so the panel spent the rest of the draft reporting it
+     * could not see the queue. The idea is right and the board badly needs
+     * this list; it does not go back in until it can confirm the Queue panel
+     * is showing again afterwards, and put it back when it is not. */
+    if (!PICKS_SYNC_ENABLED) return;
     if (!findPanelTab || !parseDraftResults) return;
     if (roomBusy || detectionSuspended || turnBannerPresent()) return;
     if (Date.now() - lastPicksSyncAt < PICKS_SYNC_MS) return;
@@ -1921,7 +1937,6 @@ async function main() {
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
       reportDraftPosition(text, lastConfig);
-      await syncFromPicksPanel();
       await maybeRefreshBoard();
       await maintainQueue(text);
       // Not the queue panel: a name we queued is not a name that was drafted.
