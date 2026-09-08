@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."   # extension/
 
 echo "=== unit tests (node:test) ==="
-node --test test/textMatch.test.js test/tradeTargeter.test.js test/turnDetect.test.js test/topPicks.test.js test/byes.test.js test/yahooPool.test.js test/consensusAdp.test.js test/sweepTrust.test.js test/attempts.test.js test/guessedAdp.test.js test/acceptance.test.js test/grade.test.js test/dispersion.test.js test/lookahead.test.js test/identity.test.js test/draftResults.test.js test/reviewRun2.test.js test/roomFormat.test.js test/announcedPick.test.js test/wiring.test.js test/indistinguishable.test.js
+node --test test/textMatch.test.js test/tradeTargeter.test.js test/turnDetect.test.js test/topPicks.test.js test/byes.test.js test/yahooPool.test.js test/consensusAdp.test.js test/sweepTrust.test.js test/attempts.test.js test/guessedAdp.test.js test/acceptance.test.js test/grade.test.js test/dispersion.test.js test/lookahead.test.js test/identity.test.js test/draftResults.test.js test/reviewRun2.test.js test/roomFormat.test.js test/announcedPick.test.js test/wiring.test.js test/indistinguishable.test.js test/positionGaps.test.js
 
 echo
 echo "=== golden-master: JS engine vs Python engine ==="

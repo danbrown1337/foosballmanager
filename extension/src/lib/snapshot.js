@@ -5,7 +5,10 @@
  * information even though they're two different front ends on two
  * different platforms.
  */
-import { loadPlayers, applyNotes, assignTiers, applyDraftState, applyByes, scarcityReport } from "../engine/board.js";
+import {
+  loadPlayers, applyNotes, assignTiers, applyDraftState, applyByes, scarcityReport,
+  makePlayer, normalizePos,
+} from "../engine/board.js";
 import { autoPick, topPicks, defaultOnesieFloor } from "../engine/autopilot.js";
 import { Storage, MOCK_STARTERS } from "./storage.js";
 import { adpUrl, parseAdpFeed } from "./consensusAdp.js";
@@ -67,6 +70,11 @@ const ROOM_ADP_COVERAGE = 0.5;
 
 async function buildPlayers(adp, notes, byes) {
   const pool = await Storage.getPool();
+  /* Positions the imported pool does not cover at all — the league starts no
+   * kicker, so its player list has none — and which therefore have to be
+   * filled from elsewhere entirely. */
+  let gapPositions = new Set();
+  let consensusAdded = 0;
   let rows = adp;
   if (pool?.players?.length) {
     rows = playersFromPool(pool);
@@ -83,6 +91,7 @@ async function buildPlayers(adp, notes, byes) {
      * for everything it does cover and the stale bundled ranks don't creep
      * back in alongside it. */
     const covered = new Set(rows.map((r) => r.pos));
+    gapPositions = new Set(adp.filter((r) => !covered.has(r.pos)).map((r) => normalizePos(r.pos)));
     const gaps = adp.filter((r) => !covered.has(r.pos));
     if (gaps.length > 0) rows = [...rows, ...gaps];
   }
@@ -114,6 +123,43 @@ async function buildPlayers(adp, notes, byes) {
      * that player's real ADP and left him on list position instead, which is
      * the exact input the guessed-ADP rule then has to clean up after. */
     const index = buildIndex(consensus.players);
+
+    /* For a position the pool lacks, the feed adds players as well as
+     * updating them.
+     *
+     * The bundled file carries eleven kickers and thirteen defences. A
+     * fourteen-team mock drafts fourteen of each, and a live draft announced
+     * five kickers — Smack, McPherson, Pineiro, Santos, Reichard — that the
+     * board had never heard of. Filling only from the bundled file leaves the
+     * engine drafting those positions half blind, and it is exactly the
+     * positions the league itself does not use, so nothing else can cover
+     * them. The feed knows them and prices them, which is more than the
+     * bundled file can say. */
+    if (gapPositions.size > 0) {
+      const onBoard = buildIndex(players);
+      let added = 0;
+      for (const candidate of consensus.players) {
+        const pos = normalizePos(candidate.pos);
+        if (!gapPositions.has(pos)) continue;
+        if (resolve(onBoard, candidate)) continue;
+        const player = makePlayer({
+          rank: candidate.rank ?? 9999,
+          name: candidate.name,
+          team: candidate.team,
+          pos,
+          adp: candidate.adp,
+          adpSource: "consensus",
+        });
+        // The feed carries a bye week, and a position filled from here has no
+        // other source for one — the pool that would normally supply it is
+        // the very thing that lacks this position.
+        if (candidate.bye != null) player.bye = candidate.bye;
+        players.push(player);
+        added++;
+      }
+      if (added > 0) consensusAdded = added;
+    }
+
     for (const p of players) {
       const match = resolve(index, p);
       if (!match) continue;
