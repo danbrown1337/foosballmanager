@@ -238,6 +238,41 @@ export function parseLastPick(text) {
   return { label: m[1], pos: m[2].toUpperCase(), team: m[3].toUpperCase(), block: m[0] };
 }
 
+/* Resolve an announced pick using everything the announcement carries.
+ *
+ * findBoardNames keys an abbreviation on its last word, so "Amon-Ra St.
+ * Brown" becomes "a brown" — while the room writes "A. ST. BROWN", whose
+ * pattern stops at the dot and yields "a st". They never meet, so a pick the
+ * room stated plainly went unrecorded, the board went on offering a player
+ * who was gone, and the turn fell through to a reach. Any particle surname
+ * does this: St. Brown, Van Noy, St. Juste.
+ *
+ * The announcement carries a position and a team beside the name, which is
+ * more than enough without loosening the general matcher and inviting false
+ * positives everywhere else. Initial, position, team, and every remaining
+ * word appearing somewhere in the name. Returns a name only when exactly one
+ * player fits — two Atlanta running backs called B. Robinson still resolve to
+ * nothing, which is correct. */
+export function resolveAnnouncedPick(label, pos, team, players) {
+  if (!label || !players?.length) return null;
+  const parts = String(label).replace(/\./g, " ").trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return null;
+
+  const initial = parts[0][0].toLowerCase();
+  const tokens = parts.slice(1).map((tok) => tok.toLowerCase());
+  const wantTeam = (team || "").toUpperCase();
+  const wantPos = normalizePos((pos || "").toUpperCase());
+
+  const hits = players.filter((p) => {
+    if (wantPos && normalizePos((p.pos || "").toUpperCase()) !== wantPos) return false;
+    if (wantTeam && (p.team || "").toUpperCase() !== wantTeam) return false;
+    const name = (p.name || "").toLowerCase();
+    if (!name.startsWith(initial)) return false;
+    return tokens.every((tok) => name.includes(tok));
+  });
+  return hits.length === 1 ? hits[0].name : null;
+}
+
 /* Which draft room this is: the id out of a draft client URL, as in
  * /draftclient/f1/10984414/12. Facts learned about a room are stored against
  * it, so what a mock says about itself can never be mistaken for the league
