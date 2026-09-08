@@ -23,6 +23,7 @@ import {
   recordDecision,
   gradeDraft,
 } from "./lib/snapshot.js";
+import { Storage } from "./lib/storage.js";
 
 async function setBadge(text) {
   await chrome.action.setBadgeText({ text });
@@ -66,6 +67,9 @@ async function handle(message, sender) {
 
     case "RECORD_DECISION":
       return recordDecision(message.entry);
+
+    case "GET_ROOM_LOGS":
+      return Storage.getAllRoomLogs();
 
     case "GRADE_DRAFT":
       return gradeDraft();
