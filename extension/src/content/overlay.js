@@ -899,8 +899,13 @@ async function main() {
      * as "his row is there but the button is missing" is what had the panel
      * asking for Jameson Williams and Chase Brown at turn after turn, neither
      * of whom was in the room. */
+    /* Not found, no row, or a row with nothing in it: all three mean the room
+     * will not produce him, and the room only stops producing a player when
+     * he has been drafted. Requiring shape.found was backwards — failing to
+     * find him at all is the strongest form of the same evidence, and it left
+     * the panel asking for the same drafted player at turn after turn. */
     const emptyRow = shape.cells === 0 && shape.controls === 0;
-    const gone = shape.found && (!shape.inTable || emptyRow);
+    const gone = !shape.found || !shape.inTable || emptyRow;
     if (!describedRows.has(name)) {
       describedRows.add(name);
       addLog(gone
@@ -1091,7 +1096,7 @@ async function main() {
    * Searching the room for them answers it directly. If the room cannot
    * produce the player, he is gone — record that and ask the engine for its
    * next choice, rather than reporting failure and stopping. */
-  async function resolveAvailableRecommendation(maxSkips = 4) {
+  async function resolveAvailableRecommendation(maxSkips = 4, { needDraftButton = false } = {}) {
     let searchBox = null;
     let skipped = 0;
     /* Candidates that can't be confirmed either way on this pass.
@@ -1133,6 +1138,33 @@ async function main() {
       const located = await locatePlayer(candidate.name, meta, { keepScroll: true });
       searchBox = located.searchBox || searchBox; // never lose the handle
       if (located.el) {
+        /* At a turn, a player with no Draft button is no use, and the turn
+         * used to end on him — the budget above covered failing to find a
+         * player and not failing to draft one. Six of seven missed turns in a
+         * measured draft were exactly this: the player was found, the button
+         * was absent, and the next candidate was never tried. */
+        if (needDraftButton) {
+          const meta2 = (boardPlayers || []).find((p) => p.name === candidate.name) || null;
+          const btn = findDraftButton(document.body, candidate.name, { player: meta2 });
+          if (!btn) {
+            /* No Draft button, at a turn, means the room will not let anyone
+             * draft him — which it only does once somebody has. Recorded as a
+             * pick rather than merely rested, so the board learns it now
+             * instead of offering him again next turn. */
+            const gone = explainMissingControl(candidate.name, meta2, "Draft button");
+            unusable.add(candidate.name);
+            if (gone) {
+              await sendMessage({
+                type: "IMPORT_PICKS", names: [candidate.name], by: "rival",
+              });
+              addLog(`${candidate.name} has no Draft button on your own turn — he has been drafted. Moving on.`);
+            } else {
+              noteUnconfirmed(candidate.name, located.sawList);
+            }
+            skipped++;
+            continue;
+          }
+        }
         unconfirmed.succeed(candidate.name); // found him: no longer suspect
         return { snapshot, name: candidate.name, el: located.el, searchBox, skipped, exhausted: false };
       }
@@ -2231,7 +2263,7 @@ async function main() {
        * means the pick goes to Yahoo. Names the ledger is resting are refused
        * instantly and cost nothing, so the budget is mostly spent on
        * first encounters. */
-      const resolved = await resolveAvailableRecommendation(10);
+      const resolved = await resolveAvailableRecommendation(10, { needDraftButton: autoFullBox.checked });
       const searchBox = resolved.searchBox;
       const clearSearch = () => closeSearch(searchBox);
       const playerEl = resolved.el;
