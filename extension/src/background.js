@@ -43,6 +43,7 @@ async function handle(message, sender) {
         picksUntilTurn: message.picksUntilTurn ?? null,
         teams: message.teams ?? null,
         format: message.format ?? null,
+        exclude: message.exclude ?? null,
       });
 
     case "IMPORT_PICKS": {
@@ -60,6 +61,7 @@ async function handle(message, sender) {
         picksUntilTurn: message.picksUntilTurn ?? null,
         teams: message.teams ?? null,
         format: message.format ?? null,
+        exclude: message.exclude ?? null,
       });
 
     case "RECORD_DECISION":
