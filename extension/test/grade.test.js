@@ -101,6 +101,18 @@ test("the graded mock's construction problems are all flagged", () => {
   assert.ok(report.strengths.includes("late_k_dst"));
 });
 
+test("a draft still in progress gets no overall grade", () => {
+  /* Unfilled slots score zero, which is right for a finished roster and
+   * nonsense in round three — a team with three picks came back "overall F".
+   * The flags and position scores are still real; the verdict is withheld. */
+  const mine = [mk("RB1", "RB", 12, { draftedBy: "mine" })];
+  const report = gradeRoster(boardWith(mine), CONFIG);
+  assert.equal(report.inProgress, true);
+  assert.equal(report.grades.overall, null);
+  assert.equal(report.picksMade, 1);
+  assert.equal(report.spots, 15);
+});
+
 test("a clean roster raises none of those flags", () => {
   const mine = [
     mk("QB", "QB", 48, { draftedBy: "mine" }),
@@ -115,8 +127,12 @@ test("a clean roster raises none of those flags", () => {
     mk("K", "K", 200, { draftedBy: "mine" }),
     mk("DEF", "DEF", 205, { draftedBy: "mine" }),
   ];
-  const report = gradeRoster(boardWith(mine), CONFIG,
+  // Eleven players against a fifteen-slot roster is an unfinished draft, so
+  // this one is graded against a league whose bench matches it.
+  const shallow = { ...CONFIG, roster: { ...CONFIG.roster, bench: 2 } };
+  const report = gradeRoster(boardWith(mine), shallow,
     [{ round: 2, pos: "RB" }, { round: 14, pos: "K" }, { round: 15, pos: "DEF" }]);
+  assert.equal(report.inProgress, false);
   assert.deepEqual(report.constructionFlags, []);
   assert.ok(report.strengths.includes("rb_depth"));
   assert.ok(["A+", "A", "A-", "B+"].includes(report.grades.overall),

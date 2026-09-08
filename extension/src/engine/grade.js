@@ -67,6 +67,17 @@ function scoreForPosition(starters, replacement) {
 export function gradeRoster(players, config, log = null) {
   const mine = players.filter((p) => p.draftedBy === "mine");
   const starters = config.roster?.starters || {};
+  const spots = Object.values(starters).reduce((a, b) => a + b, 0) + (config.roster?.bench || 0);
+  /* A draft in progress is not a bad draft.
+   *
+   * Unfilled starting slots score zero, which is the right answer for a
+   * finished roster and nonsense for one in round three: a team with a
+   * quarterback, two receivers and eleven picks still to come came back
+   * "overall F, RB F, TE F, DEF F". The report is still worth producing
+   * mid-draft — the flags and the position scores are real — but it has to
+   * say what it is rather than hand back a verdict on a team that does not
+   * exist yet. */
+  const inProgress = spots > 0 && mine.length < spots;
   const repl = replacementRanks(config);
   const ranks = positionRanks(players);
 
@@ -191,7 +202,10 @@ export function gradeRoster(players, config, log = null) {
 
   overall = Math.max(0, Math.min(100, overall));
   return {
-    grades: { ...grades, overall: letterFor(overall) },
+    inProgress,
+    picksMade: mine.length,
+    spots,
+    grades: { ...grades, overall: inProgress ? null : letterFor(overall) },
     scores: { ...scores, overall: Math.round(overall * 10) / 10 },
     constructionFlags: flags,
     strengths,

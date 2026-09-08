@@ -365,6 +365,9 @@ export async function buildSnapshot({ picksUntilTurn = null, teams = null, forma
   return {
     board: [...players].sort((a, b) => a.adp - b.adp).map((p) => ({
       name: p.name, pos: p.pos, team: p.team, adp: p.adp, tier: p.tier, bye: p.bye,
+      // Where that ADP came from, and how far the sources disagree — the two
+      // things a decision record needs to explain a pick after the fact.
+      adpSource: p.adpSource, adpSpread: p.adpSpread,
       status: p.status,
       draftedBy: p.draftedBy, noteTag: p.noteTag, note: p.note,
     })),

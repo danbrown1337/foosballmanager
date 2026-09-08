@@ -193,7 +193,9 @@ document.getElementById("gradeBtn").addEventListener("click", async () => {
     out.innerHTML = "";
 
     const overall = document.createElement("div");
-    overall.textContent = `Overall ${report.grades.overall} (${report.scores.overall})`;
+    overall.textContent = report.inProgress
+      ? `Draft in progress — ${report.picksMade} of ${report.spots} picks made. No overall grade yet.`
+      : `Overall ${report.grades.overall} (${report.scores.overall})`;
     overall.style.fontWeight = "600";
     out.appendChild(overall);
 
