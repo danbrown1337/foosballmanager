@@ -49,6 +49,26 @@ def convert_notes():
     return notes
 
 
+def convert_yahoo_ids():
+    """Yahoo's own player ids, for the players the draft room cannot otherwise
+    tell apart.
+
+    The room abbreviates to "B. Robinson" and both Bijan and Brian Robinson Jr.
+    are Atlanta running backs, so initial, surname, position and team — every
+    discriminator the text offers — are identical for two players a hundred and
+    fifty ADP places apart. No naming rule can separate them.
+
+    The DOM can. Each row carries data-id and a headshot URL with Yahoo's
+    numeric player id in it, which is exact. Only the players who actually
+    collide need an entry here.
+    """
+    src = os.path.join(ROOT, "data", "yahoo_ids.csv")
+    if not os.path.exists(src):
+        return {}
+    with open(src) as f:
+        return {r["name"]: str(r["yahoo_id"]).strip() for r in csv.DictReader(f)}
+
+
 def convert_bye_weeks():
     # Imported rather than re-parsed so this can never drift from the CLI's
     # own copy — there is exactly one BYE_WEEKS dict in the whole project.
@@ -66,6 +86,7 @@ def main():
     players = convert_adp()
     notes = convert_notes()
     byes = convert_bye_weeks()
+    yahoo_ids = convert_yahoo_ids()
 
     with open(os.path.join(OUT_DIR, "adp_2026_ppr.json"), "w") as f:
         json.dump(players, f, indent=2)
@@ -73,6 +94,8 @@ def main():
         json.dump(notes, f, indent=2)
     with open(os.path.join(OUT_DIR, "bye_weeks.json"), "w") as f:
         json.dump(byes, f, indent=2)
+    with open(os.path.join(OUT_DIR, "yahoo_ids.json"), "w") as f:
+        json.dump(yahoo_ids, f, indent=2)
 
     print(f"Wrote {len(players)} players, {len(notes)} notes, {len(byes)} bye weeks "
           f"to {OUT_DIR}")

@@ -19,6 +19,7 @@ import { abbrevKey } from "./textMatch.js";
 let cachedAdp = null;
 let cachedNotes = null;
 let cachedByes = null;
+let cachedYahooIds = null;
 
 /* Yahoo's own list, if it has been imported: current teams, current
  * positions, per-player byes and Yahoo's rank — against a bundled file
@@ -45,14 +46,18 @@ function playersFromPool(pool) {
 
 async function loadStaticData() {
   if (cachedAdp && cachedNotes && cachedByes) return { adp: cachedAdp, notes: cachedNotes, byes: cachedByes };
-  const [adpRes, notesRes, byeRes] = await Promise.all([
+  const [adpRes, notesRes, byeRes, idRes] = await Promise.all([
     fetch(chrome.runtime.getURL("data/adp_2026_ppr.json")),
     fetch(chrome.runtime.getURL("data/player_notes_2026.json")),
     fetch(chrome.runtime.getURL("data/bye_weeks.json")),
+    fetch(chrome.runtime.getURL("data/yahoo_ids.json")),
   ]);
   cachedAdp = await adpRes.json();
   cachedNotes = await notesRes.json();
   cachedByes = await byeRes.json();
+  /* Only the players the room cannot otherwise tell apart carry one, so an
+   * absent file is a board with no known collisions, not an error. */
+  cachedYahooIds = await idRes.json().catch(() => ({}));
   return { adp: cachedAdp, notes: cachedNotes, byes: cachedByes };
 }
 
@@ -295,6 +300,18 @@ async function buildPlayers(adp, notes, byes) {
     for (const p of players) p.bye = byeByName.get(p.name) ?? null;
   } else {
     applyByes(players, byes);
+  }
+  /* Stamp Yahoo's id on the players who need one.
+   *
+   * Carried on the player so every DOM path gets it for free — the click
+   * target, the Draft button, the queue star all take the player object — and
+   * so a board rebuilt from Yahoo's own imported pool keeps it too. Only the
+   * handful of players the room writes identically have an entry. */
+  if (cachedYahooIds) {
+    for (const p of players) {
+      const id = cachedYahooIds[p.name];
+      if (id) p.yahooId = String(id);
+    }
   }
   assignTiers(players);
   return players;
