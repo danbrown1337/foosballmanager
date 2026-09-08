@@ -429,14 +429,30 @@ export function byePenalty(player, mine, config) {
 /**
  * @returns {{player, score, reason, needOverride, components, alternatives}|null}
  */
+/* Whether a player may be drafted at all, in one place.
+ *
+ * This test existed inside autoPick and nowhere else, and every other path
+ * that picks a player re-implemented some subset of it. The queue's endgame
+ * reservation checked only that a player was undrafted and played the right
+ * position, so it could reserve an injured player, one nobody drafts anywhere,
+ * or the worse of two players the room writes identically — and whatever it
+ * reserves, Yahoo drafts when the panel misses a turn. That is how an IR-R
+ * back and the wrong Robinson reached a roster.
+ *
+ * One predicate, exported, so a new path cannot quietly disagree with it. */
+export function isDraftable(player) {
+  return !player.draftedBy &&
+    !UNAVAILABLE.has(player.status) &&
+    !player.undrafted &&
+    !player.ambiguous;
+}
+
 export function autoPick(players, config) {
   const mine = players.filter((p) => p.draftedBy === "mine");
   /* Undrafted anywhere means undrafted here: a player Yahoo shows with no ADP
    * at all is waiver material, and the board's fallback ordering would
    * otherwise present him as an ordinary late pick. */
-  const avail = players.filter(
-    (p) => !p.draftedBy && !UNAVAILABLE.has(p.status) && !p.undrafted && !p.ambiguous
-  );
+  const avail = players.filter(isDraftable);
   if (avail.length === 0) return null;
 
   const picksMade = players.filter((p) => p.draftedBy).length;
