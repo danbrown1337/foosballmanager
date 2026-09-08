@@ -10,7 +10,9 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { teamsFromRoundChange, parseRosterFormat } from "../src/lib/textMatch.js";
+import {
+  teamsFromRoundChange, parseRosterFormat, picksUntilTurnFromRoom, teamCountBounds,
+} from "../src/lib/textMatch.js";
 
 /* The header states slots, not lines, and the W/R/T flex is three lines for
  * one slot — which is exactly what the parser's own cross-check enforces. */
@@ -80,4 +82,36 @@ test("a format that doesn't add up to the room's own count is refused", () => {
 test("no roster panel means no format", () => {
   assert.equal(parseRosterFormat("Players Board Results Standings"), null);
   assert.equal(parseRosterFormat(""), null);
+});
+
+
+/* The countdown, taken from the room rather than calculated.
+ *
+ * It was derived from the draft slot, the current pick and a team count typed
+ * into settings — so a wrong count made it wrong, and the panel reported "13
+ * picks away" while the room's own title said 20. The room knows without
+ * being told how many teams it has. */
+test("the room states the countdown in its title and its banner", () => {
+  assert.equal(picksUntilTurnFromRoom("5 picks until your turn | Live NFL Draft"), 5);
+  assert.equal(picksUntilTurnFromRoom("Haamir's Pick • You're up in 10 Picks • Round 5, Pick 70"), 10);
+  assert.equal(picksUntilTurnFromRoom("1 pick until your turn"), 1);
+});
+
+test("zero is an answer, and means it is your turn now", () => {
+  // The caller has to tell it apart from null, which means the room is silent.
+  assert.equal(picksUntilTurnFromRoom("YOUR TURN, DRAFT NOW | Live NFL Draft"), 0);
+  assert.equal(picksUntilTurnFromRoom("Live NFL Draft | Yahoo Fantasy Sports"), null);
+});
+
+/* Round one never ticks over, so the exact team count cannot be derived until
+ * round two — but the pick number bounds it from the first round. */
+test("a pick deep into round one proves a lower bound on the team count", () => {
+  assert.equal(teamCountBounds({ round: 1, pick: 13 }).min, 13);
+  assert.equal(teamCountBounds({ round: 1, pick: 5 }).min, 5);
+});
+
+test("and the bound tightens once a second round exists", () => {
+  const bounds = teamCountBounds({ round: 2, pick: 15 });
+  assert.equal(bounds.min, 8);
+  assert.equal(bounds.max, 14);
 });
