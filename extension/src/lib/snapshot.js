@@ -407,7 +407,14 @@ function resolvePlayer(players, name) {
       best = p;
     }
   }
-  return bestScore >= 3 ? best : null;
+  /* Three shared letters is not a match, it is a coincidence.
+   *
+   * "Patriots" and "Pat Freiermuth" share exactly three, and that was enough
+   * to mark a tight end as a drafted defense — silently, because a guess this
+   * confident reports no error. Half of what was actually typed has to line
+   * up before this is willing to answer, which still lets a search box find
+   * "Jahmyr Gibbs" from "jah" and refuses the accidents. */
+  return bestScore >= 3 && bestScore >= lower.length / 2 ? best : null;
 }
 
 export async function markPick(name, by) {
