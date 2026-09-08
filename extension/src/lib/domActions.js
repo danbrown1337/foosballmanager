@@ -341,17 +341,49 @@ export function findPanelTab(root, label) {
   return null;
 }
 
+/* The star control on one row, or null if that row shows the player already
+ * queued. Undefined means this row has no star at all. */
+function starOnRow(row) {
+  const star = row?.querySelector('[data-icon*="star" i]');
+  if (!star) return undefined;
+  const icon = star.getAttribute("data-icon") || "";
+  // "star-unfilled" means not queued; a filled star is the remove control,
+  // and clicking it would take the player back out of the queue.
+  if (!/unfilled/i.test(icon) && /filled/i.test(icon)) return null;
+  return star.closest(CLICKABLE_SELECTOR) || star.parentElement || undefined;
+}
+
 export function findQueueStar(root, playerName, { player = null } = {}) {
-  /* Look at every row this player appears in, not just the first place the
-   * name turns up. */
+  /* Ask the resolver which row is his, rather than starring the first row
+   * that carries the abbreviation.
+   *
+   * This scanned occurrences directly and starred whichever matching row came
+   * first in the DOM, so every disambiguation this file does — team,
+   * position, ADP between two rows that share all three — was skipped
+   * entirely on the queue path, because findPlayerClickTarget was only ever
+   * the fallback and the scan always succeeded first. Bijan and Brian
+   * Robinson are both Atlanta running backs and the room writes
+   * "B. ROBINSON" for each; the wrong one was queued three separate times,
+   * and each time the fix went into a function this path never called. */
+  if (player) {
+    const target = findPlayerClickTarget(root, playerName, { player });
+    const row = target?.closest?.("tr, [role='row']");
+    if (!row) return null;
+    const star = starOnRow(row);
+    /* Undefined means his row has no star — nothing to click, and no reason
+     * to go looking at other players' rows for one. Refusing here is the
+     * whole point: when the resolver cannot tell two players apart it returns
+     * nothing, and a scan that ignores it would undo that. */
+    return star === undefined ? null : star;
+  }
+
+  /* No identity to check against — the caller knows only a name. Scan, since
+   * there is nothing better available. */
   for (const el of nameOccurrences(root, playerName)) {
     const row = el.closest?.("tr, [role='row']");
-    const star = row?.querySelector('[data-icon*="star" i]');
-    if (!star) continue;
-    const icon = star.getAttribute("data-icon") || "";
-    if (!/unfilled/i.test(icon) && /filled/i.test(icon)) return null; // already queued
-    const button = star.closest(CLICKABLE_SELECTOR) || star.parentElement;
-    if (button) return button;
+    const star = starOnRow(row);
+    if (star === undefined) continue;
+    return star;
   }
 
   const nameEl = findPlayerClickTarget(root, playerName, { player });

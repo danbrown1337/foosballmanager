@@ -388,6 +388,20 @@ export async function run(document) {
   results.shapeShell = describeRow(document.body, "Quinn Drafted",
     { player: { pos: "RB", team: "KC" } });
 
+  /* Queueing the right Robinson. Both are Atlanta running backs and the room
+   * writes "B. Robinson" for each, so only the ADP column separates them —
+   * and the queue path used to skip that check entirely and star whichever
+   * row came first. The wrong one was queued in three separate live drafts. */
+  const starBijan = findQueueStar(document.body, "Bijan Robinson",
+    { player: { pos: "RB", team: "ATL", adp: 2.3 } });
+  results.starBijanRow = starBijan ? (starBijan.closest("tr") || {}).id ?? null : null;
+  const starBrian = findQueueStar(document.body, "Brian Robinson",
+    { player: { pos: "RB", team: "ATL", adp: 152.9 } });
+  results.starBrianRow = starBrian ? (starBrian.closest("tr") || {}).id ?? null : null;
+  // Nothing to tell them apart: star neither.
+  results.starBlind = findQueueStar(document.body, "Bijan Robinson",
+    { player: { pos: "RB", team: "ATL" } });
+
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   // CEL, the commissioner exempt list: neither injured nor suspended, and
   // carrying an ordinary ADP, so nothing else on the row gives him away.
@@ -518,6 +532,12 @@ async function main() {
         result.queuedDraftClass === "q-draft"],
       ["spots a queued player whose entry shows no ADP", result.queuedNoAdp === true],
       ["reads every out designation in the room at once", result.statusReed === "NA"],
+      ["queues the right one of two same-team namesakes",
+        result.starBijanRow === "row-bijan"],
+      ["and the other when he is the one wanted",
+        result.starBrianRow === "row-brian"],
+      ["and stars neither when nothing can separate them",
+        result.starBlind === null],
       ["tells two same-team, same-position namesakes apart by ADP",
         result.bijanRow === "row-bijan"],
       ["and picks the other one when he is the one wanted",
