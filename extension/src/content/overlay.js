@@ -483,7 +483,7 @@ async function main() {
 
   async function refresh() {
     try {
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat });
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
       render(snapshot);
       showError(null);
       return snapshot;
@@ -855,7 +855,17 @@ async function main() {
     } catch {
       return false;
     }
-    const gone = shape.found && !shape.inTable;
+    /* A row with nothing in it means he is not in the list.
+     *
+     * findPlayerClickTarget prefers a match in a row that has cells, so a
+     * contentless one coming back means no real row holds this name — the
+     * match is in the queue panel, the pick feed or a leftover shell. That is
+     * the same fact as having no row at all: he has been drafted. Reading it
+     * as "his row is there but the button is missing" is what had the panel
+     * asking for Jameson Williams and Chase Brown at turn after turn, neither
+     * of whom was in the room. */
+    const emptyRow = shape.cells === 0 && shape.controls === 0;
+    const gone = shape.found && (!shape.inTable || emptyRow);
     if (!describedRows.has(name)) {
       describedRows.add(name);
       addLog(gone
@@ -1060,8 +1070,8 @@ async function main() {
     const unusable = new Set();
 
     for (let attempt = 0; attempt <= maxSkips; attempt++) {
-      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat });
-      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2, picksUntilTurn, teams: detectedTeams, format: detectedFormat });
+      const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
+      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2, picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
       /* Skip what is resting as well as what this turn has already ruled
        * out, so a name the room would not produce a moment ago doesn't cost
        * another walk of the list now. */
@@ -1233,7 +1243,7 @@ async function main() {
      * two quarterbacks. Only players the shortlist no longer wants at all,
      * one per cycle, so a queue the user curated isn't emptied underneath
      * them. */
-    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn, teams: detectedTeams, format: detectedFormat });
+    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
     const keep = new Set(shortlistNow.map((p) => p.name));
     const stale = [...inRoom].filter((name) => !keep.has(name));
     if (stale.length > 0) {
@@ -1927,7 +1937,7 @@ async function main() {
 
     try {
       if (!boardNameSet) {
-        const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat });
+        const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
         boardNameSet = new Set(snapshot.board.map((p) => p.name));
         boardPlayers = snapshot.board;
       }
@@ -2047,7 +2057,15 @@ async function main() {
 
       /* Resolve to someone the room can actually produce, skipping past
        * anyone already drafted. */
-      const resolved = await resolveAvailableRecommendation();
+      /* A bigger budget at the turn than anywhere else.
+       *
+       * Four candidates is plenty against a board that matches the room, and
+       * nowhere near enough against one that has fallen behind: every name
+       * the room has already drafted costs a skip, and running out of skips
+       * means the pick goes to Yahoo. Names the ledger is resting are refused
+       * instantly and cost nothing, so the budget is mostly spent on
+       * first encounters. */
+      const resolved = await resolveAvailableRecommendation(10);
       const searchBox = resolved.searchBox;
       const clearSearch = () => closeSearch(searchBox);
       const playerEl = resolved.el;

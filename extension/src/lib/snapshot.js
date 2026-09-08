@@ -222,6 +222,21 @@ async function buildPlayers(adp, notes, byes) {
  * how many picks until this manager is up again. Only the panel can see it —
  * it depends on the draft slot and the snake — so it rides in with the
  * request rather than being stored. */
+/* Players the room will not produce, set aside for recommendations only.
+ *
+ * A name the panel has failed to find three times is one the engine goes on
+ * recommending, because the board still lists him as available — so the panel
+ * fixates: the same name at every turn, unfindable every time, while the
+ * player it could actually draft never gets offered. Excluding him here is
+ * not the same as marking him drafted. Nothing is written to the board, the
+ * exclusion lasts as long as the room keeps refusing to produce him, and if
+ * he turns up again he is simply recommended again. */
+function withoutExcluded(players, exclude) {
+  if (!exclude?.length) return players;
+  const set = new Set(exclude);
+  return players.filter((p) => !set.has(p.name));
+}
+
 function withRoomContext(config, { picksUntilTurn = null, teams = null, format = null } = {}) {
   let out = config;
 
@@ -250,7 +265,7 @@ function withRoomContext(config, { picksUntilTurn = null, teams = null, format =
   return out;
 }
 
-export async function buildSnapshot({ picksUntilTurn = null, teams = null, format = null } = {}) {
+export async function buildSnapshot({ picksUntilTurn = null, teams = null, format = null, exclude = null } = {}) {
   const [{ adp, notes, byes }, config, draftState, practice] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
@@ -262,7 +277,7 @@ export async function buildSnapshot({ picksUntilTurn = null, teams = null, forma
   applyDraftState(players, draftState);
 
   const room = withRoomContext(config, { picksUntilTurn, teams, format });
-  const decision = autoPick(players, room);
+  const decision = autoPick(withoutExcluded(players, exclude), room);
   const mine = players.filter((p) => p.draftedBy === "mine").sort((a, b) => a.adp - b.adp);
 
   return {
@@ -422,7 +437,7 @@ export async function setPracticeMode(active) {
 
 /* The shortlist the draft room's queue should hold. Built from the same live
  * state as buildSnapshot, so it reflects every pick recorded so far. */
-export async function shortlist(n = 5, { picksUntilTurn = null, teams = null, format = null } = {}) {
+export async function shortlist(n = 5, { picksUntilTurn = null, teams = null, format = null, exclude = null } = {}) {
   const [{ adp, notes, byes }, config, draftState] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
@@ -492,7 +507,7 @@ export async function shortlist(n = 5, { picksUntilTurn = null, teams = null, fo
   }
 
   const PER_POSITION = 2;
-  const picks = [...reserved, ...topPicks(players, roomConfig, n * 3)];
+  const picks = [...reserved, ...topPicks(withoutExcluded(players, exclude), roomConfig, n * 3)];
   const counts = {};
   const out = [];
   const seenNames = new Set();

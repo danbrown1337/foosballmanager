@@ -378,6 +378,15 @@ export async function run(document) {
   results.shapeRow = describeRow(document.body, "De'Von Achane",
     { player: { pos: "RB", team: "Mia", adp: 15.3 } });
   results.shapeAbsent = describeRow(document.body, "Nobody At All", { player: { pos: "WR" } });
+  /* A drafted player's name survives in the queue panel and the pick feed,
+   * and the row behind it has nothing in it. That is the same fact as having
+   * no row: he is not in the list. */
+  const shell = document.createElement("tr");
+  shell.innerHTML = "";
+  shell.textContent = "Q. Drafted";
+  document.querySelector("#board-table tbody").appendChild(shell);
+  results.shapeShell = describeRow(document.body, "Quinn Drafted",
+    { player: { pos: "RB", team: "KC" } });
 
   results.naOnPage = looksUnavailableOnPage(document.body, "Jayden Reed");
   // CEL, the commissioner exempt list: neither injured nor suspended, and
@@ -522,6 +531,8 @@ async function main() {
         result.shapeRow.controls >= 1],
       ["someone not on the page at all is simply not found",
         result.shapeAbsent.found === false],
+      ["a row with no cells and no controls reads as no row at all",
+        result.shapeShell.cells === 0 && result.shapeShell.controls === 0],
       ["including the commissioner exempt list", result.statusExempt === "CEL"],
       ["and flags an exempt player on the page", result.celOnPage === true],
       ["and tags nobody who is playing", result.statusHealthy === null],
