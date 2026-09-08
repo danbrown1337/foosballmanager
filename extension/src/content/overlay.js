@@ -2328,6 +2328,37 @@ async function main() {
     observerTick();
   });
 
+  /* Tell Yahoo somebody is here.
+   *
+   * The room drops a manager into autodraft after a spell without input, and
+   * a click dispatched from script carries isTrusted false — enough for the
+   * page's own handlers, which is why drafting works, and not enough for an
+   * idle timer that is watching for a person. A draft went to autodraft while
+   * the panel was actively clicking Draft buttons.
+   *
+   * Most idle timers are ordinary event listeners and do not inspect trust,
+   * so a moved mouse is worth trying before reaching for the debugger
+   * permission and the banner that comes with it. Nothing here has any effect
+   * on the page beyond being observed: a pointer moving a few pixels, never a
+   * click, never a key. */
+  const ACTIVITY_PING_MS = 25000;
+  let lastActivityPing = 0;
+  function pingActivity() {
+    if (!polling || document.hidden) return;
+    const now = Date.now();
+    if (now - lastActivityPing < ACTIVITY_PING_MS) return;
+    lastActivityPing = now;
+    // Jittered, because a pointer landing on the same pixel every time is
+    // itself a signature of not being a person.
+    const x = 40 + Math.floor(Math.random() * 120);
+    const y = 40 + Math.floor(Math.random() * 120);
+    for (const type of ["pointermove", "mousemove"]) {
+      document.dispatchEvent(new MouseEvent(type, {
+        bubbles: true, cancelable: false, clientX: x, clientY: y,
+      }));
+    }
+  }
+
   const turnObserver = new MutationObserver(observerTick);
   turnObserver.observe(document.body, {
     subtree: true,
@@ -2340,6 +2371,27 @@ async function main() {
    * back to the configured count and stays wrong until the next round begins,
    * which in a slow draft is most of a round. Restoring is safe because these
    * are stored against this room's own id. */
+  /* State from a different room is not this draft's state.
+   *
+   * The drafted list is global while a mock room is not, so joining a new
+   * room inherited the previous draft's picks wholesale: players marked
+   * drafted who were sitting in the room, and a roster still carrying the
+   * last draft's quarterbacks — which is why a grade mid-draft reported two
+   * of them on a team that had none. Same room means a reload, and that state
+   * must be kept; a different room means it is stale in its entirety. */
+  if (roomId) {
+    try {
+      const lastRoom = await Storage.getLastDraftRoom();
+      if (lastRoom && lastRoom !== roomId) {
+        await sendMessage({ type: "RESET_DRAFT" });
+        addLog(`New room, so the previous draft's picks have been cleared.`);
+      }
+      await Storage.setLastDraftRoom(roomId);
+    } catch {
+      // Storage unavailable; the manual "New draft" button still works.
+    }
+  }
+
   if (roomId) {
     try {
       const [facts, saved] = await Promise.all([
@@ -2370,6 +2422,7 @@ async function main() {
     setInterval(refresh, POLL_INTERVAL_MS * 2),
     setInterval(pollPage, POLL_INTERVAL_MS),
     setInterval(pollForTurn, POLL_INTERVAL_MS),
+    setInterval(pingActivity, ACTIVITY_PING_MS),
   ];
   observers = [turnObserver];
 }

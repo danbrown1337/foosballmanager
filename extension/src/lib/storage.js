@@ -27,6 +27,7 @@ const KEYS = {
   draftLog: "fm_draft_log",
   roomProjection: "fm_room_projection",
   roomFacts: "fm_room_facts",
+  lastDraftRoom: "fm_last_draft_room",
   roomLog: "fm_room_log",
   roomStatus: "fm_room_status",
   consensus: "fm_consensus_adp",
@@ -203,6 +204,19 @@ export const Storage = {
    * round began, which can be most of a round in a slow draft. These are
    * facts about a specific room, so storing them per room means a mock's
    * twelve teams can never be read as the real league's ten. */
+  /* Which draft room the current drafted state was recorded in.
+   *
+   * The state is global and a mock room is not, so without this a new draft
+   * inherits the last one's picks — two hundred players marked drafted who
+   * are sitting in the room, and a roster that still counts the previous
+   * draft's quarterbacks. */
+  async getLastDraftRoom() {
+    return get(KEYS.lastDraftRoom, null);
+  },
+  async setLastDraftRoom(roomId) {
+    return set(KEYS.lastDraftRoom, roomId);
+  },
+
   async getRoomFacts(roomId) {
     if (!roomId) return null;
     const all = await get(KEYS.roomFacts, {});
