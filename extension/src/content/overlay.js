@@ -1859,6 +1859,7 @@ async function main() {
   const QUEUE_PANEL_SHOWING = /Autodraft will pick from queue|Your queue is empty/i;
   let lastPicksSyncAt = 0;
   let picksSyncStoodDown = false;
+  let warnedPicksFormat = false;
 
   function queuePanelShowing() {
     return QUEUE_PANEL_SHOWING.test(document.body.innerText || "");
@@ -1896,21 +1897,32 @@ async function main() {
       clickElement(picksTab);
       await wait(700);
 
-      /* Whatever is on the page now and was not before is the pick list. A
-       * diff rather than a selector, because the panel's markup is generated
-       * and its format is not something to depend on — and every name in it
-       * is, by definition, a player who has been drafted. */
+      /* Whatever is on the page now and was not before. A diff rather than a
+       * selector, because the panel's markup is generated and its class names
+       * are not something to depend on. */
       const added = (document.body.innerText || "")
         .split("\n")
         .filter((line) => line.trim() && !before.has(line))
         .join("\n");
 
+      /* Only the room's own numbered pick lines count.
+       *
+       * This used to fall back to searching the added text for any board name
+       * when that format was absent, on the reasoning that every name in a
+       * pick panel is a drafted player. The reasoning was fine and the
+       * premise was wrong: opening the panel re-renders the virtualised
+       * player list too, so its rows are "added text" as well — and those are
+       * players who are still available. It reported 118 picks in a room that
+       * had made 96, and the next sweep put 109 players back.
+       *
+       * A line reading "Round 6, Pick 78 (78th Overall)" is the room stating
+       * a pick. Anything else is a guess, and a guess is what this feature
+       * exists to replace. */
       const detailed = parseDraftResults(added);
-      const names = detailed.length > 0
-        ? detailed.map((pick) => pick.name)
-        : [...findBoardNames(added, boardNameSet || new Set(), boardPlayers)];
+      const known = detailed
+        .map((pick) => pick.name)
+        .filter((name) => !boardNameSet || boardNameSet.has(name));
 
-      const known = names.filter((name) => !boardNameSet || boardNameSet.has(name));
       if (known.length > 0) {
         const { changed } = await sendMessage({
           type: "IMPORT_PICKS", names: known, by: "rival",
@@ -1918,8 +1930,16 @@ async function main() {
         if (changed) {
           addLog(`Read ${known.length} picks from the room's Picks panel — the board is caught up.`);
         }
+      } else if (detailed.length > 0) {
+        addLog(`The Picks panel listed ${detailed.length} picks our board doesn't recognise.`);
       } else {
-        addLog("The Picks panel had nothing our board recognised.");
+        /* Said once rather than every 45 seconds: if the panel does not use
+         * the numbered format live, this whole path is inert and should be
+         * visible as such rather than silently doing nothing. */
+        if (!warnedPicksFormat) {
+          warnedPicksFormat = true;
+          addLog("The Picks panel didn't list picks in a format I can read — leaving the board to the announcements.");
+        }
       }
     } catch (err) {
       if (isContextGone(err)) return handleDeadContext();

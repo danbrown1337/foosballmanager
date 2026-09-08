@@ -78,3 +78,29 @@ Round 1, Pick 7 (7th Overall)
 Jaxon Smith-Njigba Sea - WR`;
   assert.equal(parseDraftResults(twice).length, 1);
 });
+
+/* What the Picks panel read must ignore.
+ *
+ * Opening that panel re-renders the virtualised player list, so its rows
+ * appear as newly-added text alongside the pick list. Searching that text for
+ * any known name reported 118 picks in a room that had made 96, and the next
+ * sweep put 109 wrongly-buried players back. Only the room's own numbered
+ * pick lines count. */
+test("player-list rows mixed in with the pick list are not picks", () => {
+  const mixed = `Round 6, Pick 78 (78th Overall)
+Tony Pollard Ten - RB
+J. Chase	WR	Cin	Bye 10	3	4.2	10	280.11
+D. Achane	RB	Mia	Bye 12	4	5.1	12	265.40
+Round 7, Pick 91 (91st Overall)
+Rico Dowdle Car - RB`;
+  const picks = parseDraftResults(mixed);
+  assert.deepEqual(picks.map((p) => p.name), ["Tony Pollard", "Rico Dowdle"]);
+});
+
+test("a panel with no numbered lines yields nothing at all", () => {
+  // Rather than falling back to "any name here must be drafted", which is
+  // exactly the guess that caused the over-marking.
+  const listOnly = `J. Chase	WR	Cin	Bye 10	3	4.2
+D. Achane	RB	Mia	Bye 12	4	5.1`;
+  assert.deepEqual(parseDraftResults(listOnly), []);
+});
