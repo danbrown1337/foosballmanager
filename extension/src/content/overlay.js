@@ -2387,7 +2387,16 @@ async function main() {
    * else's pick can sit still for a minute at a time. */
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type !== "HEARTBEAT" || !polling) return;
+    /* The whole cycle, not just the turn.
+     *
+     * A service worker alarm is the one clock Chrome does not throttle, and
+     * it was only being used to check whether it was your turn. Everything
+     * else — reading the board, keeping the queue stocked, noticing
+     * announced picks — still rode on setInterval, which stops with the tab.
+     * And the tab counts as hidden whenever its window loses focus, so
+     * switching away for a few seconds to type a message was enough. */
     observerTick();
+    pollPage().catch(() => {});
   });
 
   /* Tell Yahoo somebody is here.
@@ -2403,6 +2412,45 @@ async function main() {
    * permission and the banner that comes with it. Nothing here has any effect
    * on the page beyond being observed: a pointer moving a few pixels, never a
    * click, never a key. */
+  /* Hold the tab awake by making it audible.
+   *
+   * Chrome exempts a tab that is playing audio from the intensive throttling
+   * it applies to hidden ones — and "hidden" includes a window that is merely
+   * unfocused or covered, so every switch to another app was stopping the
+   * poll. The volume is a thousandth: inaudible in practice, but genuinely
+   * playing, because a muted tab is not an audible one and would not qualify.
+   *
+   * Autoplay policy can refuse this until the page has been interacted with,
+   * which in a draft room it always has been. If it refuses anyway the panel
+   * says so once and carries on with the alarm as its clock. */
+  let keepAwakeCtx = null;
+  let saidKeepAwakeFailed = false;
+  async function keepTabAwake() {
+    // Only in an actual draft room. Nothing else needs holding awake, and a
+    // page that merely lists drafts should not be making noise.
+    if (!/\/draftclient\//.test(location.pathname)) return;
+    try {
+      if (!keepAwakeCtx) {
+        const Ctor = window.AudioContext || window.webkitAudioContext;
+        if (!Ctor) return;
+        keepAwakeCtx = new Ctor();
+        const osc = keepAwakeCtx.createOscillator();
+        const gain = keepAwakeCtx.createGain();
+        // A thousandth: inaudible in practice, and genuinely playing, because
+        // a silent tab is not an audible one and would not qualify.
+        gain.gain.value = 0.001;
+        osc.connect(gain).connect(keepAwakeCtx.destination);
+        osc.start();
+      }
+      if (keepAwakeCtx.state === "suspended") await keepAwakeCtx.resume();
+    } catch {
+      if (!saidKeepAwakeFailed) {
+        saidKeepAwakeFailed = true;
+        addLog("Couldn't hold the tab awake with audio — click once anywhere in the draft room and it will take. Until then Chrome throttles this tab whenever its window isn't focused.");
+      }
+    }
+  }
+
   const ACTIVITY_PING_MS = 25000;
   let lastActivityPing = 0;
   function pingActivity() {
@@ -2479,12 +2527,14 @@ async function main() {
     }
   }
 
+  keepTabAwake();
   refresh();
   timers = [
     setInterval(refresh, POLL_INTERVAL_MS * 2),
     setInterval(pollPage, POLL_INTERVAL_MS),
     setInterval(pollForTurn, POLL_INTERVAL_MS),
     setInterval(pingActivity, ACTIVITY_PING_MS),
+    setInterval(keepTabAwake, 10000),
   ];
   observers = [turnObserver];
 }
