@@ -28,6 +28,7 @@ const KEYS = {
   roomProjection: "fm_room_projection",
   roomFacts: "fm_room_facts",
   lastDraftRoom: "fm_last_draft_room",
+  turnLog: "fm_turn_log",
   roomLog: "fm_room_log",
   roomStatus: "fm_room_status",
   consensus: "fm_consensus_adp",
@@ -210,6 +211,28 @@ export const Storage = {
    * inherits the last one's picks — two hundred players marked drafted who
    * are sitting in the room, and a roster that still counts the previous
    * draft's quarterbacks. */
+  /* One record per turn, won or lost.
+   *
+   * The decision log holds only the picks that succeeded, so a draft where
+   * the panel made four picks out of fifteen looked, in the record, like a
+   * draft of four picks. The eleven it lost left no trace, and the reasons
+   * had to be reconstructed from a scrolling log afterwards — which is how
+   * every diagnosis this week has gone. */
+  async getTurnLog() {
+    return get(KEYS.turnLog, []);
+  },
+  async appendTurnLog(entry) {
+    const log = await get(KEYS.turnLog, []);
+    // A turn is one entry: re-detection of the same pick is not a new turn.
+    if (entry.pick != null && log.some((e) => e.pick === entry.pick)) return log;
+    log.push(entry);
+    await set(KEYS.turnLog, log.slice(-100));
+    return log;
+  },
+  async clearTurnLog() {
+    return set(KEYS.turnLog, []);
+  },
+
   async getLastDraftRoom() {
     return get(KEYS.lastDraftRoom, null);
   },

@@ -829,6 +829,27 @@ async function main() {
    * every question about this engine took a conversation to answer instead of
    * a lookup. The record is what the panel knew: which player, at which pick,
    * for what stated reason, and what it was choosing between. */
+  /* Every turn, won or lost, with the reason it was lost.
+   *
+   * The decision log records only successful picks, so a draft in which the
+   * panel made four of fifteen looked in the record like a four-pick draft.
+   * The eleven it lost left nothing behind, and the reasons had to be
+   * reconstructed afterwards from a log that keeps twenty lines. */
+  function recordTurnOutcome(outcome, detail) {
+    const here = parseDraftPosition ? parseDraftPosition(document.body.innerText) : null;
+    const teams = detectedTeams ?? lastConfig?.league?.num_teams;
+    sendMessage({
+      type: "RECORD_TURN",
+      entry: {
+        outcome,
+        detail: detail ?? null,
+        pick: here?.pick ?? null,
+        round: here && teams ? Math.floor((here.pick - 1) / teams) + 1 : null,
+        wanted: currentRecName || null,
+      },
+    }).catch(() => {});
+  }
+
   function recordPickDecision(name) {
     const meta = (boardPlayers || []).find((p) => p.name === name) || null;
     const here = parseDraftPosition ? parseDraftPosition(document.body.innerText) : null;
@@ -1085,7 +1106,7 @@ async function main() {
 
     for (let attempt = 0; attempt <= maxSkips; attempt++) {
       const snapshot = await sendMessage({ type: "GET_SNAPSHOT", picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
-      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2, picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
+      const shortlist = await sendMessage({ type: "GET_SHORTLIST", n: maxSkips + 2, picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys(), round: roomRound });
       /* Skip what is resting as well as what this turn has already ruled
        * out, so a name the room would not produce a moment ago doesn't cost
        * another walk of the list now. */
@@ -1267,7 +1288,7 @@ async function main() {
      * two quarterbacks. Only players the shortlist no longer wants at all,
      * one per cycle, so a queue the user curated isn't emptied underneath
      * them. */
-    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys() });
+    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys(), round: roomRound });
     const keep = new Set(shortlistNow.map((p) => p.name));
     const stale = [...inRoom].filter((name) => !keep.has(name));
     if (stale.length > 0) {
@@ -1609,6 +1630,9 @@ async function main() {
   let lastDraftPosition = null;
   let detectedTeams = null;
   let detectedFormat = null;
+  /* The round the room says it is in. Everything that gates on a round must
+   * use this rather than a count derived from a board that can be behind. */
+  let roomRound = null;
   function reportDraftPosition(text, config) {
     if (!parseDraftSlot) return;
     const slot = parseDraftSlot(location.href, document.title);
@@ -1672,6 +1696,7 @@ async function main() {
     const away = stated ?? picksUntilMyTurn(position, slot, teams);
     if (away === null || away === lastPicksAway) return;
     lastPicksAway = away;
+    roomRound = position.round ?? roomRound;
     picksUntilTurn = away; // the engine can't derive this: it needs the slot and the snake
     if (away === 0) return; // the turn banner already covers this
     addLog(`Pick ${slot} of ${teams} — your next turn is ${away} pick${away === 1 ? "" : "s"} away.`);
@@ -2219,6 +2244,7 @@ async function main() {
         addLog(listHidden
           ? `Your turn — the Players list isn't open, so ${currentRecName || "the pick"} can't be drafted from here.`
           : `Your turn — couldn't find "${currentRecName || "a recommendation"}" in this room, draft it manually.`);
+        recordTurnOutcome(listHidden ? "list-not-open" : "player-not-found");
         await clearSearch();
         return;
       }
@@ -2243,6 +2269,7 @@ async function main() {
           ? `Your pick: ${currentRecName} — his Draft button is highlighted, press it.`
           : `Your pick: ${currentRecName} — found on the page, draft him.`);
         highlightElement(draftBtn || playerEl);
+        recordTurnOutcome("manual-mode", currentRecName);
         await clearSearch();
         return;
       }
@@ -2253,12 +2280,14 @@ async function main() {
           noteUnconfirmed(currentRecName, true);
         }
         addLog(`Found ${currentRecName} but no Draft button on his row — draft him manually.`);
+        recordTurnOutcome("no-draft-button");
         await clearSearch();
         return;
       }
       await wait(jitterDelay());
       clickElement(draftBtn);
       addLog(`Drafted ${currentRecName}.`);
+      recordTurnOutcome("drafted", currentRecName);
       recordPickDecision(currentRecName);
       await clearSearch();
     } catch (err) {
@@ -2276,6 +2305,7 @@ async function main() {
        * why. A failure during a turn is the least acceptable moment to say
        * nothing. */
       addLog(`Auto-draft failed this turn: ${String(err.message || err)}`);
+      recordTurnOutcome("error", String(err.message || err));
     }
   }
 
