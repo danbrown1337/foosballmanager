@@ -329,6 +329,18 @@ export function describeRow(root, playerName, { player = null } = {}) {
   };
 }
 
+/* One of the room's right-hand panel tabs — "Queue" or "Picks" — by its exact
+ * label. Exact, because "Picks" also appears inside "You're up in 3 Picks",
+ * and clicking that is clicking something else entirely. */
+export function findPanelTab(root, label) {
+  const doc = root.ownerDocument || root;
+  const wanted = label.trim().toLowerCase();
+  for (const el of doc.querySelectorAll(CLICKABLE_SELECTOR)) {
+    if ((el.textContent || "").trim().toLowerCase() === wanted) return el;
+  }
+  return null;
+}
+
 export function findQueueStar(root, playerName, { player = null } = {}) {
   /* Look at every row this player appears in, not just the first place the
    * name turns up. */

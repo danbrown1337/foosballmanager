@@ -183,7 +183,7 @@ async function main() {
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
     findQueueRemove, looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
-    readRoomProjections, describeRow, sweepTrust, Attempts;
+    readRoomProjections, describeRow, findPanelTab, sweepTrust, Attempts;
   ({ findBoardNames, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal,
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
@@ -199,7 +199,7 @@ async function main() {
      DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox, setInputValue, surnameOf,
      findListScroller, findQueueStar, findDraftButton, findQueueRemove,
      looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomProjections,
-     readRoomStatuses, describeRow } =
+     readRoomStatuses, describeRow, findPanelTab } =
     await import(chrome.runtime.getURL("src/lib/domActions.js")));
 
   /* Every helper this panel uses is destructured from a dynamic import, and a
@@ -217,7 +217,7 @@ async function main() {
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
     looksUnavailableOnPage, rowShowsNoAdp, readRoomAdp, readRoomStatuses,
-    readRoomProjections, describeRow, fetchPool,
+    readRoomProjections, describeRow, findPanelTab, fetchPool,
     leagueIdFromUrl, sweepTrust, Attempts,
   };
   const unbound = Object.keys(wired).filter((name) => typeof wired[name] !== "function");
@@ -283,6 +283,9 @@ async function main() {
   /* How many picks one poll may believe in. Four seconds, one room, one pick
    * at a time — anything past this is the page changing under us. */
   const MAX_PICKS_PER_POLL = 3;
+  // Often enough to stay current, rarely enough that the queue panel is
+  // almost always the one on screen.
+  const PICKS_SYNC_MS = 45000;
   let boardNameSet = null;
   let boardPlayers = null;
   let lastConfig = null;
@@ -301,7 +304,10 @@ async function main() {
    * the queue is what drafts for you — Yahoo picks from it without needing
    * this tab awake at all. Depth is the whole mitigation, so it goes up. */
   const QUEUE_DEPTH_HIDDEN = 8;
-  const queueDepth = () => (document.hidden ? QUEUE_DEPTH_HIDDEN : QUEUE_DEPTH);
+  // Deeper whenever the panel cannot act reliably — hidden, or reading a list
+  // that will not render. The queue is what drafts for you in both cases.
+  const queueDepth = () =>
+    (document.hidden || headerState ? QUEUE_DEPTH_HIDDEN : QUEUE_DEPTH);
   let queueEnabled = false;
   let lastQueueRunAt = 0;
   /* Queue maintenance and a board update both drive the room's search box.
@@ -902,12 +908,17 @@ async function main() {
     }
   }
 
-  function noteHidden() {
-    setHeaderState("degraded — tab hidden");
+  /* Said when the list stops responding to scrolling, whatever the cause —
+   * a covered window, a discarded tab, a room mid-rerender. Describes the
+   * symptom rather than guessing at the reason, because the reason was
+   * guessed wrong once already. */
+  function noteFrozen() {
+    setHeaderState("degraded — list not rendering");
     if (saidHidden) return;
     saidHidden = true;
-    addLog("This tab is in the background, so the panel can't read the player list reliably. Keeping the queue deeper instead — Yahoo drafts from it without this tab awake.");
+    addLog("The player list stopped rendering while being read — usually a covered or backgrounded window. Keeping the queue deeper instead; Yahoo drafts from it either way.");
   }
+
 
   /* How many players the board still believes are available. Marking from
    * absence is measured against this rather than a flat row count. It only
@@ -1712,27 +1723,51 @@ async function main() {
     collect(document.body.innerText);
     if (!scroller) return { scrolled: false, steps: 0 };
 
-    /* Not slow — unreliable. A hidden tab has its timers throttled to about
-     * once a minute, and rendering suspended with them, so the rows a scroll
-     * is meant to reveal may never mount at all. Walking the list there
-     * produces a confident, wrong view of the room. Read what is already on
-     * screen and say plainly that this was not a sweep: reachedEnd stays
-     * false, so nothing downstream can mistake it for one. */
-    if (document.hidden) {
-      noteHidden();
-      return { scrolled: false, steps: 0, hidden: true };
-    }
+    /* Whether the list is rendering, tested rather than assumed.
+     *
+     * This used to refuse to sweep whenever document.hidden was true. That is
+     * the wrong signal: Chrome reports a tab hidden when its window is merely
+     * covered by another window, so a draft nobody had navigated away from
+     * spent itself flagged "degraded — tab hidden" while sitting in plain
+     * sight behind something else.
+     *
+     * What actually matters is whether scrolling reveals new rows, and that
+     * can simply be checked. The walk below stops early if two consecutive
+     * steps reveal nothing new — which is what a frozen tab looks like, and
+     * also what the end of a short list looks like, and both are reasons to
+     * stop. */
 
     const startTop = scroller.scrollTop;
     const step = Math.max(200, scroller.clientHeight - 60);
     let steps = 0;
     let reachedEnd = false;
+    let stale = 0;
+    let lastHeight = -1;
     for (let top = 0; top <= scroller.scrollHeight && steps < 40; top += step, steps++) {
       scroller.scrollTop = top;
       await wait(160); // let the list render the rows it just revealed
       collect(document.body.innerText);
+
+      /* A tab whose rendering is suspended scrolls without mounting anything,
+       * so the page text stops changing. Two steps of that and the walk is
+       * reading a frozen list: stop, and leave reachedEnd false so nothing
+       * downstream treats it as a complete view. */
+      const height = document.body.innerText.length;
+      stale = height === lastHeight ? stale + 1 : 0;
+      lastHeight = height;
+      if (stale >= 2) {
+        noteFrozen();
+        break;
+      }
+
       if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) {
         reachedEnd = true;
+        // Walking the list to the bottom is the proof that it renders; that,
+        // not the tab's visibility, is what clears the warning.
+        if (headerState) {
+          setHeaderState("");
+          saidHidden = false;
+        }
         break;
       }
     }
@@ -1759,6 +1794,65 @@ async function main() {
    * only thing that reads the room's actual state, so it shouldn't have been
    * conditional on the queue being switched on. */
   const BOARD_REFRESH_MS = 120000;
+  /* Open the room's Picks panel, read every pick out of it, and put the Queue
+   * back.
+   *
+   * The announcement covers picks made while we are watching, and nothing
+   * else: a reload, a throttled minute or a closed laptop leaves a permanent
+   * hole, and this draft reached round thirteen still recommending Derrick
+   * Henry, taken in round three. Sweeps cannot fill that hole either — a
+   * partial view is not allowed to conclude anyone is drafted, correctly, and
+   * a partial view is all a virtualised list gives.
+   *
+   * The room keeps the whole list and will show it on request. It is a
+   * read-only view swap in the side panel, the player list is untouched
+   * beneath it, and the Queue goes back immediately — but it does replace the
+   * queue panel while it is open, so it never runs during a turn and never
+   * while anything else is using the room. */
+  let lastPicksSyncAt = 0;
+  async function syncFromPicksPanel() {
+    if (!findPanelTab || !parseDraftResults) return;
+    if (roomBusy || detectionSuspended || turnBannerPresent()) return;
+    if (Date.now() - lastPicksSyncAt < PICKS_SYNC_MS) return;
+
+    const picksTab = findPanelTab(document.body, "Picks");
+    if (!picksTab) return;
+    lastPicksSyncAt = Date.now();
+    roomBusy = true;
+    try {
+      clickElement(picksTab);
+      await wait(700); // the panel renders its list
+      const picks = parseDraftResults(document.body.innerText);
+      if (picks.length > 0) {
+        const known = picks
+          .map((pick) => pick.name)
+          .filter((name) => !boardNameSet || boardNameSet.has(name));
+        if (known.length > 0) {
+          const { changed } = await sendMessage({
+            type: "IMPORT_PICKS", names: known, by: "rival",
+          });
+          if (changed) {
+            addLog(`Read ${picks.length} picks from the room's Picks panel — the board is caught up.`);
+          }
+        }
+        const unknown = picks.length - known.length;
+        if (unknown > 0) addLog(`${unknown} pick(s) in that list didn't match our board.`);
+      }
+    } catch (err) {
+      if (isContextGone(err)) return handleDeadContext();
+      addLog(`Couldn't read the Picks panel: ${String(err.message || err)}`);
+    } finally {
+      // Always put the queue back: leaving Picks showing would blind queue
+      // maintenance for the rest of the draft.
+      const queueTab = findPanelTab(document.body, "Queue");
+      if (queueTab) {
+        clickElement(queueTab);
+        await wait(300);
+      }
+      roomBusy = false;
+    }
+  }
+
   async function maybeRefreshBoard() {
     if (roomBusy || detectionSuspended) return;
     if (Date.now() - lastBoardUpdateAt < BOARD_REFRESH_MS) return;
@@ -1803,6 +1897,10 @@ async function main() {
      * stops for a while, and picks made in that window are never seen — the
      * panel comes back looking healthy and quietly out of date. It can't
      * prevent that, but it can refuse to hide it. */
+    /* Clear a degraded badge the moment the tab is genuinely visible. It was
+     * set on a hidden sweep and only ever cleared by a visibilitychange
+     * event, so a tab that was hidden when the script loaded kept the badge
+     * for the rest of the draft. */
     const now = Date.now();
     const gap = now - lastPollAt;
     lastPollAt = now;
@@ -1823,6 +1921,7 @@ async function main() {
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
       reportDraftPosition(text, lastConfig);
+      await syncFromPicksPanel();
       await maybeRefreshBoard();
       await maintainQueue(text);
       // Not the queue panel: a name we queued is not a name that was drafted.
@@ -2037,13 +2136,12 @@ async function main() {
   /* Coming back to the tab is the one moment the panel can catch up cheaply:
    * the list renders again, and whatever was missed while it was hidden is
    * still on the page. */
+  /* Coming back to the tab is a cheap moment to catch up: the list renders
+   * again and whatever was missed is still on the page. Going away is no
+   * longer treated as a fault in itself — a covered window reports the same
+   * thing as an abandoned one, and only the sweep can tell them apart. */
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      noteHidden();
-      return;
-    }
-    setHeaderState("");
-    saidHidden = false;
+    if (document.hidden) return;
     lastBoardUpdateAt = 0; // let the next cycle sweep immediately
     observerTick();
   });
