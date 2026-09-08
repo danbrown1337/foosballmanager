@@ -1145,7 +1145,20 @@ async function main() {
          * was absent, and the next candidate was never tried. */
         if (needDraftButton) {
           const meta2 = (boardPlayers || []).find((p) => p.name === candidate.name) || null;
-          const btn = findDraftButton(document.body, candidate.name, { player: meta2 });
+          let btn = findDraftButton(document.body, candidate.name, { player: meta2 });
+          if (!btn && document.querySelectorAll("tbody tr").length > 5) {
+            /* Give the room a beat before believing it.
+             *
+             * A turn arrives while the room is still redrawing from the last
+             * pick, and for a moment no row has a Draft button — nine
+             * candidates in a row came back "20 cells, 1 controls, no Draft
+             * button", every one of them still available and one of them
+             * announced drafted a minute later. Waiting once is the
+             * difference between reading a half-drawn page and reading the
+             * room. */
+            await wait(700);
+            btn = findDraftButton(document.body, candidate.name, { player: meta2 });
+          }
           if (!btn) {
             /* No Draft button, at a turn, means the room will not let anyone
              * draft him — which it only does once somebody has. Recorded as a
