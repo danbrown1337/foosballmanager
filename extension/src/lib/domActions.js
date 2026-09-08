@@ -120,6 +120,22 @@ export function rowYahooId(row) {
   return m ? m[1] : null;
 }
 
+/* The position written on the row, when the row states one plainly.
+ *
+ * Cells only, and only when exactly one position token appears: a row that
+ * says two things, or nothing, gets no opinion rather than a guess. */
+const POSITION_CELLS = new Set(["QB", "RB", "WR", "TE", "K", "DEF"]);
+
+export function rowPosition(row) {
+  if (!row?.querySelectorAll) return null;
+  const found = new Set();
+  for (const cell of row.querySelectorAll("td, th, span, abbr, div")) {
+    const text = (cell.textContent || "").trim().toUpperCase();
+    if (POSITION_CELLS.has(text)) found.add(text);
+  }
+  return found.size === 1 ? [...found][0] : null;
+}
+
 export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, player = null } = {}) {
   const doc = root.ownerDocument || root;
   /* A defence's row says "Texans", never "Houston Defense", so the name we
@@ -223,6 +239,34 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
       matches.length = 0;
       matches.push(...notRuledOut);
     }
+  }
+
+  /* A row that states a different position is a different player.
+   *
+   * The abbreviation path already demands the row show this player's team,
+   * because "B. Robinson" names two Atlanta backs. The full-name path demanded
+   * nothing at all — a name matched exactly was accepted wherever it appeared.
+   * That is fine until two players genuinely share a name: the board's Mike
+   * Evans is a receiver in San Francisco, and a roster panel came back reading
+   * "M. Evans TE Car".
+   *
+   * Position is the one discriminator a room always writes and never
+   * abbreviates differently — team codes vary between sources, "WR" does not.
+   * So a row positively stating another position is dropped, whatever its name
+   * reads as. If that leaves nothing, the turn finds no target and falls
+   * through to the queue, which is the right way to lose this argument: a
+   * missed pick is recoverable and the wrong player is not. */
+  if (player?.pos) {
+    const want = String(player.pos).trim().toUpperCase();
+    const consistent = matches.filter((node) => {
+      const shown = rowPosition(rowOf(node));
+      return shown === null || shown === want;
+    });
+    if (consistent.length !== matches.length) {
+      matches.length = 0;
+      matches.push(...consistent);
+    }
+    if (matches.length === 0) return null;
   }
 
   /* Several matches are usually one player written in several places — the
