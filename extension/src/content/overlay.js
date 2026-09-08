@@ -178,7 +178,7 @@ async function main() {
   let fetchPool, leagueIdFromUrl, diffDrafted, findMyTeamNames, findRosterSlots, findRosterTotal, findAmbiguousAbbrevs,
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
     teamCountBounds, defenceAliases, parseDraftResults, teamsFromRoundChange,
-    parseRosterFormat, draftRoomId, parseLastPick,
+    parseRosterFormat, draftRoomId, parseLastPick, resolveAnnouncedPick,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
@@ -188,7 +188,7 @@ async function main() {
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
      defenceAliases, parseDraftResults, teamsFromRoundChange, parseRosterFormat,
-     draftRoomId, parseLastPick } =
+     draftRoomId, parseLastPick, resolveAnnouncedPick } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -212,7 +212,7 @@ async function main() {
     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
     parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases,
     parseDraftResults, teamsFromRoundChange, parseRosterFormat, draftRoomId,
-    parseLastPick, isMyTurn,
+    parseLastPick, resolveAnnouncedPick, isMyTurn,
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -1188,12 +1188,22 @@ async function main() {
     }
 
     if (!boardNameSet) return noteQueueIdle("queue: waiting — the board hasn't loaded yet");
+    // The list is back; clear a warning about it being gone.
+    if (headerState === "can't act — open the Players tab") setHeaderState("");
 
     /* The star column and the Draft buttons exist only in the room's Players
      * list. With another tab showing — Board, Picks, Results — there is
      * nothing to click, and the panel was reporting that as a missing star on
      * a particular player's row, which points at the wrong thing entirely. */
     if (document.querySelectorAll('[data-icon*="star" i]').length < 5) {
+      /* Shown in the header, not just logged.
+       *
+       * Without the player list there is nothing to star and nothing to
+       * click, so the panel can do nothing at all — and a single log line
+       * among fifty scrolls away in a minute. One draft ended with both the
+       * kicker and defence slots empty and four tight ends on the bench,
+       * because this was true for the last few rounds and said so quietly. */
+      setHeaderState("can't act — open the Players tab");
       return noteQueueIdle("queue: open the room's Players tab — nothing to star while it's hidden");
     }
 
@@ -1709,9 +1719,16 @@ async function main() {
     if (!last || last.block === lastAnnounced) return;
     lastAnnounced = last.block;
 
+    /* The general matcher first, then the announcement's own position and
+     * team for the names it cannot key — a particle surname keys on its last
+     * word here and on its first in the room, so "Amon-Ra St. Brown" and
+     * "A. ST. BROWN" never meet. */
     const names = findBoardNames(last.block, boardNameSet, boardPlayers);
-    if (names.size === 1) {
-      const [name] = [...names];
+    const resolved = names.size === 1
+      ? [...names][0]
+      : resolveAnnouncedPick(last.label, last.pos, last.team, boardPlayers || []);
+    if (resolved) {
+      const name = resolved;
       const { changed } = await sendMessage({
         type: "IMPORT_PICKS", names: [name], by: "rival",
       });

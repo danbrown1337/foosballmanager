@@ -14,7 +14,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseLastPick, findBoardNames } from "../src/lib/textMatch.js";
+import { parseLastPick, findBoardNames, resolveAnnouncedPick } from "../src/lib/textMatch.js";
 import { makePlayer } from "../src/engine/board.js";
 
 const LIVE = `John's Pick • You're up in 10 Picks • Round 5, Pick 70
@@ -96,4 +96,35 @@ test("a defence resolves to the right team's defence", () => {
   const names = new Set(board.map((p) => p.name));
   const announced = parseLastPick("Last:\nSeahawks\n(DEF · SEA)");
   assert.deepEqual([...findBoardNames(announced.block, names, board)], ["Seattle Defense"]);
+});
+
+/* Particle surnames, which the general matcher cannot key.
+ *
+ * findBoardNames keys an abbreviation on the last word — "Amon-Ra St. Brown"
+ * becomes "a brown" — while the room writes "A. ST. BROWN", whose pattern
+ * stops at the dot and gives "a st". They never meet, so a pick the room
+ * stated plainly went unrecorded, the board kept offering a player who was
+ * gone, and the turn fell through to a reach graded C. */
+test("an announcement resolves a name the abbreviation key cannot", () => {
+  const board = [
+    makePlayer({ rank: 1, name: "Amon-Ra St. Brown", team: "DET", pos: "WR", adp: 7 }),
+    makePlayer({ rank: 2, name: "A.J. Brown", team: "NE", pos: "WR", adp: 24 }),
+  ];
+  assert.equal(resolveAnnouncedPick("A. ST. BROWN", "WR", "DET", board), "Amon-Ra St. Brown");
+  // And the team keeps the two Browns apart.
+  assert.equal(resolveAnnouncedPick("A. BROWN", "WR", "NE", board), "A.J. Brown");
+});
+
+test("it still refuses when two players genuinely fit", () => {
+  const board = [
+    makePlayer({ rank: 1, name: "Bijan Robinson", team: "ATL", pos: "RB", adp: 2.3 }),
+    makePlayer({ rank: 2, name: "Brian Robinson", team: "ATL", pos: "RB", adp: 152.9 }),
+  ];
+  assert.equal(resolveAnnouncedPick("B. ROBINSON", "RB", "ATL", board), null);
+});
+
+test("and nothing at all for a player we don't carry", () => {
+  const board = [makePlayer({ rank: 1, name: "Someone Else", team: "KC", pos: "WR", adp: 30 })];
+  assert.equal(resolveAnnouncedPick("Z. NOBODY", "WR", "KC", board), null);
+  assert.equal(resolveAnnouncedPick("", "WR", "KC", board), null);
 });
