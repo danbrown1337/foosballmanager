@@ -2345,6 +2345,25 @@ async function main() {
       }
       await wait(jitterDelay());
       clickElement(draftBtn);
+      /* Tell the engine it was ours, now, before anything else.
+       *
+       * At the snake's turn you pick twice within a couple of seconds. The
+       * only things that ever told the board a pick was *mine* were the
+       * roster reader and the pick announcement — the reader runs on its own
+       * schedule and the announcement is imported as "rival" — so neither
+       * had landed by the time the second pick was computed. Every snake
+       * turn therefore chose against a roster missing the pick made two
+       * seconds earlier, and took the same position twice: two running backs
+       * at 10 and 11, two more at 30 and 31, two quarterbacks at 70 and 71
+       * with both citing "you have 0 of 1 rostered". That is the whole of
+       * the redundant_qb2 flag, and of every "two RBs again" this project
+       * has chased.
+       *
+       * Marking here is optimistic — the click could still be refused — but
+       * the panel already claims the pick in the same breath, and a wrong
+       * "mine" is corrected by the next roster read, which is exactly the
+       * path that was carrying this fact before, only later. */
+      await sendMessage({ type: "MARK_PICK", name: currentRecName, by: "mine" });
       addLog(`Drafted ${currentRecName}.`);
       recordTurnOutcome("drafted", currentRecName);
       recordPickDecision(currentRecName);
