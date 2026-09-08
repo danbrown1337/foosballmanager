@@ -905,12 +905,26 @@ async function main() {
      * find him at all is the strongest form of the same evidence, and it left
      * the panel asking for the same drafted player at turn after turn. */
     const emptyRow = shape.cells === 0 && shape.controls === 0;
-    const gone = !shape.found || !shape.inTable || emptyRow;
+    /* A player we queued has no row because we queued him.
+     *
+     * Yahoo lifts a queued player out of the available list and into the
+     * queue panel, so his row and its Draft button go away while he is still
+     * perfectly available. Reading that as "the room won't produce him, so
+     * he's drafted" recorded a rival pick for Jake Elliott seconds after the
+     * panel starred him, which takes a real player off the board for good.
+     *
+     * Losing him from the room's queue is the signal that he was drafted, and
+     * the queue cycle already watches for that. Absence from the list is not,
+     * for these names only. */
+    const ours = queuedByUs.has(name);
+    const gone = !ours && (!shape.found || !shape.inTable || emptyRow);
     if (!describedRows.has(name)) {
       describedRows.add(name);
       addLog(gone
         ? `${name}: name is on the page but he has no row in the player list — he has been drafted.`
-        : `${name}: row present (${shape.cells} cells, ${shape.controls} controls, icons ${shape.icons.join("/") || "none"}) but no ${what}.`);
+        : ours && (!shape.found || emptyRow)
+          ? `${name} is in your queue, which is why he has no row — leaving him on the board.`
+          : `${name}: row present (${shape.cells} cells, ${shape.controls} controls, icons ${shape.icons.join("/") || "none"}) but no ${what}.`);
     }
     return gone;
   }
