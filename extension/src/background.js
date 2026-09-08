@@ -10,6 +10,7 @@ import {
   importPicks,
   setPracticeMode,
   shortlist,
+  queuePlan,
   repairBoard,
   recordRoomAdp,
   recordRoomProjection,
@@ -60,6 +61,15 @@ async function handle(message, sender) {
 
     case "GET_SHORTLIST":
       return shortlist(message.n || 5, {
+        round: message.round ?? null,
+        picksUntilTurn: message.picksUntilTurn ?? null,
+        teams: message.teams ?? null,
+        format: message.format ?? null,
+        exclude: message.exclude ?? null,
+      });
+
+    case "GET_QUEUE_PLAN":
+      return queuePlan(message.n || 5, {
         round: message.round ?? null,
         picksUntilTurn: message.picksUntilTurn ?? null,
         teams: message.teams ?? null,
