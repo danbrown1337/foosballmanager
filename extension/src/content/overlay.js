@@ -286,7 +286,6 @@ async function main() {
   // Often enough to stay current, rarely enough that the queue panel is
   // almost always the one on screen.
   const PICKS_SYNC_MS = 45000;
-  const PICKS_SYNC_ENABLED = false;
   let boardNameSet = null;
   let boardPlayers = null;
   let lastConfig = null;
@@ -781,8 +780,22 @@ async function main() {
    * that is where the conclusion sits. Misses from a sweep that never got
    * down the list are not counted at all. */
   function noteUnconfirmed(name, sawList) {
-    if (!sawList) return;
+    /* Resting and marking drafted are different acts, and gating both on the
+     * same evidence was wrong.
+     *
+     * Marking writes to the board, so it needs a sweep that really saw the
+     * board. Resting only stops offering a name for ninety seconds, costs
+     * nothing if mistaken, and undoes itself. Requiring the strong evidence
+     * for both meant that on a board whose sweeps come back partial — which
+     * is most of them — a name that could not be found was never rested,
+     * never excluded from recommendations, and blocked every turn from then
+     * on. A live draft sat on Ladd McConkey, already drafted and nowhere on
+     * the page, through pick after pick with a full queue behind him. */
     if (!unconfirmed.fail(name)) return;
+    if (!sawList) {
+      addLog(`${name} can't be found in the room — resting him for 90s so the next name gets a turn.`);
+      return;
+    }
     if (!missingMeansDrafted) {
       addLog(`${name} not found in ${UNCONFIRMED_TRIES} full passes — resting him (not marking; this rule has been wrong today).`);
       return;
@@ -1827,53 +1840,101 @@ async function main() {
    * beneath it, and the Queue goes back immediately — but it does replace the
    * queue panel while it is open, so it never runs during a turn and never
    * while anything else is using the room. */
+  /* Read the room's own list of every pick, then put the Queue panel back.
+   *
+   * The announcement covers picks made while we are watching and nothing
+   * else, so every "stopped watching" gap leaves a permanent hole: one draft
+   * ended believing 187 players were available when the room had 95, and the
+   * defence slot went unfilled because the board thought every defence was
+   * gone. Sweeps cannot fix that — a partial view is not allowed to conclude
+   * anyone is drafted, correctly, and partial is all a virtualised list gives.
+   *
+   * The room keeps the full list and shows it on request. The cost is that
+   * the Picks panel occupies the same column as the Queue, which is where
+   * queue maintenance reads what is queued — and the first version of this
+   * did not always put the Queue back, so the panel spent a whole draft
+   * saying it could not see the queue. Hence the verification below, and the
+   * permanent stand-down if it ever fails.
+   */
+  const QUEUE_PANEL_SHOWING = /Autodraft will pick from queue|Your queue is empty/i;
   let lastPicksSyncAt = 0;
+  let picksSyncStoodDown = false;
+
+  function queuePanelShowing() {
+    return QUEUE_PANEL_SHOWING.test(document.body.innerText || "");
+  }
+
+  /* Click back to Queue and confirm it took. Only the inactive tab renders as
+   * a button, so once Picks is showing the control is labelled "Queue". */
+  async function restoreQueuePanel() {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (queuePanelShowing()) return true;
+      const tab = findPanelTab(document.body, "Queue");
+      if (!tab) break;
+      clickElement(tab);
+      await wait(400);
+    }
+    return queuePanelShowing();
+  }
+
   async function syncFromPicksPanel() {
-    /* Disabled. Reading the Picks panel means swapping the side panel over
-     * and swapping it back, and in a live draft it did not always swap back —
-     * the room was left showing Picks, which is where queue maintenance reads
-     * what is queued, so the panel spent the rest of the draft reporting it
-     * could not see the queue. The idea is right and the board badly needs
-     * this list; it does not go back in until it can confirm the Queue panel
-     * is showing again afterwards, and put it back when it is not. */
-    if (!PICKS_SYNC_ENABLED) return;
-    if (!findPanelTab || !parseDraftResults) return;
+    if (picksSyncStoodDown || !findPanelTab || !parseDraftResults) return;
     if (roomBusy || detectionSuspended || turnBannerPresent()) return;
     if (Date.now() - lastPicksSyncAt < PICKS_SYNC_MS) return;
+    // Start only from a known state, so there is something definite to
+    // restore to afterwards.
+    if (!queuePanelShowing()) return;
 
     const picksTab = findPanelTab(document.body, "Picks");
     if (!picksTab) return;
+
     lastPicksSyncAt = Date.now();
     roomBusy = true;
+    detectionSuspended = true; // the swap is not the room losing players
     try {
+      const before = new Set((document.body.innerText || "").split("\n"));
       clickElement(picksTab);
-      await wait(700); // the panel renders its list
-      const picks = parseDraftResults(document.body.innerText);
-      if (picks.length > 0) {
-        const known = picks
-          .map((pick) => pick.name)
-          .filter((name) => !boardNameSet || boardNameSet.has(name));
-        if (known.length > 0) {
-          const { changed } = await sendMessage({
-            type: "IMPORT_PICKS", names: known, by: "rival",
-          });
-          if (changed) {
-            addLog(`Read ${picks.length} picks from the room's Picks panel — the board is caught up.`);
-          }
+      await wait(700);
+
+      /* Whatever is on the page now and was not before is the pick list. A
+       * diff rather than a selector, because the panel's markup is generated
+       * and its format is not something to depend on — and every name in it
+       * is, by definition, a player who has been drafted. */
+      const added = (document.body.innerText || "")
+        .split("\n")
+        .filter((line) => line.trim() && !before.has(line))
+        .join("\n");
+
+      const detailed = parseDraftResults(added);
+      const names = detailed.length > 0
+        ? detailed.map((pick) => pick.name)
+        : [...findBoardNames(added, boardNameSet || new Set(), boardPlayers)];
+
+      const known = names.filter((name) => !boardNameSet || boardNameSet.has(name));
+      if (known.length > 0) {
+        const { changed } = await sendMessage({
+          type: "IMPORT_PICKS", names: known, by: "rival",
+        });
+        if (changed) {
+          addLog(`Read ${known.length} picks from the room's Picks panel — the board is caught up.`);
         }
-        const unknown = picks.length - known.length;
-        if (unknown > 0) addLog(`${unknown} pick(s) in that list didn't match our board.`);
+      } else {
+        addLog("The Picks panel had nothing our board recognised.");
       }
     } catch (err) {
       if (isContextGone(err)) return handleDeadContext();
       addLog(`Couldn't read the Picks panel: ${String(err.message || err)}`);
     } finally {
-      // Always put the queue back: leaving Picks showing would blind queue
-      // maintenance for the rest of the draft.
-      const queueTab = findPanelTab(document.body, "Queue");
-      if (queueTab) {
-        clickElement(queueTab);
-        await wait(300);
+      detectionSuspended = false;
+      previousBoardNames = null;
+      previousScrollTop = null;
+      const restored = await restoreQueuePanel();
+      if (!restored) {
+        /* Leaving the room on Picks blinds queue maintenance for the rest of
+         * the draft, which is a far worse outcome than a board that is a few
+         * picks behind. One failure and it never tries again this session. */
+        picksSyncStoodDown = true;
+        addLog("Couldn't put the Queue panel back, so I won't read the Picks panel again this draft — click Queue in the left column.");
       }
       roomBusy = false;
     }
@@ -1947,6 +2008,7 @@ async function main() {
       await importMyTeam(text);
       checkRosterShape(text, lastConfig);
       reportDraftPosition(text, lastConfig);
+      await syncFromPicksPanel();
       await maybeRefreshBoard();
       await maintainQueue(text);
       // Not the queue panel: a name we queued is not a name that was drafted.
@@ -1980,6 +2042,24 @@ async function main() {
          * arrived as a burst — fourteen names, seventeen names — and every
          * real detection has been one or two. Whatever the cause, a burst is
          * never evidence of a burst of picks. */
+        /* Defences are never concluded from a poll diff.
+         *
+         * They are matched by team nickname, the fuzziest matching here, and
+         * a draft room is full of team names that have nothing to do with
+         * picks — the pick order column, the manager list, matchup text. Get
+         * one wrong and the board believes a defence is gone; get several
+         * wrong and it believes they all are, which is how a draft finished
+         * with its defence slot empty and a second kicker on the bench,
+         * because the endgame reservation had no defence left to offer.
+         *
+         * Nothing is lost by refusing: the room announces every pick with its
+         * position beside it, and the Picks panel lists them outright. Both
+         * are positive evidence and neither depends on a nickname. */
+        for (const name of [...newlyDrafted]) {
+          const meta = (boardPlayers || []).find((p) => p.name === name);
+          if (meta?.pos === "DEF") newlyDrafted.delete(name);
+        }
+
         if (newlyDrafted.size > MAX_PICKS_PER_POLL) {
           noteQueueIdle(`Ignored ${newlyDrafted.size} players vanishing at once — that is the list moving, not ${newlyDrafted.size} picks.`);
         } else if (newlyDrafted.size > 0) {

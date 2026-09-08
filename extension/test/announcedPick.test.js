@@ -70,3 +70,30 @@ test("an announcement is one pick however many times it is read", () => {
   const again = parseLastPick(LIVE.replace("10 Picks", "9 Picks"));
   assert.equal(first.block, again.block);
 });
+
+test("a defence announcement is read like any other pick", () => {
+  /* This required an initial and a surname, which every player has and no
+   * defence does. Defences could therefore only be learned from the nickname
+   * diff — the fuzziest matching here — and a draft ended with its defence
+   * slot empty because the board thought they were all gone. */
+  assert.deepEqual(parseLastPick("Last:\nSeahawks\n(DEF · SEA)"), {
+    label: "Seahawks", pos: "DEF", team: "SEA",
+    block: "Last:\nSeahawks\n(DEF · SEA)",
+  });
+});
+
+test("and so is a kicker", () => {
+  const k = parseLastPick("Last:\nW. LUTZ\n(K · DEN)");
+  assert.equal(k.pos, "K");
+  assert.equal(k.team, "DEN");
+});
+
+test("a defence resolves to the right team's defence", () => {
+  const board = [
+    makePlayer({ rank: 1, name: "Seattle Defense", team: "SEA", pos: "DEF", adp: 109 }),
+    makePlayer({ rank: 2, name: "Denver Defense", team: "DEN", pos: "DEF", adp: 102 }),
+  ];
+  const names = new Set(board.map((p) => p.name));
+  const announced = parseLastPick("Last:\nSeahawks\n(DEF · SEA)");
+  assert.deepEqual([...findBoardNames(announced.block, names, board)], ["Seattle Defense"]);
+});

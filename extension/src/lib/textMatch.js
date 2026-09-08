@@ -227,7 +227,12 @@ export function teamCountBounds(position) {
  * scrolling, it does not need the Players tab open, and a MutationObserver
  * sees it arrive whether or not timers are being throttled. */
 export function parseLastPick(text) {
-  const m = /Last:\s*\n?\s*([A-Za-z]\.\s?[A-Za-z'\u2019-]+)\s*\n?\s*\(\s*([A-Za-z/]{1,4})\s*[\u00b7\u2022|-]\s*([A-Za-z]{2,3})\s*\)/
+  /* Matched on the shape of the announcement rather than the shape of the
+   * name. It used to require an initial and a surname, which every player has
+   * and no defence does — "Seahawks (DEF · SEA)" never matched, so defences
+   * could only ever be learned from the fuzzy nickname diff, and getting one
+   * of those wrong costs a starting slot. */
+  const m = /Last:\s*\n\s*([^\n(]{2,30}?)\s*\n\s*\(\s*([A-Za-z/]{1,4})\s*[\u00b7\u2022|-]\s*([A-Za-z]{2,3})\s*\)/
     .exec(String(text || ""));
   if (!m) return null;
   return { label: m[1], pos: m[2].toUpperCase(), team: m[3].toUpperCase(), block: m[0] };
