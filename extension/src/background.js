@@ -8,6 +8,7 @@
 import {
   buildSnapshot,
   importPicks,
+  syncMyTeam,
   setPracticeMode,
   shortlist,
   queuePlan,
@@ -55,6 +56,9 @@ async function handle(message, sender) {
       if (result.changed) await setBadge("\u2022");
       return result;
     }
+
+    case "SYNC_MY_TEAM":
+      return syncMyTeam(message.names || [], message.keep || []);
 
     case "SET_PRACTICE":
       return setPracticeMode(!!message.active);

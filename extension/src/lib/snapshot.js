@@ -923,6 +923,48 @@ export async function importPicks(names, by = "rival") {
   return { changed, count: names.length };
 }
 
+/* The room's own roster panel, taken as the truth about what is mine.
+ *
+ * importPicks only ever adds, so a name marked "mine" in error stays mine for
+ * the rest of the draft. A fifteen-spot roster came back as seventeen that
+ * way, and picksMade over spots is not a harmless miscount: it drove
+ * remaining negative, emptied the queue plan, and cost the two turns that
+ * depended on it.
+ *
+ * The page knows. It renders your team, and a player it does not list is not
+ * on your team whatever the board recorded earlier. Demoted to "rival" rather
+ * than freed, because being wrong about *whose* he is says nothing about
+ * whether he is still available — and the sweep already puts genuinely
+ * available players back.
+ *
+ * `keep` is the grace list: names drafted seconds ago that the roster panel
+ * has not rendered yet. Without it this would undo the pick it just made,
+ * which is the same fault from the other direction.
+ */
+export async function syncMyTeam(names, keep = []) {
+  const onPage = new Set(names);
+  const spared = new Set(keep);
+  const state = await Storage.getDraftState();
+  let changed = false;
+  const demoted = [];
+
+  for (const name of names) {
+    if (state.drafted[name] !== "mine") {
+      state.drafted[name] = "mine";
+      changed = true;
+    }
+  }
+  for (const [name, by] of Object.entries(state.drafted)) {
+    if (by !== "mine" || onPage.has(name) || spared.has(name)) continue;
+    state.drafted[name] = "rival";
+    demoted.push(name);
+    changed = true;
+  }
+
+  if (changed) await Storage.setDraftState(state);
+  return { changed, count: names.length, demoted };
+}
+
 export async function recordDetectedPicks(names, by = "rival") {
   const state = await Storage.getDraftState();
   let changed = false;

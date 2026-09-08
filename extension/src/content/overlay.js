@@ -324,6 +324,19 @@ async function main() {
    * drafting him is a pick we never saw — the cheapest, most reliable pick
    * detector available, and it costs nothing to read. */
   const queuedByUs = new Set();
+  /* Names this panel drafted in the last few seconds. The roster panel takes
+   * a moment to render a pick, and the team sync below must not read that
+   * lag as "he was never mine" and undo it. */
+  const RECENT_PICK_GRACE_MS = 25000;
+  const recentlyMine = new Map();
+  function noteMyPick(name) {
+    recentlyMine.set(name, Date.now());
+  }
+  function recentPickNames() {
+    const cutoff = Date.now() - RECENT_PICK_GRACE_MS;
+    for (const [name, at] of recentlyMine) if (at < cutoff) recentlyMine.delete(name);
+    return [...recentlyMine.keys()];
+  }
   const reportedAmbiguous = new Set();
   let currentRecName = null;
   let currentRecReason = null;
@@ -900,6 +913,7 @@ async function main() {
 
       await wait(jitterDelay());
       clickElement(btn);
+      noteMyPick(entry.name);
       try {
         await sendMessage({ type: "IMPORT_PICKS", names: [entry.name], by: "mine" });
       } catch (err) {
@@ -911,6 +925,11 @@ async function main() {
       addLog(`Drafted ${entry.name} from the queue — ${currentRecName} couldn't be drafted.`);
       currentRecName = entry.name;
       currentRecReason = entry.reason || currentRecReason;
+      /* The alternatives were computed for the player the engine asked for,
+       * and he is not the one being taken — pick 18 of one draft logged
+       * "George Pickens" as an alternative to George Pickens. Better no list
+       * than a list about somebody else. */
+      currentAlternatives = null;
       recordPickDecision(entry.name);
       return true;
     }
@@ -1943,8 +1962,17 @@ async function main() {
     if (!boardNameSet || !findMyTeamNames) return false;
     const mine = [...findMyTeamNames(text, boardNameSet, boardPlayers)];
     if (mine.length === 0) return false;
-    const { changed } = await sendMessage({ type: "IMPORT_PICKS", names: mine, by: "mine" });
+    /* The page is the authority on what is mine, not an addition to it.
+     * IMPORT_PICKS only ever adds, so one name marked mine in error stayed
+     * mine for the whole draft — a fifteen-spot roster read as seventeen,
+     * which drove the queue plan empty and cost two turns. */
+    const { changed, demoted } = await sendMessage({
+      type: "SYNC_MY_TEAM", names: mine, keep: recentPickNames(),
+    });
     if (changed) addLog(`Read your team off the page: ${mine.join(", ")}`);
+    if (demoted?.length) {
+      addLog(`${demoted.join(", ")} ${demoted.length === 1 ? "is" : "are"} not on your team — the board had that wrong.`);
+    }
     return changed;
   }
 
@@ -2487,6 +2515,7 @@ async function main() {
        * itself just handed us and therefore already a board key. And the
        * click has happened either way, so a failure to record it is worth a
        * log line, not an abandoned turn. */
+      noteMyPick(currentRecName);
       try {
         await sendMessage({ type: "IMPORT_PICKS", names: [currentRecName], by: "mine" });
       } catch (err) {
