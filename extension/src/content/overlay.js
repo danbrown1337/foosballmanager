@@ -1217,7 +1217,7 @@ async function main() {
     queueEnabled = queueBox.checked;
     await Storage.setQueueEnabled(queueEnabled);
     addLog(queueEnabled
-      ? `Keeping Yahoo's queue ${QUEUE_DEPTH} deep — it drafts for you even if this tab is asleep.`
+      ? `Keeping Yahoo's queue ${QUEUE_DEPTH} deep with the engine's next picks, in order — it drafts for you even if this tab is asleep.`
       : "Leaving Yahoo's queue alone.");
     if (queueEnabled) lastQueueRunAt = 0;
   });
@@ -1341,14 +1341,22 @@ async function main() {
         if (attempts === 1) {
           noteQueueIdle(`queue: checking — ${inRoom.size} in the room's queue`);
         }
-        /* Take out what no longer belongs. Yahoo drafts from this queue, so an
-     * entry left there is a pick waiting to happen — and entries added before
-     * the roster changed are how a team ended up with three tight ends and
-     * two quarterbacks. Only players the shortlist no longer wants at all,
-     * one per cycle, so a queue the user curated isn't emptied underneath
-     * them. */
-    const shortlistNow = await sendMessage({ type: "GET_SHORTLIST", n: queueDepth(), picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys(), round: roomRound });
-    const keep = new Set(shortlistNow.map((p) => p.name));
+        /* The plan, not a shortlist.
+     *
+     * Yahoo spends this queue as a sequence — topmost surviving entry first,
+     * then the next — so it is built as one: each entry is the pick the
+     * engine would make with everything above it already on the roster. A
+     * shortlist offered "Seahawks, Broncos, Texans" in the endgame, three
+     * correct answers to "if the first is gone, then who?" and a plan for
+     * nobody; the same shape handed over two backs at the turn of the snake,
+     * and could leave a roster needing one kicker and one defense with two
+     * of either.
+     *
+     * Take out what no longer belongs, one per cycle: an entry left here is a
+     * pick waiting to happen, but a queue the user curated should not be
+     * emptied underneath them either. */
+    const plan = await sendMessage({ type: "GET_QUEUE_PLAN", n: queueDepth(), picksUntilTurn, teams: detectedTeams, format: detectedFormat, exclude: unconfirmed.restingKeys(), round: roomRound });
+    const keep = new Set(plan.map((p) => p.name));
     const stale = [...inRoom].filter((name) => !keep.has(name));
     if (stale.length > 0) {
       const name = stale[0];
@@ -1356,13 +1364,13 @@ async function main() {
       if (control) {
         clickElement(control);
         queuedByUs.delete(name);
-        addLog(`Took ${name} out of the queue — no longer in the shortlist.`);
+        addLog(`Took ${name} out of the queue — the plan no longer wants him.`);
         await wait(600);
         return; // re-read the queue next cycle rather than acting on stale counts
       }
     }
 
-    const wanted = shortlistNow;
+    const wanted = plan;
         const pick = wanted.find(
           (p) => !inRoom.has(p.name) && !queuedByUs.has(p.name) && !tried.has(p.name) &&
             !restingUnconfirmed(p.name)
@@ -1370,7 +1378,7 @@ async function main() {
         if (!pick) {
           if (attempts === 1) noteQueueIdle(wanted.length === 0
             ? "queue: board has no available players — rebuild it from Yahoo's list"
-            : "queue: already holds the shortlist");
+            : "queue: already holds the plan");
           break;
         }
 

@@ -650,6 +650,116 @@ export async function shortlist(n = 5, {
   return out;
 }
 
+/* The queue as a plan, not a list of alternatives.
+ *
+ * shortlist() answers "who should I take next, and if he's sniped, then
+ * who?" — a fallback chain for one pick. Yahoo's queue is not consumed that
+ * way. It is consumed as a sequence: whenever we are not watching, Yahoo
+ * takes the topmost surviving entry, then the next one, then the next.
+ *
+ * Those two things disagree badly, and the disagreement is what a whole
+ * evening of drafts kept producing. A shortlist capped at two per position
+ * offered "Seahawks, Broncos, Texans" in the endgame — three defenses, all
+ * correct answers to "if the first is gone, then who?", and a plan for
+ * nobody. At the turn of the snake, where two picks come seconds apart, it
+ * handed over two backs or two quarterbacks for the same reason. And a
+ * roster needing one kicker and one defense with two picks left could be
+ * given two of either.
+ *
+ * So the queue is built the way it will be spent. Each entry is the pick the
+ * engine would actually make with every entry above it already on the
+ * roster: choose, put him on the simulated roster, choose again. The need
+ * gradient, the roster-completion override and the onesie floor all see the
+ * roster as it will be by the time that entry is reached, so the sequence
+ * fills K and DEF once each and never doubles up on a slot that the entry
+ * above it just filled.
+ *
+ * The cost is that it is a worse answer to the snipe. If the first entry is
+ * taken before your turn you get the second, which was chosen for the slot
+ * after — a mild ordering loss, against the certainty of not queueing three
+ * defenses. The round is passed in from the room rather than derived, for
+ * the same reason shortlist() takes it: a board ninety picks behind never
+ * lifts the kicker floor on its own.
+ */
+export async function queuePlan(n = 5, {
+  picksUntilTurn = null, teams = null, format = null, exclude = null, round = null,
+} = {}) {
+  const [{ adp, notes, byes }, config, draftState] = await Promise.all([
+    loadStaticData(),
+    Storage.getConfig(),
+    Storage.getDraftState(),
+  ]);
+  const players = await buildPlayers(adp, notes, byes);
+  applyDraftState(players, draftState);
+
+  const roomConfig = withRoomContext(config, { picksUntilTurn, teams, format });
+  const starters = roomConfig.roster?.starters || {};
+  const spots = Object.values(starters).reduce((a, b) => a + b, 0) + (roomConfig.roster?.bench || 0);
+  const onesieFloor = roomConfig.autopilot?.onesie_min_round ?? defaultOnesieFloor(roomConfig);
+  const teamCount = roomConfig.league?.num_teams || 10;
+  const picksMade = players.filter((p) => p.draftedBy).length;
+  const roundNow = round ?? (Math.floor(picksMade / teamCount) + 1);
+
+  /* A private copy: this walks the roster forward through picks that have not
+   * happened, and none of that may reach the stored board. */
+  const board = withoutExcluded(players, exclude).map((p) => ({ ...p }));
+  const plan = [];
+
+  for (let slot = 0; slot < n; slot++) {
+    const mine = board.filter((p) => p.draftedBy === "mine");
+    const remaining = spots - mine.length;
+    if (remaining <= 0) break;
+
+    const unfilled = Object.keys(starters).filter(
+      (pos) => pos !== "FLEX" && mine.filter((p) => p.pos === pos).length < starters[pos]
+    );
+
+    let chosen = null;
+    let reason = null;
+    let needOverride = false;
+
+    /* Empty starting slots first, once there are barely enough picks left to
+     * fill them — the same rule and the same floor the live engine uses, so
+     * the queue and the panel never disagree about the draft they are in. */
+    if (unfilled.length > 0 && remaining <= unfilled.length + 3) {
+      for (const pos of unfilled) {
+        if ((pos === "K" || pos === "DEF") && roundNow < onesieFloor) continue;
+        const best = board
+          .filter((p) => isDraftable(p) && p.pos === pos)
+          .sort((a, b) => a.adp - b.adp)[0];
+        if (best) {
+          chosen = best;
+          reason = `Reserved: ${pos} is still unfilled with ${remaining} pick(s) left.`;
+          needOverride = true;
+          break;
+        }
+      }
+    }
+
+    if (!chosen) {
+      let decision = null;
+      try {
+        decision = autoPick(board, roomConfig);
+      } catch {
+        break; // nothing draftable left; the plan ends here rather than throwing
+      }
+      if (!decision?.player) break;
+      chosen = board.find((p) => p.name === decision.player.name) || null;
+      reason = decision.reason;
+      needOverride = !!decision.needOverride;
+    }
+    if (!chosen) break;
+
+    chosen.draftedBy = "mine"; // the next slot chooses as if this one landed
+    plan.push({
+      name: chosen.name, pos: chosen.pos, team: chosen.team, tier: chosen.tier,
+      adp: chosen.adp, slot: slot + 1, reason, needOverride,
+    });
+  }
+
+  return plan;
+}
+
 /* Rebuild the drafted list from what the room still offers.
  *
  * Everything else here infers picks — watching names appear or vanish,
