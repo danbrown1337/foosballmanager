@@ -94,6 +94,32 @@ export function rowAdp(row) {
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+/* Yahoo's own player id, off the row.
+ *
+ * The room writes "B. Robinson", and Bijan and Brian Robinson Jr. are both
+ * Atlanta running backs — initial, surname, position and team are every
+ * discriminator the text has, and they are identical for two players a
+ * hundred and fifty ADP places apart. Reading them is hopeless by
+ * construction, which is why this cost a first-round pick more than once.
+ *
+ * The markup is not ambiguous at all. Each row carries data-id, and the
+ * headshot URL ends in the same number:
+ *
+ *   data-id="34054"
+ *   .../nfl_cutout/players_l/08252026/34054.1.png
+ *
+ * 40055 is Bijan. 34054 is Brian. Exact, and it was there all along.
+ */
+export function rowYahooId(row) {
+  if (!row) return null;
+  const holder = row.matches?.("[data-id]") ? row : row.querySelector?.("[data-id]");
+  const attr = holder?.getAttribute?.("data-id");
+  if (attr && /^\d{3,8}$/.test(attr.trim())) return attr.trim();
+  const img = row.querySelector?.("img[src]");
+  const m = img && /\/(\d{3,8})\.\d+\.(?:png|jpg|webp)/.exec(img.getAttribute("src") || "");
+  return m ? m[1] : null;
+}
+
 export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, player = null } = {}) {
   const doc = root.ownerDocument || root;
   /* A defence's row says "Texans", never "Houston Defense", so the name we
@@ -164,6 +190,40 @@ export function findPlayerClickTarget(root, playerName, { maxAncestorDepth = 6, 
     if (matches.length >= 8) break; // a real collision is two rows, not eight
   }
   if (matches.length === 0) return null;
+
+  /* The id settles it, when we have one.
+   *
+   * Everything below arbitrates on ADP, which is a proxy: it needs the room
+   * to publish a number, needs that number to be near the board's, and gives
+   * up when two rows are close. For the one case it exists to solve it kept
+   * failing — a room that prints no ADP for a bench back leaves both rows
+   * unscored, arbitration finds no rivals, and the first match wins, which is
+   * how Brian Robinson kept arriving in place of Bijan.
+   *
+   * Yahoo's id is not a proxy. A row that carries a different player's id is
+   * not this player, whatever his name reads as, and a row carrying his own
+   * needs no further argument. */
+  const rowOf = (node) => node.parentElement?.closest?.("tr, [role='row']") || null;
+  if (player?.yahooId) {
+    const want = String(player.yahooId);
+    const idOf = (node) => rowYahooId(rowOf(node));
+    const his = matches.filter((n) => idOf(n) === want);
+    if (his.length > 0) {
+      matches.length = 0;
+      matches.push(...his);
+    } else {
+      /* No row claims him. Drop the ones that positively belong to someone
+       * else and judge what is left; if that is nothing, the room is showing
+       * a different player under his name and there is nobody to click. */
+      const notRuledOut = matches.filter((n) => {
+        const id = idOf(n);
+        return !id || id === want;
+      });
+      if (notRuledOut.length === 0) return null;
+      matches.length = 0;
+      matches.push(...notRuledOut);
+    }
+  }
 
   /* Several matches are usually one player written in several places — the
    * pick feed, the queue panel, his row — not two players. A collision is
