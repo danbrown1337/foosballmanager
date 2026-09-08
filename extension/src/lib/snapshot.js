@@ -722,10 +722,30 @@ export async function queuePlan(n = 5, {
   const board = withoutExcluded(players, exclude).map((p) => ({ ...p }));
   const plan = [];
 
-  for (let slot = 0; slot < n; slot++) {
+  /* How many entries this plan is allowed to be.
+   *
+   * Normally the picks the roster still has room for, capped at what was
+   * asked. But a board that reads as over-full has lost count — a fifteen-spot
+   * roster came back as seventeen in a live draft, one name recorded twice
+   * under two spellings — and stopping there emptied the plan for the rest of
+   * the night. The queue then had nothing to hold, and the turn fallback,
+   * whose whole job is to walk the queue when a pick cannot be made, had
+   * nothing to walk: both remaining turns were lost to "board has no
+   * available players".
+   *
+   * An over-full roster is never evidence that the draft has stopped needing
+   * picks. The room decides that, by not offering a turn. So a board that has
+   * lost count still gets a short plan rather than none. */
+  const OVER_FULL_PLAN = 2;
+  const trueRemaining = spots - players.filter((p) => p.draftedBy === "mine").length;
+  const budget = trueRemaining > 0 ? Math.min(n, trueRemaining) : Math.min(n, OVER_FULL_PLAN);
+
+  for (let slot = 0; slot < budget; slot++) {
     const mine = board.filter((p) => p.draftedBy === "mine");
-    const remaining = spots - mine.length;
-    if (remaining <= 0) break;
+    // Floored for the same reason the budget is: this feeds the reservation
+    // rule below, and a negative here would stop it reserving the empty
+    // starting slots on exactly the board that has lost track of them.
+    const remaining = Math.max(1, spots - mine.length);
 
     const unfilled = Object.keys(starters).filter(
       (pos) => pos !== "FLEX" && mine.filter((p) => p.pos === pos).length < starters[pos]
