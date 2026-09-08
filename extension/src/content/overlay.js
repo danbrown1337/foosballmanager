@@ -2363,7 +2363,26 @@ async function main() {
        * the panel already claims the pick in the same breath, and a wrong
        * "mine" is corrected by the next roster read, which is exactly the
        * path that was carrying this fact before, only later. */
-      await sendMessage({ type: "MARK_PICK", name: currentRecName, by: "mine" });
+      /* Record it, but never at the cost of the turn.
+       *
+       * MARK_PICK was the wrong door: it resolves names for the popup's
+       * search box, so it throws when it cannot find one and guesses when it
+       * half can. Both fired here. "Vikings" threw — inside the try, after
+       * the click had already landed — so the turn was logged as an error and
+       * the defense went unrecorded, and the next pick took a second one.
+       * "Patriots" was worse: it shares three letters with Pat Freiermuth,
+       * which was enough for the fuzzy fallback, so a tight end was silently
+       * marked as my pick.
+       *
+       * IMPORT_PICKS writes the name as given, which is the name the engine
+       * itself just handed us and therefore already a board key. And the
+       * click has happened either way, so a failure to record it is worth a
+       * log line, not an abandoned turn. */
+      try {
+        await sendMessage({ type: "IMPORT_PICKS", names: [currentRecName], by: "mine" });
+      } catch (err) {
+        addLog(`Drafted ${currentRecName} but couldn't record him: ${String(err.message || err)}`);
+      }
       addLog(`Drafted ${currentRecName}.`);
       recordTurnOutcome("drafted", currentRecName);
       recordPickDecision(currentRecName);
