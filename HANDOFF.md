@@ -1,208 +1,132 @@
-# Handoff
+# Handoff — morning of 2026-09-08
 
-Where this project stands, for whoever (human or Claude) picks it up next.
-Written 2026-09-03.
+State at end of the 2026-09-07 session. HEAD `565ab65`, extension **v0.71.0**,
+everything committed and pushed to `origin/main`.
 
-## What this is
-
-A Yahoo Fantasy Football draft assistant and in-season roster manager, for
-Dan's real league: **1 QB, 2 RB, 2 WR, 1 TE, 2 W/R/T flex, 1 DEF, no
-kicker** (confirmed from the league's roster screen). Team count and
-scoring are still guesses — see "What needs a human" below.
-
-Three ways to use it, all sharing one tested engine so they can never
-disagree with each other:
-
-1. **CLI** (`fantasy_manager/`) — `draft_assistant.py`, `roster_manager.py`,
-   `trade_targeter.py`, `yahoo_client.py`, `browser_sync.py`.
-2. **Web app** (`fantasy_manager/web.py`) — `python3 -m fantasy_manager.web`,
-   point-and-click, stdlib only, no terminal literacy needed beyond
-   starting it. Supports `--share` for a second person on the same network.
-3. **Chrome extension** (`extension/`) — the same engine ported to JS,
-   installable via `chrome://extensions` → Load unpacked, no Python needed
-   at all. Covers drafting and trade offers fully; roster viewing partially
-   (see its own README for the honest gap list). Includes an opt-in,
-   off-by-default **auto-draft** that can click your recommended pick (and,
-   if separately enabled, Yahoo's own Confirm button) when it's your turn —
-   see "The automation boundary" below, it's no longer absolute.
-
-**Repo:** https://github.com/danbrown1337/foosballmanager, branch `main`.
-CI: 9 pushes, 9 green, never once red. `README.md` is the user-facing entry
-point — start there for setup and commands; this file is project state and
-context, not a how-to.
-
-## Read this first if you're a fresh Claude session
-
-- The project lives **only** in `danbrown1337/foosballmanager`. It used to
-  be built inside `danbrown1337/practice_makes_perfect` before being moved
-  out — if you see that repo mentioned anywhere (old branches, a closed
-  PR #1), it's leftover history. **Never push fantasy-manager work there.**
-  The user was explicit and annoyed the one time this almost happened.
-- If you're picking up a stale local clone of `practice_makes_perfect` in
-  this environment: it may have a local `main` branch with ~12 unpushed
-  commits sitting on it. Check whether those SHAs already exist on
-  `foosballmanager` (they very likely do, via `git cat-file -e` after
-  `git fetch origin <sha>` if the clone is shallow) before assuming
-  anything needs pushing — it's almost certainly a pre-reset leftover, not
-  new work.
-- Two long-dead branches on `practice_makes_perfect`
-  (`claude/fantasy-manager-repo-am7b62`, safe to delete — identical to
-  `foosballmanager/main`; `add-canonical-patterns-docs`, unrelated 593-line
-  doc commit, not mine to judge) are stuck because this session's git
-  gateway 403s on `git push --delete`, and the GitHub MCP tools available
-  have no delete-branch method. If you hit the same wall, tell the user
-  rather than burning turns on it — it's a 10-second fix from the GitHub
-  UI (`/branches`, trash icon).
-
-## Verification posture (why the commit messages are long)
-
-None of this was ever tested against live Yahoo — this environment's
-egress proxy blocks `fantasysports.yahoo.com` outright, and Yahoo's own
-API access is still pending approval (see below). Every commit message
-explains specifically what *was* verified and how, because "should work
-per the docs" wasn't good enough for code nobody could watch run against
-the real site. The two techniques worth knowing about if you extend this:
-
-- **Golden-master testing** (`extension/test/compare_with_python.js` +
-  `scripts/simulate_draft.py`): the Python engine drafts a full mock draft
-  for every team, guardrails included; the JS port replays the identical
-  draft and every pick is diffed. This is how the JS engine port was
-  verified correct — 640 picks across 4 configs, zero mismatches — and it
-  regenerates fresh from Python on every CI run specifically so a future
-  change to `autopilot.py` can't silently drift from the JS port while
-  CI stays green against a stale fixture.
-- **Real browser verification**: this container has a bundled Chromium
-  (`/opt/pw-browsers/`). The extension was actually loaded unpacked into it
-  via Playwright and driven end-to-end — not just "the files exist and
-  parse." That's how a real bug got caught (a content script's static
-  `import` throws in Chrome even with a `"type": "module"` manifest hint;
-  the fix is dynamic `import()`) that reading MV3 docs alone wouldn't have
-  surfaced, since `developer.chrome.com` was also unreachable from here.
-
-If you add a browser-facing feature, use this pattern: don't trust "should
-work," load it into the real bundled Chromium and watch it run.
-
-## What needs a human (can't be resolved from a coding session)
-
-1. **League settings beyond the roster construction.** `num_teams` and
-   `scoring` in `profiles/<name>/league.yaml` are still the generic
-   defaults (10 teams, PPR). Only the starter slots are confirmed. Every
-   tier and replacement-level number the engine produces reads from this
-   file — get the real values in before draft day.
-2. **Yahoo API application status.** Was "submitted," last known state.
-   `yahoo_client.py` is written and unit-tested against Yahoo's documented
-   response shapes but has never run against a live account. Once
-   approved: two separate steps, registering the app AND applying for
-   Fantasy API access specifically — people miss the second one. Redirect
-   URI must be `https://localhost:8000` (Yahoo's older `oob` flow isn't
-   reliably accepted for new apps anymore).
-3. **Research data provenance.** `data/adp_2026_ppr.csv` (190 players) and
-   `data/player_notes_2026.csv` (32 players tagged bust/breakout/
-   injury_watch/value_note) came bundled in the original project zip the
-   user uploaded — no Claude session has independently pulled or verified
-   either against a live source, since the cloud session that builds this
-   repo can't reach the internet at all (confirmed live, not assumed).
-   The engine never asks Yahoo for rankings, so this is genuinely the
-   entire "who's good" signal — worth the user confirming they trust it,
-   or refreshing it via local Claude (real internet access, unlike this
-   session) before a real draft. See `LIVE_DRAFT.md`'s optional refresh
-   step.
-4. **A real dry run before draft day.** See `LIVE_DRAFT.md` for the plan
-   already written for this: a local Claude Code session (not this cloud
-   one — it has no network path to Yahoo at all, confirmed live) attaches
-   to the user's own logged-in Chrome over CDP via `browser_sync.py`
-   (already tested, credential-free) and drives picks with a visible
-   confirm step until proven out. If you're a session picking this up
-   after that dry run happened, check there for what was actually learned
-   about the real draft room (turn-detection wording, DOM patterns) and
-   feed it back into `extension/src/lib/turnDetect.js` /
-   `domActions.js`'s guesses.
-
-   Both `browser_sync.py watch` (CLI) and the extension's content script
-   also need `--mode`/mode-select set correctly for the real draft room's
-   layout (picks appearing vs. names disappearing from a pool) — this can
-   only be confirmed against the actual Yahoo draft room, which no cloud
-   session has been able to reach. If nothing gets detected either way,
-   capture the page (`browser_sync.py dump`, or the extension's panel log) and
-   hand it to whoever's driving next — that one round trip fixes it. Same
-   mock draft is also the place to test **auto-draft** (leave "fully
-   automatic" off first) and, in Options, add whatever your room's real
-   "your turn" wording is if `turnDetect.js`'s guessed phrases don't fire.
-5. **Repo visibility.** Was flagged as worth making private earlier in
-   this project's life (it's public; contains the user's actual research
-   notes and trade strategy, harmless to have written but not necessarily
-   meant for leaguemates to read before draft day) — never confirmed
-   either way. Check `https://github.com/danbrown1337/foosballmanager/settings`.
-6. **The two stale `practice_makes_perfect` branches** mentioned above.
-
-## What's genuinely solid
-
-- **246 Python tests, 49 JS unit tests, a 640-pick golden-master
-  comparison** — all green, every push (counts re-verified directly via
-  `python3 -m pytest` / `node --test`, not carried forward from an older
-  commit message). `tests/test_data.py`
-  checks the shipped CSVs, not just the code, so a bad player-name typo in
-  `data/player_notes_2026.csv` fails CI instead of silently miscounting a
-  trade offer.
-- **Two real engine bugs found and fixed by testing, not inspection**:
-  the roster-completion guardrail was counting the IR slot as a draftable
-  pick (delayed the "must fill this starter slot" override past the actual
-  final pick); a league with zero kicker slots could still have a kicker
-  drafted onto the bench once skill-position value ran dry, because absent
-  positions defaulted to "assume 1 starter" instead of "never draft this."
-  Both reproduced directly before fixing, both have regression tests that
-  fail against the old code.
-- **The automation boundary, updated.** Roster moves and trades are still
-  never automated anywhere in this project — that line hasn't moved.
-  Drafting is now the one deliberate exception: the extension has an
-  opt-in, off-by-default auto-draft (`src/lib/turnDetect.js` +
-  `src/lib/domActions.js`, wired into `src/content/overlay.js`) that finds
-  and clicks the recommended player when a configurable "your turn" phrase
-  appears in the page text, then stops short of Yahoo's own confirm click
-  unless a second "fully automatic" toggle is also on. This was added
-  because the user explicitly asked for it ("But it needs too that's what
-  we want"), not a refactor's side effect — CLI, web app, and browser sync
-  are untouched, and trades/roster moves in the extension are untouched
-  too. **Never verified against live Yahoo** (same limit as everything
-  else — see "Verification posture"); `test/domActions.check.js` verifies
-  the click-targeting logic against a real browser on a synthetic page, and
-  the default "your turn" phrases in `turnDetect.js` are an educated guess.
-  Test it in a Yahoo mock draft, "fully automatic" off, before trusting it
-  live.
-- **Two-person support** (`--profile`, or a separate Chrome profile for
-  the extension) is real and tested — verified end-to-end that two
-  people drafting side by side never see each other's picks and each gets
-  recommended what the other just took.
-
-## Architecture map
-
-```
-fantasy_manager/       CLI + web app (Python, stdlib + PyYAML only)
-  board.py             ADP loading, tiering, replacement level
-  autopilot.py         the pick engine — 4 guardrails, ported faithfully to JS
-  profiles.py          per-person settings/rosters/state (chrome.storage.local
-                        equivalent for the extension is src/lib/storage.js)
-  browser_sync.py      Playwright-driven roster import + live draft watch
-  web.py                point-and-click app, binds 127.0.0.1 (or --share)
-config/league.yaml      TEMPLATE new profiles seed from — not read directly
-profiles/<name>/        gitignored; real per-person data lives here
-data/                   shared 2026 ADP + research notes (CSV)
-extension/               Chrome extension, zero npm deps, load-unpacked
-  src/engine/            board.js / autopilot.js / tradeTargeter.js —
-                         faithful ports, verified via golden-master
-  src/content/overlay.js the only piece that touches a live Yahoo page
-  test/                  node:test + golden-master comparison tooling
-scripts/                 CSV->JSON conversion + draft-simulation tooling
-                         shared between the Python tests and the JS port
+```bash
+cd extension && bash test/run_all.sh     # 209 tests + load check + DOM check
+cd .. && python3 -m pytest               # 245 tests
 ```
 
-## If you're a Claude session with no memory of this conversation
+Both green as of the last commit. The golden master (JS engine vs Python
+engine, pick for pick) is inside `run_all.sh`.
 
-Read `README.md` and `extension/README.md` first — they're the accurate,
-current user-facing docs. This file exists because a lot of *why* decisions
-were made (the automation boundary, the platform constraint that a Chrome
-extension can't reach a native app, the shallow-clone/wrong-repo trap) live
-only in a very long conversation history that won't be available to you.
-If something in the code looks unusually cautious or over-verified, it's
-probably because it was — read the commit message before assuming it's
-excessive.
+---
+
+## Read this first
+
+**Your extension is loaded unpacked from this working directory.** There is no
+staging boundary: the moment a file is edited, a browser reload picks it up,
+including a half-finished edit. That is how a `unbound helpers — findPanelTab`
+error reached the console tonight. **Only reload the extension on a version
+that has been announced as committed.**
+
+**Don't debug against a live draft.** Twice tonight a fix shipped mid-draft
+made the draft worse — the frozen-list detector (v0.70.0) and the Picks-panel
+swap (v0.70.0), both reverted in v0.70.1. Capture a room to a fixture and
+iterate against that instead.
+
+---
+
+## The one finding that matters
+
+Almost every bad pick this session traced to the same thing, and it is not the
+scoring: **the board falls behind the room**, so the engine chooses from a pool
+that is missing the players actually available, and the shortlist fills with
+players who were drafted rounds ago.
+
+Symptoms it produced, all downstream of that one cause:
+
+- `queue: couldn't confirm <elite player> in the room` — correct, he was gone
+- `Your turn — couldn't find "<name>" in this room, draft it manually`
+- Kenneth Walker III taken while Jonathan Taylor and Christian McCaffrey were
+  still on the room's list — the engine never saw them as options
+- Yahoo autodrafting the pick, which is where the QB2s, the second tight ends
+  and the D-graded receivers on every roster tonight came from
+
+Fixes that landed against it: reading the room's own pick announcement, the
+identity-based joins, the burst guard, the scroll-position guard, and holding
+three-strikes to the marking threshold.
+
+---
+
+## Open, in the order I would do them
+
+### 1. The cold-start hole — the Picks panel
+
+**This is the fix for the finding above and it is written but disabled.**
+
+`syncFromPicksPanel()` in `src/content/overlay.js`, gated behind
+`PICKS_SYNC_ENABLED = false`.
+
+The room keeps the complete pick list and will show it on request. Reading it
+would close the hole that announcements cannot: picks made before the panel
+loaded, or during a reload, are invisible forever otherwise. A draft reached
+round 13 still recommending Derrick Henry, taken in round 3.
+
+It is off because swapping the side panel over to Picks did not reliably swap
+back, and the room was left showing Picks — which is where queue maintenance
+reads what is queued, so the panel spent the rest of that draft reporting
+`can't see the queue panel`.
+
+**To finish it:** after restoring, confirm the Queue panel is actually showing
+(`/Autodraft will pick from queue|Your queue is empty/` in the page text) and
+click back again if not; bail out of the whole sync if it cannot be confirmed.
+Note from the live DOM: only the *inactive* tab renders as a button, so when
+Picks is showing the button says "Queue" and vice versa — verify that before
+relying on `findPanelTab`.
+
+### 2. `document.hidden` is the wrong signal
+
+Chrome reports a tab hidden when its window is merely **covered** by another
+window. That is why the panel kept saying "tab hidden" during drafts nobody
+had navigated away from, and it gates real behaviour: sweeps, the queue depth,
+and the turn warning.
+
+The v0.70.0 attempt to test rendering directly (unchanged page text = frozen)
+false-positived on a list that renders fine and was reverted to require
+`document.hidden` as well. A better signal is needed. Candidate: compare the
+set of player names visible before and after a scroll step — if it changed,
+the list is rendering, whatever the visibility flag claims.
+
+### 3. Was the early defence the engine or Yahoo?
+
+The last draft finished with a kicker and a defence rostered before round 14,
+which `defaultOnesieFloor` forbids and the queue's reservation also blocks
+since v0.63. The visible log had scrolled past the evidence.
+
+**v0.70.0 persists up to 200 log lines per room** in `chrome.storage.local`
+under `fm_room_log`, keyed by the draft room id — but nothing surfaces them.
+Adding a "copy full log" button beside "Copy decision log" in the popup would
+have answered this in ten seconds, and will answer the next one.
+
+### 4. Grade a draft the engine actually drafted
+
+Every review so far — including two written by another model — has graded a
+roster Yahoo's autodraft produced. `test/reviewRun2.test.js` pins the three
+behaviours those reviews called failures and shows the engine refuses all
+three. There is still **no measurement of our own engine drafting a full
+draft**.
+
+Popup → Team tab → **Grade this draft** produces the report from the decision
+log. It needs one clean draft where the panel makes every pick.
+
+---
+
+## Quick reference
+
+| Log line | Meaning |
+|---|---|
+| `Room announced X drafted.` | Working as intended — positive pick detection |
+| `Board refreshed: … 0 put back` | Board healthy, no churn |
+| `Partial view (N seen …) — freeing only` | Correct: too little of the board to mark anyone |
+| `Ignored N players vanishing at once` | Burst guard caught a view change, not N picks |
+| `This room has N teams, not the M in your settings` | Auto-detection overriding config for the session |
+| `This room's format: …` | Roster shape read off the panel |
+| `queue: couldn't confirm X` | Usually correct — X is drafted; a problem only if X is visibly in the room |
+| `row present (0 cells, 0 controls…)` | Since v0.71 this counts as "drafted", not "button missing" |
+| `degraded — …` in the header | Panel cannot read the list reliably |
+
+Detected team count and roster format apply **per session and per room** and
+are deliberately never written to settings — a mock is 12 or 14 teams with a
+kicker, the real league is 10 with none.
