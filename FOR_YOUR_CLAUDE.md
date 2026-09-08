@@ -93,6 +93,12 @@ Tell them both, because the panel can only report them after the fact:
 - **Nothing typed in the room's player search.** A filter narrows the list to
   a few rows, and everything the panel looks for afterwards is missing from
   it.
+- **The draft window has to stay focused and on top.** Chrome throttles a
+  tab whose window is merely covered or unfocused — not just minimised — and
+  a throttled tab can sleep straight through a turn. This is the one known
+  limitation with no fix in the extension; the queue in Step 3b is the safety
+  net for when it happens, but the cheap answer is to leave the draft window
+  in front and chat somewhere else.
 
 ## Step 3 — explain what they'll see, before draft day
 
@@ -100,6 +106,28 @@ Have them open the extension's popup once so it isn't new to them mid-draft:
 a recommended pick with a one-line reason, positional scarcity, and their
 roster as it fills in. In the draft room itself a floating panel appears on
 the page, with buttons to mark players as taken.
+
+## Step 3b — the queue is the safety net, and it fills itself
+
+Worth explaining once, because it changes what they should do with it.
+
+The panel keeps Yahoo's own queue loaded with the engine's next picks **in
+order**. Each entry is chosen as though everything above it is already on the
+roster, so the queue reads like a plan rather than a list of alternatives —
+it will not hand them two kickers, or three defences, or a second quarterback
+at a slot that the entry above just filled. Yahoo drafts from that queue
+whenever the panel cannot act, which is what makes a throttled tab survivable.
+
+Two things follow, and both are worth saying out loud:
+
+- **Leave the queue alone.** The panel takes names out that its plan no longer
+  wants, so hand-curated entries will disappear and it will look like a bug.
+  If they want a specific player, tell them to draft him — not to queue him.
+- **A recommendation that is already drafted does not cost the turn.** The
+  panel walks the queue and takes the next name instead. In the end-of-draft
+  report (**popup -> Team -> Grade this draft**) that shows up as a turn whose
+  `wanted` and `detail` disagree. That is the fallback working, not a fault —
+  it landed three picks in each of the last two test drafts.
 
 ## Step 4 — auto-draft, and the honest caveat
 
@@ -149,6 +177,9 @@ and the extension is what they'll want for every draft after the first.
 1. Extension loaded, league settings entered and double-checked (kicker,
    flex).
 2. A mock draft run at least once, with the panel visibly recommending.
-3. Draft room open in the Chrome tab where the extension is loaded.
-4. Fully-automatic off unless they've deliberately chosen otherwise.
-5. They know the recommendation is advice, and the confirm click is theirs.
+3. Draft room open in the Chrome tab where the extension is loaded, on the
+   room's **Players** tab, with nothing typed in its search box.
+4. That window focused and on top for the draft — not sitting behind the one
+   they're chatting in.
+5. Fully-automatic off unless they've deliberately chosen otherwise.
+6. They know the recommendation is advice, and the confirm click is theirs.
