@@ -456,6 +456,7 @@ export async function autopickCommit(commit) {
 export async function resetDraft() {
   await Storage.resetDraftState();
   await Storage.clearDraftLog();
+  await Storage.clearTurnLog();
   return buildSnapshot();
 }
 
@@ -465,6 +466,12 @@ export async function resetDraft() {
  * anyone has had to go on — which is why every question about this engine
  * ("why three tight ends?", "why no backs?") took a conversation to answer
  * instead of a lookup. */
+/* What happened at one turn, whoever ended up making the pick. */
+export async function recordTurn(entry) {
+  const log = await Storage.appendTurnLog({ at: new Date().toISOString(), ...entry });
+  return { turns: log.length };
+}
+
 export async function recordDecision(entry) {
   const log = await Storage.appendDraftLog({
     at: new Date().toISOString(),
@@ -482,9 +489,22 @@ export async function gradeDraft() {
     Storage.getDraftState(),
     Storage.getDraftLog(),
   ]);
+  const turns = await Storage.getTurnLog();
   const players = await buildPlayers(adp, notes, byes);
   applyDraftState(players, draftState);
-  return { ...gradeRoster(players, config, log), log };
+  /* The turns the panel lost are the story of a draft it barely took part
+   * in, and they belong beside the picks it won. */
+  const missed = turns.filter((t) => t.outcome !== "drafted");
+  const reasons = {};
+  for (const turn of missed) reasons[turn.outcome] = (reasons[turn.outcome] || 0) + 1;
+  return {
+    ...gradeRoster(players, config, log),
+    log,
+    turns,
+    turnsSeen: turns.length,
+    turnsWon: turns.length - missed.length,
+    missedReasons: reasons,
+  };
 }
 
 /** Record newly-detected picks from a content script poll, defaulting to
@@ -522,7 +542,9 @@ export async function setPracticeMode(active) {
 
 /* The shortlist the draft room's queue should hold. Built from the same live
  * state as buildSnapshot, so it reflects every pick recorded so far. */
-export async function shortlist(n = 5, { picksUntilTurn = null, teams = null, format = null, exclude = null } = {}) {
+export async function shortlist(n = 5, {
+  picksUntilTurn = null, teams = null, format = null, exclude = null, round = null,
+} = {}) {
   const [{ adp, notes, byes }, config, draftState] = await Promise.all([
     loadStaticData(),
     Storage.getConfig(),
@@ -570,8 +592,17 @@ export async function shortlist(n = 5, { picksUntilTurn = null, teams = null, fo
    * has to respect the same floor the engine does: reserving a kicker in
    * round twelve hands over a pick that autoPick would have refused, and the
    * two disagreeing is worse than either rule alone. */
+  /* The room's round, not our count of it.
+   *
+   * This derived the round from how many players the board believes are
+   * drafted, and the board lags — by ninety picks in one draft. It therefore
+   * thought round eight while the room was in round fourteen, so the floor
+   * below never lifted, no defence was ever reserved into the queue, and the
+   * slot finished the draft empty. Twice.
+   *
+   * The room prints the round in its banner and cannot be behind itself. */
   const picksMade = players.filter((p) => p.draftedBy).length;
-  const roundNow = Math.floor(picksMade / (roomConfig.league?.num_teams || 10)) + 1;
+  const roundNow = round ?? (Math.floor(picksMade / (roomConfig.league?.num_teams || 10)) + 1);
   const onesieFloor = roomConfig.autopilot?.onesie_min_round ?? defaultOnesieFloor(roomConfig);
 
   const reserved = [];

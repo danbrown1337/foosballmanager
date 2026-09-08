@@ -213,6 +213,17 @@ document.getElementById("gradeBtn").addEventListener("click", async () => {
       good.textContent = `Strengths: ${report.strengths.join(", ")}`;
       out.appendChild(good);
     }
+    /* The turns lost matter more than the picks won when the panel is only
+     * taking a quarter of them. */
+    if (report.turnsSeen) {
+      const turns = document.createElement("div");
+      const reasons = Object.entries(report.missedReasons || {})
+        .map(([why, n]) => `${n} x ${why}`).join(", ");
+      turns.textContent = `Turns: ${report.turnsWon} of ${report.turnsSeen} drafted by the panel` +
+        (reasons ? ` — missed: ${reasons}` : "");
+      out.appendChild(turns);
+    }
+
     if (!report.log?.length) {
       const note = document.createElement("div");
       note.textContent = "No decision log for this draft — flags about when a pick was made need one.";

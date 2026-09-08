@@ -21,6 +21,7 @@ import {
   resetDraft,
   recordDetectedPicks,
   recordDecision,
+  recordTurn,
   gradeDraft,
 } from "./lib/snapshot.js";
 import { Storage } from "./lib/storage.js";
@@ -59,11 +60,15 @@ async function handle(message, sender) {
 
     case "GET_SHORTLIST":
       return shortlist(message.n || 5, {
+        round: message.round ?? null,
         picksUntilTurn: message.picksUntilTurn ?? null,
         teams: message.teams ?? null,
         format: message.format ?? null,
         exclude: message.exclude ?? null,
       });
+
+    case "RECORD_TURN":
+      return recordTurn(message.entry);
 
     case "RECORD_DECISION":
       return recordDecision(message.entry);
