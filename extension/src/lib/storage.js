@@ -230,6 +230,20 @@ export const Storage = {
     return set(KEYS.roomLog, all);
   },
 
+  /* Every room's log at once, newest room first.
+   *
+   * The lines have been written to storage since v0.70.0 and nothing has ever
+   * read them back, so the one time they were needed — a draft that went to
+   * autodraft, in a window that had since been closed — the record existed
+   * and was unreachable. */
+  async getAllRoomLogs() {
+    const all = await get(KEYS.roomLog, {});
+    const facts = await get(KEYS.roomFacts, {});
+    return Object.entries(all)
+      .map(([roomId, lines]) => ({ roomId, lines, at: facts[roomId]?.at ?? 0 }))
+      .sort((a, b) => b.at - a.at);
+  },
+
   async getRoomProjection() {
     return get(KEYS.roomProjection, null);
   },

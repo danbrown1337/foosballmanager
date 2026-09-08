@@ -231,3 +231,31 @@ document.getElementById("copyLog").addEventListener("click", async () => {
     out.textContent = `Couldn't copy: ${err.message}`;
   }
 });
+
+
+/* The panel's own log, out of storage rather than off the screen.
+ *
+ * It is kept per room and survives a reload, a closed tab and a closed
+ * window — which is the whole point, since the questions worth asking about a
+ * draft ("why did that go to autodraft?") are asked after it has ended and
+ * usually after the room is gone. Until now the only copy was in the panel's
+ * DOM, so closing the tab destroyed the evidence. */
+document.getElementById("copyPanelLog").addEventListener("click", async () => {
+  const out = document.getElementById("gradeOut");
+  try {
+    const rooms = await sendMessage({ type: "GET_ROOM_LOGS" });
+    if (!rooms.length) {
+      out.textContent = "No panel logs stored yet.";
+      return;
+    }
+    const text = rooms
+      .map((room) => `=== room ${room.roomId} (${room.lines.length} lines) ===\n${room.lines.join("\n")}`)
+      .join("\n\n");
+    await navigator.clipboard.writeText(text);
+    const newest = rooms[0];
+    out.textContent =
+      `Copied ${rooms.length} room log(s), ${newest.lines.length} lines from the most recent.`;
+  } catch (err) {
+    out.textContent = `Couldn't copy the panel log: ${err.message}`;
+  }
+});
