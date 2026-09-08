@@ -179,6 +179,7 @@ async function main() {
     findQueueNames, withoutQueuePanel, parseDraftSlot, parseDraftPosition, picksUntilMyTurn,
     teamCountBounds, defenceAliases, parseDraftResults, teamsFromRoundChange,
     parseRosterFormat, draftRoomId, parseLastPick, resolveAnnouncedPick,
+    picksUntilTurnFromRoom,
     Storage, isMyTurn, looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, DEFAULT_CONFIRM_PHRASES, findPlayerSearchBox,
     setInputValue, surnameOf, findListScroller, findQueueStar, findDraftButton,
@@ -188,7 +189,7 @@ async function main() {
      findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel,
      parseDraftSlot, parseDraftPosition, picksUntilMyTurn, teamCountBounds,
      defenceAliases, parseDraftResults, teamsFromRoundChange, parseRosterFormat,
-     draftRoomId, parseLastPick, resolveAnnouncedPick } =
+     draftRoomId, parseLastPick, resolveAnnouncedPick, picksUntilTurnFromRoom } =
     await import(chrome.runtime.getURL("src/lib/textMatch.js")));
   ({ Storage } = await import(chrome.runtime.getURL("src/lib/storage.js")));
   ({ fetchPool, leagueIdFromUrl } = await import(chrome.runtime.getURL("src/lib/yahooPool.js")));
@@ -212,7 +213,7 @@ async function main() {
     findAmbiguousAbbrevs, findQueueNames, withoutQueuePanel, parseDraftSlot,
     parseDraftPosition, picksUntilMyTurn, teamCountBounds, defenceAliases,
     parseDraftResults, teamsFromRoundChange, parseRosterFormat, draftRoomId,
-    parseLastPick, resolveAnnouncedPick, isMyTurn,
+    parseLastPick, resolveAnnouncedPick, picksUntilTurnFromRoom, isMyTurn,
     looksLikeAFutureTurn, findPlayerClickTarget, findConfirmClickTarget,
     highlightElement, clickElement, findPlayerSearchBox, setInputValue, surnameOf,
     findListScroller, findQueueStar, findDraftButton, findQueueRemove,
@@ -1639,13 +1640,36 @@ async function main() {
     }
 
     const bounds = teamCountBounds(position);
+
+    /* Round one never ticks over, so the exact count cannot be derived until
+     * round two — and the whole of round one runs on a number the room has
+     * already contradicted. It said "Pick 10 of 10" at round 1, pick 13.
+     *
+     * The pick number bounds it on its own: thirteen picks into the first
+     * round is at least thirteen teams. A floor is not the exact answer and
+     * is strictly better than one known to be too small, since everything
+     * built on it errs the same way. The exact value replaces it at the first
+     * round change. */
+    if (bounds && teams < bounds.min && detectedTeams !== bounds.min) {
+      detectedTeams = bounds.min;
+      Storage.setRoomFacts(roomId, { teams: bounds.min }).catch(() => {});
+      addLog(`Round ${position.round}, pick ${position.pick} means at least ${bounds.min} teams — settings say ${teams}. Using ${bounds.min} until the round turns over.`);
+    }
     if (bounds && (teams < bounds.min || teams > bounds.max) && !warnedTeamCount) {
       warnedTeamCount = true;
       const range = bounds.max === Infinity ? `${bounds.min} or more` : `${bounds.min}-${bounds.max}`;
       addLog(`This room looks like a ${range} team draft, but the panel is set to ${teams}. Fix it in Options or every "picks away" number is wrong.`);
     }
 
-    const away = picksUntilMyTurn(position, slot, teams);
+    /* The room's own countdown, over anything we can calculate.
+     *
+     * picksUntilMyTurn needs a team count, and a wrong count makes it wrong —
+     * the panel reported 13 picks away while the room's title said 20. The
+     * room knows without being told how many teams it has. */
+    const stated = picksUntilTurnFromRoom(
+      `${document.title}\n${document.body.innerText.slice(0, 400)}`
+    );
+    const away = stated ?? picksUntilMyTurn(position, slot, teams);
     if (away === null || away === lastPicksAway) return;
     lastPicksAway = away;
     picksUntilTurn = away; // the engine can't derive this: it needs the slot and the snake

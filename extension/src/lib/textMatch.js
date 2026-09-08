@@ -238,6 +238,28 @@ export function parseLastPick(text) {
   return { label: m[1], pos: m[2].toUpperCase(), team: m[3].toUpperCase(), block: m[0] };
 }
 
+/* How many picks until this manager is up, as the room states it.
+ *
+ * This was derived instead: from the draft slot, the current pick and a team
+ * count typed into settings. When that count is wrong every number built on
+ * it is wrong — the panel said "your next turn is 13 picks away" while the
+ * room's own title said 20, and the urgency rule ran on the difference for a
+ * whole draft.
+ *
+ * The room puts it in the page title and in its status banner, and neither
+ * needs to know how many teams there are. Zero is a real answer and means it
+ * is your turn now, so the caller must distinguish it from null, which means
+ * the room did not say. */
+export function picksUntilTurnFromRoom(text) {
+  const source = String(text || "");
+  const until = /(\d+)\s+picks?\s+until\s+your\s+turn/i.exec(source);
+  if (until) return Number(until[1]);
+  const upIn = /you'?re up in\s+(\d+)\s+picks?/i.exec(source);
+  if (upIn) return Number(upIn[1]);
+  if (/your turn,?\s*draft now/i.test(source)) return 0;
+  return null;
+}
+
 /* Resolve an announced pick using everything the announcement carries.
  *
  * findBoardNames keys an abbreviation on its last word, so "Amon-Ra St.
