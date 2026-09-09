@@ -2,6 +2,11 @@
 bye-week / summary / overachiever views."""
 import argparse
 
+import pytest
+
+from fantasy_manager import profiles
+from fantasy_manager.board import build_board
+
 from fantasy_manager import roster_manager
 from fantasy_manager.roster_manager import cmd_byeweeks, cmd_overachievers, cmd_summary, load_my_roster
 
@@ -131,3 +136,43 @@ class TestOverachievers:
         cmd_overachievers(args(pos="rb", top=10))
         out = capsys.readouterr().out
         assert "Back" in out and "Riser" not in out
+
+
+class TestFreeAgentPool:
+    """The pool `waivers` ranks has to exclude everyone already rostered —
+    including your own players, whichever file they are recorded in."""
+
+    @pytest.fixture
+    def sandbox(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(profiles, "PROFILES_DIR", str(tmp_path / "profiles"))
+        monkeypatch.delenv(profiles.ENV_VAR, raising=False)
+        profiles.ensure_profile()
+        return tmp_path
+
+    def test_excludes_players_on_the_weekly_import(self, sandbox):
+        # Regression: the pool was filtered against my_roster.csv only, so a
+        # roster kept current by the weekly import — the normal in-season
+        # case — had its own players recommended back as waiver targets.
+        board, _ = build_board()
+        mine = board[0].name
+        with open(profiles.weekly_path(), "w", newline="") as f:
+            f.write("name,pos,team,slot,status,opponent,proj,bye\n")
+            f.write(f"{mine},{board[0].pos},{board[0].team},BN,,,10.0,False\n")
+
+        available, _ = roster_manager.load_free_agents()
+        assert mine not in {p.name for p in available}
+
+    def test_excludes_players_on_rival_rosters(self, sandbox):
+        board, _ = build_board()
+        theirs = board[0].name
+        with open(profiles.league_rosters_path(), "w", newline="") as f:
+            f.write("team_name,manager,name,pos,team\n")
+            f.write(f"Rivals,Someone,{theirs},{board[0].pos},{board[0].team}\n")
+
+        available, source = roster_manager.load_free_agents()
+        assert theirs not in {p.name for p in available}
+        assert "all known rosters" in source
+
+    def test_says_so_when_it_only_knows_your_own_roster(self, sandbox):
+        _, source = roster_manager.load_free_agents()
+        assert "your roster only" in source

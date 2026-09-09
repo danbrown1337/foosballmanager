@@ -112,10 +112,17 @@ class TestRosterManager:
         assert "No roster on file yet" in result.stdout
 
     def test_waivers_lists_the_board(self, project):
+        """With no roster imported there is nothing to measure a pickup
+        against, so this falls back to a plain best-available list — and says
+        so, rather than implying the order means more than it does."""
         result = run(project, "fantasy_manager.roster_manager", "waivers",
                      "--pos", "RB", "--top", "5")
         assert result.returncode == 0
-        assert len(result.stdout.strip().splitlines()) == 6
+        assert "Best available" in result.stdout
+        assert "No roster on file yet" in result.stdout
+        players = [line for line in result.stdout.splitlines()
+                   if line.startswith("  ") and " RB " in line]
+        assert len(players) == 5
 
     def test_overachievers_reports_breakout_calls(self, project):
         result = run(project, "fantasy_manager.roster_manager", "overachievers", "--top", "5")
