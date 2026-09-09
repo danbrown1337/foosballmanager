@@ -297,3 +297,106 @@ class TestChromeAttach:
         finally:
             proc.terminate()
             proc.wait(timeout=10)
+
+
+# --- Weekly (My Team page) parsing -------------------------------------------
+#
+# Yahoo renders the same row two ways depending on viewport and page: stacked,
+# with slot / matchup / projection each on their own line, and inline, with the
+# whole row on one. Both are parsed here and both must produce identical rows —
+# that equivalence is what the first test below pins, because a parser that
+# only handles the layout the author happened to look at is a parser that
+# breaks on somebody else's screen.
+
+STACKED_PAGE = """
+My Team
+QB
+Josh Allen Buf - QB
+Sun 1:00 pm vs NYJ
+22.45
+W/R/T
+Jahmyr Gibbs Det - RB Q
+Sun 4:25 pm @ GB
+15.10
+BN
+Puka Nacua LAR - WR O
+Sun 1:00 pm vs SEA
+0.00
+BN
+Tank Bigsby Jax - RB
+Bye
+0.00
+"""
+
+INLINE_PAGE = """
+QB Josh Allen Buf - QB Sun 1:00 pm vs NYJ 22.45
+W/R/T Jahmyr Gibbs Det - RB Q Sun 4:25 pm @ GB 15.10
+BN Puka Nacua LAR - WR O Sun 1:00 pm vs SEA 0.00
+BN Tank Bigsby Jax - RB Bye 0.00
+"""
+
+
+class TestParseWeeklyText:
+    def test_both_renderings_agree(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        assert parse_weekly_text(STACKED_PAGE) == parse_weekly_text(INLINE_PAGE)
+
+    def test_reads_slot_status_opponent_and_projection(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+
+        allen = rows["Josh Allen"]
+        assert (allen["slot"], allen["status"], allen["opponent"], allen["proj"]) == \
+               ("QB", "", "vs NYJ", 22.45)
+
+        gibbs = rows["Jahmyr Gibbs"]
+        assert (gibbs["slot"], gibbs["status"], gibbs["opponent"], gibbs["proj"]) == \
+               ("W/R/T", "Q", "@GB", 15.10)
+
+    def test_at_sign_opponent_is_parsed(self):
+        # Regression: an earlier pattern anchored on \b before the "@", and a
+        # word boundary needs a word character on one side — " @" has none, so
+        # every away game silently picked up the *next* player's home opponent.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+        assert rows["Jahmyr Gibbs"]["opponent"] == "@GB"
+
+    def test_a_row_does_not_inherit_its_neighbours_numbers(self):
+        # Regression: a fixed window of surrounding lines gave the first player
+        # the second player's projection, which is invisible in a lineup and
+        # wrong every week.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+        assert rows["Josh Allen"]["proj"] == 22.45
+        assert rows["Josh Allen"]["opponent"] == "vs NYJ"
+
+    def test_bye_is_flagged_and_carries_no_opponent(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        bigsby = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}["Tank Bigsby"]
+        assert bigsby["bye"] is True and bigsby["opponent"] is None
+
+    def test_injury_designation_is_kept_not_swallowed_into_the_name(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+        assert "Puka Nacua" in rows and rows["Puka Nacua"]["status"] == "O"
+
+    def test_slot_label_never_becomes_part_of_the_name(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        assert all(not r["name"].startswith(("BN ", "QB ", "W/R/T "))
+                   for r in parse_weekly_text(INLINE_PAGE))
+
+    def test_missing_projection_is_none_not_zero(self):
+        # "No projection on the page" and "projected to score nothing" are
+        # different claims and the engine treats them differently.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text("Bijan Robinson Atl - RB\nSun 1:00 pm vs TB\n")
+        assert rows[0]["proj"] is None
+
+    def test_empty_page_is_empty_not_an_error(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        assert parse_weekly_text("Nothing here\n") == []
+
+    def test_names_carry_periods_for_adp_matching(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text("BN A.J. Brown Phi - WR Sun 1:00 pm vs DAL 12.30\n")
+        assert rows[0]["name"] == "A.J. Brown"

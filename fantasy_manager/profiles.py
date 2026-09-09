@@ -76,6 +76,21 @@ def draft_state_path(name: str | None = None) -> str:
     return os.path.join(profile_dir(name), "draft_state.json")
 
 
+def weekly_path(week: int | None = None, name: str | None = None) -> str:
+    """This week's imported roster snapshot.
+
+    Kept per-week rather than overwritten so a lineup decision stays auditable
+    after the fact — "what did it think on Sunday morning" is the only way to
+    tell a bad call from bad luck.
+    """
+    label = f"week{int(week):02d}" if week else "week_current"
+    return os.path.join(profile_dir(name), f"{label}.csv")
+
+
+def free_agents_path(name: str | None = None) -> str:
+    return os.path.join(profile_dir(name), "free_agents.csv")
+
+
 def credentials_path(name: str | None = None) -> str:
     return os.path.join(profile_dir(name), "yahoo_credentials.json")
 

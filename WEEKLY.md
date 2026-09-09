@@ -1,0 +1,209 @@
+# The weekly process
+
+Drafting is one day. The season is eighteen weeks of two questions: **who do I
+start**, and **who's worth picking up**. This is how the tool answers both, and
+where in the week each one matters.
+
+The short version, run twice a week:
+
+```bash
+# 1. Import what Yahoo currently shows for your team
+python3 -m fantasy_manager.browser_sync week --url <your My Team page URL>
+
+# 2. Read the whole week in one report
+python3 -m fantasy_manager.roster_manager week
+```
+
+Everything else on this page is detail behind those two commands.
+
+## What it does and doesn't decide
+
+It recommends. You execute. Nothing in this project sets a lineup, places a
+claim, drops a player, or sends a trade — that line is drawn deliberately and
+it holds here too. Drafting was the one opt-in exception, and only in the
+Chrome extension.
+
+That isn't caution for its own sake. The lineup advice is only as good as a
+page-scrape it cannot verify, and a script that quietly sets lineups on a bad
+parse loses you weeks before you notice. A recommendation you read takes ten
+seconds to sanity-check. Set it yourself.
+
+## One-time setup
+
+Two things in your profile's `league.yaml` (`profiles/<you>/league.yaml`, not
+the template in `config/`):
+
+```yaml
+season:
+  week1_start: "2026-09-10"   # kickoff of Week 1; everything derives the week from this
+
+waivers:
+  system: faab                # faab | priority — check League -> Settings on Yahoo
+  faab_budget: 100
+  faab_remaining: 100         # update as you spend
+```
+
+If `week1_start` is missing the report says "Week unknown" rather than guessing,
+because a Week 3 lineup set in Week 4 is worse than no advice. And the waiver
+system is printed on every report, so if it assumed wrong you'll see it the
+first time rather than after a bid you couldn't make.
+
+Once, so waivers can tell a free agent from someone's bench player:
+
+```bash
+python3 -m fantasy_manager.browser_sync sync --url <League -> Rosters URL>
+```
+
+Without that file, `waivers` says so and falls back to "best available", which
+will happily suggest players who are already rostered.
+
+## The rhythm
+
+Waiver run days vary by league — check **League -> Settings**; Yahoo's common
+default processes claims overnight into Wednesday. Set yours as `run_day` in
+`league.yaml`. The shape below assumes that default; shift it to match.
+
+### Tuesday — read the wire
+
+Waiver claims for the coming week are usually due late Tuesday. This is the one
+that rewards being early, because it's the only decision in the week made
+against a deadline rather than a kickoff.
+
+```bash
+python3 -m fantasy_manager.browser_sync week --url <My Team URL>
+python3 -m fantasy_manager.browser_sync week --free-agents --url <Players -> Available URL>
+python3 -m fantasy_manager.roster_manager waivers
+```
+
+You get, per target: the projected gain over the player they'd actually
+replace in your lineup, a suggested drop, and either a FAAB bid range or a
+"worth your priority" verdict.
+
+**Read the gain, not the ranking.** A player is worth a claim because he
+upgrades a slot you're starting, not because he's the best name available. The
+tool measures against the weakest player currently holding a slot he could
+take, which is why a good running back can show a smaller gain than a mediocre
+tight end — you already have running backs.
+
+### Wednesday — see what landed
+
+Claims processed. Re-import, and check whether the plan survived contact:
+
+```bash
+python3 -m fantasy_manager.browser_sync week --url <My Team URL>
+python3 -m fantasy_manager.roster_manager week
+```
+
+Anything you missed is now a free agent, first-come — the same `waivers`
+command ranks those too.
+
+### Thursday — the lock nobody remembers
+
+**A player in Thursday night's game locks at kickoff.** If the report tells you
+to start someone playing Thursday, that has to happen Thursday afternoon, not
+Sunday morning. This is the single most common way a good recommendation turns
+into zero points.
+
+```bash
+python3 -m fantasy_manager.roster_manager lineup
+```
+
+Check the `OPP` column against the Thursday matchup before you close the laptop.
+
+### Sunday morning — the one that counts
+
+Inactives are announced about 90 minutes before kickoff, and that is when
+`Questionable` becomes `Out`. Re-import then, not the night before:
+
+```bash
+python3 -m fantasy_manager.browser_sync week --url <My Team URL>
+python3 -m fantasy_manager.roster_manager lineup
+```
+
+Read the flags at the bottom of the report:
+
+- `is BYE` / `is O` in a starting slot — that slot scores zero as it stands.
+  Always act on these.
+- `Q` next to a starter — expected to play, flagged so you can decide. The
+  tool starts them; Yahoo's projection already discounts them somewhat.
+- `is D and left out` — Doubtful players are excluded by default, because
+  Yahoo's projection often doesn't zero them and trusting the number would
+  quietly start someone who sits. `--allow-doubtful` reconsiders them.
+- `Move X from W/R/T to TE` — nobody is benched, but the move still has to
+  happen. Leave a tight end in a flex spot and the TE slot sits empty.
+
+### Monday — nothing
+
+Deliberately. There is no decision to make on a Monday that can't wait for
+Tuesday's wire, and the temptation to churn a roster after a bad Sunday is how
+you drop the player who scores 20 next week.
+
+## Reading the start/sit report
+
+```
+SLOT    PLAYER                  POS  OPP     ST   PROJ
+QB      Josh Allen              QB   vs NYJ  —    21.80
+...
+                                             TOTAL 127.60
+
+Changes to make in Yahoo:
+  - FLEX: start Jaylen Waddle, bench Tank Bigsby  (Tank Bigsby is BYE)
+  - Move  Trey McBride           (move from W/R/T to TE)
+```
+
+The **Changes** block is the actionable part. The lineup above it is what you
+end up with; the changes are what you have to click to get there.
+
+The lineup is the highest-projecting *legal* one — every slot filled by
+someone eligible for it, nobody on bye or ruled out. Where the league runs both
+a flex and a superflex, the narrower slot is filled first on purpose; fill the
+wider one first and it swallows the only eligible running back and strands the
+other slot.
+
+## When it can't answer
+
+The report tells you which of these it's in rather than papering over it:
+
+- **No weekly data imported** — it falls back to your post-draft roster, which
+  is enough to catch a bye or an empty slot and *not* enough to rank two
+  healthy players. It says so at the top.
+- **No projection for a player** — he's slotted on position eligibility alone
+  and named in a warning. "No information" is not treated as "projected zero".
+- **No league rosters imported** — `waivers` says its pool is "your roster
+  only" and is a best-available list, not a wire.
+
+## The part to verify once
+
+`browser_sync week` parses Yahoo's rendered page text, and **no session here
+has seen a live 2026 My Team page**. The "Name TEAM - POS" anchor it keys on
+has been stable for years; the surrounding columns — slot, injury tag,
+opponent, and especially the projection — are read from the text around it and
+are a reasonable guess, not a verified one.
+
+So the first time you run it, the import prints every field it extracted:
+
+```
+PLAYER                  POS  TM   SLOT   ST   OPP     PROJ
+Josh Allen              QB   BUF  QB     —    vs NYJ  21.80
+```
+
+Check that table against the page once. A projection column read off the wrong
+number is invisible in a lineup recommendation and obvious in a table. If it's
+wrong, `browser_sync dump --url <My Team URL> --out page.html` saves what the
+page actually renders, and the parser is `parse_weekly_text` in
+`fantasy_manager/browser_sync.py`.
+
+No Chrome automation needed for any of this, incidentally: `--from-text` reads
+a file of rows you copied off the page by hand, and takes the identical path
+through the parser.
+
+## What isn't here yet
+
+- **Matchup strength.** Nothing looks at whether your running back is facing
+  the league's worst run defence. Yahoo's projection prices some of that in
+  already; nothing in this repo does it independently.
+- **Trade offers as part of the weekly loop.** `trade_targeter.py` exists and
+  works, but it isn't wired into `week` — it runs on season-long value, not
+  this week's numbers.
+- **The Chrome extension.** All of the above is CLI-only. The extension covers
+  drafting; the weekly workflow hasn't been ported to it.
