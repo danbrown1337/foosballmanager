@@ -124,6 +124,15 @@ class TestRosterManager:
                    if line.startswith("  ") and " RB " in line]
         assert len(players) == 5
 
+    def test_matchup_refuses_rather_than_inventing_a_rating(self, project):
+        """With no imported weeks there is no data, and the useful output is
+        the reason — including that it cannot be backfilled, which is the whole
+        argument for starting collection before it can answer anything."""
+        result = run(project, "fantasy_manager.roster_manager", "matchup")
+        assert result.returncode == 0
+        assert "nothing to measure" in result.stdout
+        assert "backfill" in result.stdout
+
     def test_overachievers_reports_breakout_calls(self, project):
         result = run(project, "fantasy_manager.roster_manager", "overachievers", "--top", "5")
         assert result.returncode == 0

@@ -141,11 +141,10 @@ function parseStackedMyTeam(lines) {
     const forward = lines.slice(index + 1, Math.max(index + 1, end)).map((l) => l.trim());
 
     let opponent = null;
-    let proj = null;
     let onBye = false;
     let rosterStatus = null;
     const integers = [];
-    let seenDecimal = false;
+    const decimals = [];
     for (const line of forward) {
       if (line.includes("%")) {
         // Both pages put a percentage column after the numbers that matter, so
@@ -153,6 +152,10 @@ function parseStackedMyTeam(lines) {
         //   projection = the LAST decimal. My Team runs Fan Pts then Proj Pts,
         //     and Fan Pts is "-" in week 1 but real from week 2 on — taking the
         //     first decimal would silently return points already scored.
+        //   actual = the FIRST decimal, but only when there are two. One means
+        //     the row has no Fan Pts yet, or is the players page with its
+        //     single value column; guessing would put points already scored
+        //     into the projection field or the reverse.
         //   bye week = the last integer BEFORE the first decimal. My Team has
         //     only Bye there; the players page has GP* then Bye, so "the first
         //     integer" reads games-played as the bye on every row.
@@ -172,20 +175,23 @@ function parseStackedMyTeam(lines) {
       }
       if (BYE_MARKER.test(line)) { onBye = true; continue; }
       if (BARE_INT.test(line)) {
-        if (!seenDecimal) integers.push(Number.parseInt(line, 10));
+        // An NFL season is 18 weeks, so anything outside that is some other
+        // column — a whole-number Fan Pts most likely — and letting it through
+        // would report a bye week of 0.
+        const value = Number.parseInt(line, 10);
+        if (!decimals.length && value >= 1 && value <= 18) integers.push(value);
         continue;
       }
       const number = PROJECTION_FULL.exec(line);
-      if (number) {
-        seenDecimal = true;
-        proj = Number.parseFloat(number.groups.value);
-      }
+      if (number) decimals.push(Number.parseFloat(number.groups.value));
     }
     const byeWeek = integers.length ? integers[integers.length - 1] : null;
+    const proj = decimals.length ? decimals[decimals.length - 1] : null;
+    const actual = decimals.length >= 2 ? decimals[0] : null;
 
     rows.push({
       name, pos, team: match.groups.team.toUpperCase(),
-      slot, status, opponent, proj, bye: onBye, byeWeek, rosterStatus,
+      slot, status, opponent, proj, actual, bye: onBye, byeWeek, rosterStatus,
     });
   });
   return rows;
@@ -245,6 +251,8 @@ function parseInline(lines) {
           + opponentMatch.groups.team.toUpperCase()
         : null,
       proj: projectionMatch ? Number.parseFloat(projectionMatch.groups.value) : null,
+      // One value column here, so a projection and a result are indistinguishable.
+      actual: null,
       bye: /\bbye\b/i.test(tail) && !opponentMatch,
       byeWeek: null,
       rosterStatus: null,

@@ -12,6 +12,7 @@
      "status": "",
      "opponent": "@CAR",
      "proj": 18.35,
+     "actual": null,
      "bye": false,
      "byeWeek": 10,
      "rosterStatus": null
@@ -24,6 +25,7 @@
      "status": "",
      "opponent": "@TEN",
      "proj": 14.91,
+     "actual": null,
      "bye": false,
      "byeWeek": 13,
      "rosterStatus": null
@@ -36,6 +38,7 @@
      "status": "Q",
      "opponent": "@LAC",
      "proj": 13.02,
+     "actual": null,
      "bye": false,
      "byeWeek": 14,
      "rosterStatus": null
@@ -48,6 +51,7 @@
      "status": "",
      "opponent": "@NYG",
      "proj": 16.55,
+     "actual": null,
      "bye": false,
      "byeWeek": 14,
      "rosterStatus": null
@@ -60,6 +64,7 @@
      "status": "",
      "opponent": "vs GB",
      "proj": 17.7,
+     "actual": null,
      "bye": false,
      "byeWeek": 6,
      "rosterStatus": null
@@ -72,6 +77,7 @@
      "status": "",
      "opponent": "@PIT",
      "proj": 11.17,
+     "actual": null,
      "bye": false,
      "byeWeek": 11,
      "rosterStatus": null
@@ -84,6 +90,7 @@
      "status": "",
      "opponent": "vs NE",
      "proj": 11.47,
+     "actual": null,
      "bye": false,
      "byeWeek": 11,
      "rosterStatus": null
@@ -96,6 +103,7 @@
      "status": "",
      "opponent": "vs CLE",
      "proj": 10.82,
+     "actual": null,
      "bye": false,
      "byeWeek": 7,
      "rosterStatus": null
@@ -108,6 +116,7 @@
      "status": "",
      "opponent": "vs BAL",
      "proj": 11.56,
+     "actual": null,
      "bye": false,
      "byeWeek": 13,
      "rosterStatus": null
@@ -120,6 +129,7 @@
      "status": "",
      "opponent": "@PHI",
      "proj": 10.29,
+     "actual": null,
      "bye": false,
      "byeWeek": 7,
      "rosterStatus": null
@@ -132,6 +142,7 @@
      "status": "",
      "opponent": "vs DEN",
      "proj": 10.32,
+     "actual": null,
      "bye": false,
      "byeWeek": 5,
      "rosterStatus": null
@@ -144,6 +155,7 @@
      "status": "",
      "opponent": "vs GB",
      "proj": 8.9,
+     "actual": null,
      "bye": false,
      "byeWeek": 6,
      "rosterStatus": null
@@ -156,6 +168,7 @@
      "status": "",
      "opponent": "vs CHI",
      "proj": 1.03,
+     "actual": null,
      "bye": false,
      "byeWeek": 5,
      "rosterStatus": null
@@ -168,6 +181,7 @@
      "status": "",
      "opponent": "vs NE",
      "proj": 6.97,
+     "actual": null,
      "bye": false,
      "byeWeek": 11,
      "rosterStatus": null
@@ -180,6 +194,7 @@
      "status": "",
      "opponent": "@KC",
      "proj": 6.67,
+     "actual": null,
      "bye": false,
      "byeWeek": 10,
      "rosterStatus": null
@@ -198,6 +213,7 @@
      "status": "",
      "opponent": "vs NYJ",
      "proj": 21.4,
+     "actual": 24.6,
      "bye": false,
      "byeWeek": 7,
      "rosterStatus": null
@@ -210,6 +226,7 @@
      "status": "O",
      "opponent": "@TB",
      "proj": 17.8,
+     "actual": 18.2,
      "bye": false,
      "byeWeek": 8,
      "rosterStatus": null
@@ -222,6 +239,7 @@
      "status": "Q",
      "opponent": "vs ARI",
      "proj": 11.2,
+     "actual": 9.1,
      "bye": false,
      "byeWeek": 11,
      "rosterStatus": null
@@ -234,6 +252,7 @@
      "status": "",
      "opponent": "@BAL",
      "proj": 18.9,
+     "actual": 22.4,
      "bye": false,
      "byeWeek": 6,
      "rosterStatus": null
@@ -246,6 +265,7 @@
      "status": "",
      "opponent": null,
      "proj": null,
+     "actual": null,
      "bye": true,
      "byeWeek": 5,
      "rosterStatus": null
@@ -258,6 +278,7 @@
      "status": "",
      "opponent": "vs ATL",
      "proj": 9.4,
+     "actual": 7.2,
      "bye": false,
      "byeWeek": 9,
      "rosterStatus": null
@@ -270,6 +291,7 @@
      "status": "",
      "opponent": "vs NE",
      "proj": 13.5,
+     "actual": 12.3,
      "bye": false,
      "byeWeek": 12,
      "rosterStatus": null
@@ -282,6 +304,7 @@
      "status": "",
      "opponent": "vs DEN",
      "proj": 8.6,
+     "actual": 11.0,
      "bye": false,
      "byeWeek": 10,
      "rosterStatus": null
@@ -294,6 +317,7 @@
      "status": "",
      "opponent": "vs MIN",
      "proj": 9.8,
+     "actual": 8.8,
      "bye": false,
      "byeWeek": 10,
      "rosterStatus": null
@@ -306,6 +330,7 @@
      "status": "",
      "opponent": "@TB",
      "proj": 8.2,
+     "actual": 6.1,
      "bye": false,
      "byeWeek": 8,
      "rosterStatus": null
@@ -318,6 +343,7 @@
      "status": "IR",
      "opponent": "vs SEA",
      "proj": 0.0,
+     "actual": 0.0,
      "bye": false,
      "byeWeek": 11,
      "rosterStatus": null
@@ -330,6 +356,7 @@
      "status": "",
      "opponent": "vs CIN",
      "proj": 8.3,
+     "actual": 5.0,
      "bye": false,
      "byeWeek": 6,
      "rosterStatus": null
@@ -348,6 +375,7 @@
      "status": "",
      "opponent": "@CIN",
      "proj": 18.08,
+     "actual": null,
      "bye": false,
      "byeWeek": 10,
      "rosterStatus": "W (Sep 11)"
@@ -360,6 +388,7 @@
      "status": "",
      "opponent": "vs CHI",
      "proj": 17.09,
+     "actual": null,
      "bye": false,
      "byeWeek": 5,
      "rosterStatus": "W (Sep 11)"
@@ -372,6 +401,7 @@
      "status": "Q",
      "opponent": "vs NE",
      "proj": 16.13,
+     "actual": null,
      "bye": false,
      "byeWeek": 11,
      "rosterStatus": "W (Sep 16)"
@@ -384,6 +414,7 @@
      "status": "",
      "opponent": "vs MIA",
      "proj": 10.95,
+     "actual": null,
      "bye": false,
      "byeWeek": 13,
      "rosterStatus": "FA"
@@ -396,6 +427,7 @@
      "status": "",
      "opponent": "vs NYJ",
      "proj": 8.85,
+     "actual": null,
      "bye": false,
      "byeWeek": 9,
      "rosterStatus": "FA"
@@ -408,6 +440,7 @@
      "status": "",
      "opponent": "@SEA",
      "proj": 8.84,
+     "actual": null,
      "bye": false,
      "byeWeek": 11,
      "rosterStatus": "W (Sep 16)"
@@ -420,6 +453,7 @@
      "status": "",
      "opponent": "@LAR",
      "proj": 8.8,
+     "actual": null,
      "bye": false,
      "byeWeek": 8,
      "rosterStatus": "W (Sep 11)"
@@ -432,6 +466,7 @@
      "status": "",
      "opponent": "vs DEN",
      "proj": 8.34,
+     "actual": null,
      "bye": false,
      "byeWeek": 5,
      "rosterStatus": "FA"
@@ -450,6 +485,7 @@
      "status": "",
      "opponent": "vs NYJ",
      "proj": 22.45,
+     "actual": null,
      "bye": false,
      "byeWeek": null,
      "rosterStatus": null
@@ -462,6 +498,7 @@
      "status": "Q",
      "opponent": "@GB",
      "proj": 15.1,
+     "actual": null,
      "bye": false,
      "byeWeek": null,
      "rosterStatus": null
@@ -474,6 +511,7 @@
      "status": "O",
      "opponent": "vs SEA",
      "proj": 0.0,
+     "actual": null,
      "bye": false,
      "byeWeek": null,
      "rosterStatus": null
@@ -486,6 +524,7 @@
      "status": "",
      "opponent": null,
      "proj": 0.0,
+     "actual": null,
      "bye": true,
      "byeWeek": null,
      "rosterStatus": null
