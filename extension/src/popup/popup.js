@@ -339,15 +339,60 @@ function renderWeek(report) {
   }
   parts.push("</ul>");
   if (report.hasProjections) {
-    parts.push(`<div class="muted">Projected total: ${report.projected.toFixed(2)}</div>`);
+    // Two numbers, not one. What Yahoo has set is the check on the parser —
+    // it should match the projected total Yahoo shows on the same page — and
+    // the gap to the optimum is what the changes above are worth.
+    const gain = report.projected - report.currentProjected;
+    parts.push(`<div class="muted">Projected total: ${report.projected.toFixed(2)}`
+      + ` &nbsp;·&nbsp; as Yahoo has it set: ${report.currentProjected.toFixed(2)}`
+      + (gain > 0.005 ? ` (+${gain.toFixed(2)})` : "") + "</div>");
+    parts.push('<div class="muted" style="font-size:11px">The second number '
+      + "should match the projected total on your Yahoo page. If it doesn't, "
+      + "the projection column is being read wrong.</div>");
+    if (report.currentUnprojected?.length) {
+      parts.push('<div class="muted" style="font-size:11px">Not counted in it: '
+        + `${report.currentUnprojected.map(escapeHtml).join(", ")} `
+        + "(no projection on the page).</div>");
+    }
   }
 
   for (const warning of report.warnings) {
     parts.push(`<div class="muted" style="margin-top:6px">! ${escapeHtml(warning)}</div>`);
   }
+  parts.push(byesSection(report));
   parts.push(otherTabsWarning(report));
 
   out.innerHTML = parts.join("");
+}
+
+/* Byes far enough out to still be cheap to fix.
+ *
+ * Only the weeks where a bye would leave a starting slot SHORT — three players
+ * off in week 9 is not a problem if you can still field a legal lineup, and
+ * listing it would bury the week you actually have to plan for. Same rule the
+ * CLI's `week` section 2 uses. */
+function byesSection(report) {
+  if (!report.byesChecked) {
+    // "Nothing coming up" would be a claim it hasn't checked.
+    return '<div class="label" style="margin-top:10px">Byes coming up</div>'
+      + '<div class="muted">Set your season start in Settings to look ahead — '
+      + "without it there's no way to know which week this is.</div>";
+  }
+  const parts = ['<div class="label" style="margin-top:10px">Byes coming up</div>'];
+  if (!report.byes.length) {
+    parts.push('<div class="muted">Nothing through week '
+      + `${report.week + report.weeksAhead} leaves a starting slot short.</div>`);
+    return parts.join("");
+  }
+  parts.push('<ul class="plain">');
+  for (const bye of report.byes) {
+    const names = bye.players
+      .map((p) => `${escapeHtml(p.name)} (${escapeHtml(p.pos)})`).join(", ");
+    parts.push(`<li><b>Week ${bye.week}</b> — ${names}`
+      + '<br><span class="muted">you\'d be short a starter</span></li>');
+  }
+  parts.push("</ul>");
+  return parts.join("");
 }
 
 document.getElementById("weekBtn")?.addEventListener("click", async () => {

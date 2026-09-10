@@ -15,10 +15,13 @@
  * Nothing here sets a lineup or places a claim.
  */
 import {
+  byeOutlook,
+  currentWeek,
   evaluateWaiverTargets,
   isFreeAgent,
   lineupChanges,
   optimalLineup,
+  setLineup,
   waiverClears,
   waiverSystem,
   weekLabel,
@@ -50,7 +53,8 @@ function rosterChoice(pages) {
  * could not find your team page" call for different things from the reader,
  * and a blank panel says neither.
  */
-export function buildWeekReport({ pages, tabCount }, config, today = new Date()) {
+export function buildWeekReport({ pages, tabCount }, config, options = {}) {
+  const { today = new Date(), byeWeeks = null, weeksAhead = 3 } = options;
   if (!tabCount) {
     return { error: "Open your Yahoo My Team page in a tab, then try again." };
   }
@@ -68,11 +72,34 @@ export function buildWeekReport({ pages, tabCount }, config, today = new Date())
 
   const { starters, superflex } = leagueShape(config);
   const best = optimalLineup(page.rows, starters, { superflex });
+  const asSet = setLineup(page.rows);
+  const week = currentWeek(config, today);
 
   return {
     label: weekLabel(config, today),
     url: page.url,
     otherRosterTabs,
+    week,
+    // What Yahoo has set right now, against what it should be. The gap is what
+    // the changes below are worth, and the total itself is the one end-to-end
+    // check on the parser: it should equal the projected total Yahoo displays
+    // on the same page. That number isn't in the page text, so the comparison
+    // is the reader's — showing the sum is what makes it a glance.
+    currentProjected: asSet.projected,
+    currentUnprojected: asSet.unprojected,
+    currentCount: asSet.players.length,
+    // Byes far enough out to still be cheap to fix. Empty when the season
+    // start isn't configured — byeOutlook returns nothing without a week, and
+    // the panel distinguishes that from "nothing coming up".
+    byes: byeWeeks
+      ? byeOutlook(page.rows, byeWeeks, week, starters, weeksAhead)
+        .map(([targetWeek, players]) => ({
+          week: targetWeek,
+          players: players.map((p) => ({ name: p.name, pos: p.pos })),
+        }))
+      : [],
+    byesChecked: !!byeWeeks && !!week,
+    weeksAhead,
     starters: best.starters.map((a) => ({
       slot: a.slot,
       name: a.player ? a.player.name : null,

@@ -68,32 +68,51 @@ def cmd_summary(args):
         print(f"  {pos:<4} [{len(players)}] {names}")
 
 
+# The NFL runs byes from about week 5 to week 14, so scanning 2-18 covers the
+# season with room to spare. bye_outlook counts forward from a given week, and
+# starting at 1 is how you ask it for "the whole season" rather than "soon".
+SEASON_START_WEEK = 1
+SEASON_WEEKS_AHEAD = 17
+
+
 def cmd_byeweeks(args):
-    roster = load_my_roster()
+    """Every week this season where a bye would leave a starting slot short.
+
+    This used to flag any week with two players at the same position out, which
+    is a different question and got both answers wrong on a real roster: it
+    flagged a week when two BENCH tight ends were off (no shortage, you still
+    start your starter) and stayed silent on the week the roster's only
+    quarterback was out (a guaranteed zero). What matters is whether you can
+    still field a legal lineup, so it now asks that — the same rule `week` and
+    the extension's Week tab use, against the same tested function.
+    """
+    config = load_config()
+    roster, has_weekly = roster_for_week(None)
     if not roster:
         print(f"No roster on file yet — fill in {profiles.my_roster_path()} first.")
         return
 
-    by_week = defaultdict(list)
-    for r in roster:
-        week = BYE_WEEKS.get(r["team"])
-        if week:
-            by_week[week].append(r)
+    starters = (config.get("roster") or {}).get("starters") or {}
+    if not starters:
+        print("No starting slots configured, so there's nothing to be short of.\n"
+              "Set roster.starters in your profile's league.yaml.")
+        return
 
-    print("Bye-week conflicts (2+ starters-worthy players out the same week):")
-    flagged = False
-    for week in sorted(by_week):
-        players = by_week[week]
-        pos_count = defaultdict(int)
-        for p in players:
-            pos_count[p["pos"]] += 1
-        crowded = {pos: n for pos, n in pos_count.items() if n >= 2}
-        if crowded:
-            flagged = True
-            names = ", ".join(f"{p['name']} ({p['pos']})" for p in players)
-            print(f"  Week {week}: {names}")
-    if not flagged:
-        print("  None — your bye weeks are well spread out.")
+    outlook = weekly.bye_outlook(roster, BYE_WEEKS, SEASON_START_WEEK, starters,
+                                 weeks_ahead=SEASON_WEEKS_AHEAD)
+
+    print("Bye weeks that would leave a starting slot short:")
+    if not outlook:
+        print("  None — you can field a legal lineup every week of the season.")
+    else:
+        for week, players in outlook:
+            names = ", ".join(f"{p.name} ({p.pos})" for p in players)
+            print(f"  Week {week}: {names} — you'd be short a starter.")
+
+    if not has_weekly:
+        # The shipped table is a hand-maintained snapshot; the page knows better.
+        print("\n  (From the bye table, not this week's page. Import My Team with\n"
+              "   `browser_sync week` and this uses the bye weeks Yahoo reports.)")
 
 
 def _as_float(value):
@@ -244,6 +263,22 @@ def cmd_lineup(args):
     best = weekly.optimal_lineup(roster, starters, superflex=superflex,
                                  allow_doubtful=args.allow_doubtful)
     _print_lineup(best)
+
+    # What Yahoo currently has set, next to what it should be. Two jobs: the
+    # gap is what the changes below are worth, and the "as set" number is the
+    # one end-to-end check on the parser — it should equal the projected total
+    # Yahoo displays on the same page. That number isn't in the page text, so
+    # the comparison is yours; printing the sum makes it a glance rather than
+    # mental arithmetic over nine rows.
+    as_set = weekly.set_lineup(roster)
+    if has_weekly and as_set.players:
+        gain = best.projected - as_set.projected
+        print(f"{'':<8}{'':<24}{'':<5}{'':<8}{'AS SET':<5} {as_set.projected:.2f}"
+              + (f"   (+{gain:.2f} from the changes below)" if gain > 0.005 else ""))
+        print("        ^ this should match the projected total on your Yahoo page.")
+        if as_set.unprojected:
+            print("          Not counted in it: "
+                  + ", ".join(as_set.unprojected) + " (no projection on the page).")
 
     changes = weekly.lineup_changes(roster, best)
     print()

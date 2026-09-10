@@ -21,6 +21,7 @@ from fantasy_manager.weekly import (
     expand_slots,
     lineup_changes,
     optimal_lineup,
+    set_lineup,
     slot_accepts,
     waiver_system,
     week_label,
@@ -226,6 +227,52 @@ class TestOptimalLineup:
         starters = {"QB": 1, "RB": 1, "FLEX": 1}
         assert optimal_lineup(roster, starters, superflex=True).projected == pytest.approx(
             brute_force_best(roster, starters, superflex=True))
+
+
+class TestSetLineup:
+    """What Yahoo has set, as opposed to what it should be.
+
+    Its total is the only end-to-end check on the parser that exists: it should
+    equal the projected total Yahoo displays on the same page. That number is
+    not in the page text, so the comparison is the reader's — which is exactly
+    why the sum has to be right.
+    """
+
+    def test_reads_the_slots_the_page_reported(self):
+        players = [
+            player("Starter", "QB", 20.0, slot="QB"),
+            player("Flexed", "RB", 10.0, slot="W/R/T"),
+            player("Benched", "RB", 30.0, slot="BN"),
+            player("Stashed", "WR", 25.0, slot="IR"),
+        ]
+        result = set_lineup(players)
+        assert [p.name for p in result.players] == ["Starter", "Flexed"]
+        assert result.projected == 30.0
+
+    def test_a_starter_without_a_projection_is_named_not_zeroed_silently(self):
+        # A total quietly missing a player looks exactly like one that works.
+        players = [player("Known", "QB", 20.0, slot="QB"),
+                   player("Unknown", "RB", None, slot="RB")]
+        result = set_lineup(players)
+        assert result.projected == 20.0
+        assert result.unprojected == ["Unknown"]
+
+    def test_rows_with_no_slot_are_not_a_lineup(self):
+        # The available-players page carries no slot column at all.
+        assert set_lineup([player("Wire", "RB", 12.0)]).players == []
+
+    def test_matches_yahoos_own_displayed_total_on_the_captured_page(self):
+        import os
+        from fantasy_manager.browser_sync import parse_weekly_text
+        path = os.path.join(os.path.dirname(__file__), "fixtures",
+                            "yahoo_myteam_week1.txt")
+        with open(path) as f:
+            roster = [WeeklyPlayer(**row) for row in parse_weekly_text(f.read())]
+        result = set_lineup(roster)
+        # Yahoo displayed 120.96 for the lineup it had set on this page.
+        assert len(result.players) == 9
+        assert result.projected == 120.96
+        assert result.unprojected == []
 
 
 class TestLineupChanges:

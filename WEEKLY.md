@@ -155,11 +155,19 @@ SLOT    PLAYER                  POS  OPP     ST   PROJ
 QB      Josh Allen              QB   vs NYJ  —    21.80
 ...
                                              TOTAL 127.60
+                                             AS SET 120.96   (+6.64 from the changes below)
+        ^ this should match the projected total on your Yahoo page.
 
 Changes to make in Yahoo:
   - FLEX: start Jaylen Waddle, bench Tank Bigsby  (Tank Bigsby is BYE)
   - Move  Trey McBride           (move from W/R/T to TE)
 ```
+
+**AS SET is the line to check once.** It sums the projections for whoever Yahoo
+currently has starting, which is exactly what Yahoo's own projected total for
+the week shows. If those two numbers disagree, the projection column is being
+read wrong — and that is invisible everywhere else in the report. The gap
+between TOTAL and AS SET is what the changes are worth.
 
 The **Changes** block is the actionable part. The lineup above it is what you
 end up with; the changes are what you have to click to get there.
@@ -210,10 +218,14 @@ Josh Allen              QB   BUF  QB     —    vs NYJ  21.80
 ```
 
 Check that table against the page once. A projection column read off the wrong
-number is invisible in a lineup recommendation and obvious in a table. The
-quickest way to compare: your My Team page shows Yahoo's own projected total
-for the week — add up the PROJ column for whoever Yahoo currently has starting
-and it should match.
+number is invisible in a lineup recommendation and obvious in a table.
+
+You no longer have to add the column up yourself: `lineup` prints an **AS SET**
+total, which is exactly the sum for whoever Yahoo currently has starting, and
+the extension's Week tab prints the same number. Compare it to the projected
+total your My Team page displays. Those two agreeing is the only end-to-end
+evidence the parser is reading the right column — Yahoo's total is not in the
+page text, so nothing can check it automatically.
 
 If it's wrong, copy the page and save it (`pbpaste > page.txt` on macOS), then
 `parse_weekly_text` in `fantasy_manager/browser_sync.py` is what needs
@@ -232,5 +244,5 @@ through the parser.
 - **Trade offers as part of the weekly loop.** `trade_targeter.py` exists and
   works, but it isn't wired into `week` — it runs on season-long value, not
   this week's numbers.
-- **Bye-week conflicts and overachievers in the extension.** `byeweeks` and
-  `overachievers` stay CLI-only. Start/sit and waivers are in both.
+- **`overachievers` in the extension.** It stays CLI-only. Start/sit, waivers
+  and the bye outlook are in both.

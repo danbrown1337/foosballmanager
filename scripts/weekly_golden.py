@@ -31,6 +31,7 @@ from fantasy_manager.weekly import (                                # noqa: E402
     evaluate_waiver_targets,
     lineup_changes,
     optimal_lineup,
+    set_lineup,
 )
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -68,6 +69,7 @@ def lineup_case(label, roster, starters, superflex=False, allow_doubtful=False):
     best = optimal_lineup(roster, starters, superflex=superflex,
                           allow_doubtful=allow_doubtful)
     changes = lineup_changes(roster, best)
+    as_set = set_lineup(roster)
     return {
         "label": label,
         "roster": [as_row(p) for p in roster],
@@ -75,6 +77,13 @@ def lineup_case(label, roster, starters, superflex=False, allow_doubtful=False):
         "superflex": superflex,
         "allowDoubtful": allow_doubtful,
         "expected": {
+            # What Yahoo currently has set, alongside what it should be. The
+            # gap between the two totals is what the changes are worth.
+            "setLineup": {
+                "players": [p.name for p in as_set.players],
+                "projected": as_set.projected,
+                "unprojected": as_set.unprojected,
+            },
             "slots": [
                 {"slot": a.slot,
                  "player": a.player.name if a.player else None,

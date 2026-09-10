@@ -780,6 +780,21 @@
    "superflex": false,
    "allowDoubtful": false,
    "expected": {
+    "setLineup": {
+     "players": [
+      "Caleb Williams",
+      "Breece Hall",
+      "Jeremiyah Love",
+      "CeeDee Lamb",
+      "Justin Jefferson",
+      "Kyle Pitts Sr.",
+      "Jadarian Price",
+      "Bhayshul Tuten",
+      "Seahawks"
+     ],
+     "projected": 120.96,
+     "unprojected": []
+    },
     "slots": [
      {
       "slot": "QB",
@@ -1045,6 +1060,21 @@
    "superflex": false,
    "allowDoubtful": false,
    "expected": {
+    "setLineup": {
+     "players": [
+      "Caleb Williams",
+      "Breece Hall",
+      "Jeremiyah Love",
+      "CeeDee Lamb",
+      "Justin Jefferson",
+      "Kyle Pitts Sr.",
+      "Jadarian Price",
+      "Bhayshul Tuten",
+      "Seahawks"
+     ],
+     "projected": 120.96,
+     "unprojected": []
+    },
     "slots": [
      {
       "slot": "QB",
@@ -1318,6 +1348,21 @@
    "superflex": true,
    "allowDoubtful": false,
    "expected": {
+    "setLineup": {
+     "players": [
+      "Caleb Williams",
+      "Breece Hall",
+      "Jeremiyah Love",
+      "CeeDee Lamb",
+      "Justin Jefferson",
+      "Kyle Pitts Sr.",
+      "Jadarian Price",
+      "Bhayshul Tuten",
+      "Seahawks"
+     ],
+     "projected": 120.96,
+     "unprojected": []
+    },
     "slots": [
      {
       "slot": "QB",
@@ -1551,6 +1596,23 @@
    "superflex": false,
    "allowDoubtful": false,
    "expected": {
+    "setLineup": {
+     "players": [
+      "Josh Allen",
+      "Bijan Robinson",
+      "Kenneth Walker III",
+      "Ja'Marr Chase",
+      "Nico Collins",
+      "Taysom Hill",
+      "Jaylen Waddle",
+      "Harrison Butker",
+      "Ravens"
+     ],
+     "projected": 109.1,
+     "unprojected": [
+      "Nico Collins"
+     ]
+    },
     "slots": [
      {
       "slot": "QB",
@@ -1795,6 +1857,23 @@
    "superflex": false,
    "allowDoubtful": false,
    "expected": {
+    "setLineup": {
+     "players": [
+      "Josh Allen",
+      "Bijan Robinson",
+      "Kenneth Walker III",
+      "Ja'Marr Chase",
+      "Nico Collins",
+      "Taysom Hill",
+      "Jaylen Waddle",
+      "Harrison Butker",
+      "Ravens"
+     ],
+     "projected": 109.1,
+     "unprojected": [
+      "Nico Collins"
+     ]
+    },
     "slots": [
      {
       "slot": "QB",
@@ -2049,6 +2128,23 @@
    "superflex": false,
    "allowDoubtful": true,
    "expected": {
+    "setLineup": {
+     "players": [
+      "Josh Allen",
+      "Bijan Robinson",
+      "Kenneth Walker III",
+      "Ja'Marr Chase",
+      "Nico Collins",
+      "Taysom Hill",
+      "Jaylen Waddle",
+      "Harrison Butker",
+      "Ravens"
+     ],
+     "projected": 109.1,
+     "unprojected": [
+      "Nico Collins"
+     ]
+    },
     "slots": [
      {
       "slot": "QB",
@@ -2294,6 +2390,23 @@
    "superflex": false,
    "allowDoubtful": false,
    "expected": {
+    "setLineup": {
+     "players": [
+      "Josh Allen",
+      "Bijan Robinson",
+      "Kenneth Walker III",
+      "Ja'Marr Chase",
+      "Nico Collins",
+      "Taysom Hill",
+      "Jaylen Waddle",
+      "Harrison Butker",
+      "Ravens"
+     ],
+     "projected": 109.1,
+     "unprojected": [
+      "Nico Collins"
+     ]
+    },
     "slots": [
      {
       "slot": "QB",
@@ -2398,6 +2511,11 @@
    "superflex": false,
    "allowDoubtful": false,
    "expected": {
+    "setLineup": {
+     "players": [],
+     "projected": 0,
+     "unprojected": []
+    },
     "slots": [
      {
       "slot": "QB",
