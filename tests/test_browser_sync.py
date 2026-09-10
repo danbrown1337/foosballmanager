@@ -400,3 +400,82 @@ class TestParseWeeklyText:
         from fantasy_manager.browser_sync import parse_weekly_text
         rows = parse_weekly_text("BN A.J. Brown Phi - WR Sun 1:00 pm vs DAL 12.30\n")
         assert rows[0]["name"] == "A.J. Brown"
+
+
+# --- The real Yahoo My Team layout -------------------------------------------
+#
+# tests/fixtures/yahoo_myteam_week1.txt is captured from an actual Yahoo My Team
+# page, and it is the reason this parser exists in its current form. The first
+# version anchored on "Name TEAM - POS" appearing together on one line, which
+# the real page never does — it stacks the row, putting the name two lines above
+# a bare "Chi - QB". That parsed zero players off a live page while passing
+# every hand-written test, so the captured page is now the test.
+
+def _fixture(name):
+    import pathlib
+    return (pathlib.Path(__file__).parent / "fixtures" / name).read_text()
+
+
+class TestRealYahooMyTeamPage:
+    @pytest.fixture
+    def rows(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        return {r["name"]: r for r in parse_weekly_text(_fixture("yahoo_myteam_week1.txt"))}
+
+    def test_parses_every_player_on_the_page(self, rows):
+        assert len(rows) == 15
+
+    def test_reads_the_full_row(self, rows):
+        qb = rows["Caleb Williams"]
+        assert (qb["pos"], qb["team"], qb["slot"]) == ("QB", "CHI", "QB")
+        assert (qb["opponent"], qb["proj"], qb["bye_week"]) == ("@CAR", 18.35, 10)
+
+    def test_injury_designation_glued_to_the_name_is_recovered(self, rows):
+        # Renders as "Jeremiyah LoveQVideo ForecastNew Player Note" — the Q has
+        # no separator before it, and the name must not absorb it either.
+        assert rows["Jeremiyah Love"]["status"] == "Q"
+        assert rows["Jeremiyah Love"]["proj"] == 13.02
+
+    def test_note_chrome_is_not_mistaken_for_a_status(self, rows):
+        # "Kyle Pitts Sr.No new player Notes" and "CeeDee LambPlayer Note" start
+        # with N and P; neither is a designation.
+        assert rows["Kyle Pitts Sr."]["status"] == ""
+        assert rows["CeeDee Lamb"]["status"] == ""
+
+    def test_name_suffixes_survive(self, rows):
+        # Exact-name matching is what attaches ADP value, so "Sr." must stay.
+        assert "Kyle Pitts Sr." in rows and "Aaron Jones Sr." in rows
+
+    def test_flex_and_bench_slots_are_read(self, rows):
+        assert rows["Jadarian Price"]["slot"] == "W/R/T"
+        assert rows["Josh Downs"]["slot"] == "BN"
+
+    def test_defense_rows_parse(self, rows):
+        assert rows["Seahawks"]["pos"] == "DEF"
+        assert rows["Seahawks"]["slot"] == "DEF"
+        assert rows["Broncos"]["slot"] == "BN"
+
+    def test_home_and_away_opponents(self, rows):
+        assert rows["Justin Jefferson"]["opponent"] == "vs GB"
+        assert rows["Breece Hall"]["opponent"] == "@TEN"
+
+    def test_projection_is_proj_pts_not_fan_pts(self):
+        """The columns run Bye, Fan Pts, Proj Pts, then percentages.
+
+        Fan Pts is "-" in week 1 but a real number from week 2 on, and it sits
+        *before* the projection. Taking the first decimal after the anchor would
+        silently return points already scored for the rest of the season.
+        """
+        from fantasy_manager.browser_sync import parse_weekly_text
+        scored = _fixture("yahoo_myteam_week1.txt").replace(
+            "Chi - QB\nSun 1:00 pm @ Car\n10\n–\n18.35",
+            "Chi - QB\nSun 1:00 pm @ Car\n10\n24.60\n18.35")
+        rows = {r["name"]: r for r in parse_weekly_text(scored)}
+        assert rows["Caleb Williams"]["proj"] == 18.35
+
+    def test_inline_pages_still_parse(self):
+        # The league-rosters and draft-room pages really do put name and
+        # position on one line; that path must survive the stacked one.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text(INLINE_PAGE)
+        assert {r["name"] for r in rows} >= {"Josh Allen", "Jahmyr Gibbs"}

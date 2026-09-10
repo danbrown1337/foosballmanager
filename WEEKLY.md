@@ -174,11 +174,15 @@ The report tells you which of these it's in rather than papering over it:
 
 ## The part to verify once
 
-`browser_sync week` parses Yahoo's rendered page text, and **no session here
-has seen a live 2026 My Team page**. The "Name TEAM - POS" anchor it keys on
-has been stable for years; the surrounding columns — slot, injury tag,
-opponent, and especially the projection — are read from the text around it and
-are a reasonable guess, not a verified one.
+`browser_sync week` parses Yahoo's rendered page text. It has been checked
+against a real My Team page (2026 week 1, captured as
+`tests/fixtures/yahoo_myteam_week1.txt`), including the cross-check that
+matters: summing the parsed projections for the nine players Yahoo had starting
+reproduced Yahoo's own displayed projected total to the cent.
+
+That is one page, though, from one league. A different roster shape — a kicker
+slot, an IR player, a bye week, a player listed Out — renders rows this capture
+does not contain.
 
 So the first time you run it, the import prints every field it extracted:
 
@@ -188,10 +192,15 @@ Josh Allen              QB   BUF  QB     —    vs NYJ  21.80
 ```
 
 Check that table against the page once. A projection column read off the wrong
-number is invisible in a lineup recommendation and obvious in a table. If it's
-wrong, `browser_sync dump --url <My Team URL> --out page.html` saves what the
-page actually renders, and the parser is `parse_weekly_text` in
-`fantasy_manager/browser_sync.py`.
+number is invisible in a lineup recommendation and obvious in a table. The
+quickest way to compare: your My Team page shows Yahoo's own projected total
+for the week — add up the PROJ column for whoever Yahoo currently has starting
+and it should match.
+
+If it's wrong, copy the page and save it (`pbpaste > page.txt` on macOS), then
+`parse_weekly_text` in `fantasy_manager/browser_sync.py` is what needs
+adjusting. Do not save the page as HTML and use `--from-file`: that passes raw
+markup through, and the parser matches rendered text.
 
 No Chrome automation needed for any of this, incidentally: `--from-text` reads
 a file of rows you copied off the page by hand, and takes the identical path

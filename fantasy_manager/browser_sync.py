@@ -131,14 +131,18 @@ def parse_roster_text(text: str) -> list[dict]:
 # he plays, and what Yahoo projects. Those fields are what the functions below
 # recover.
 #
-# HOW THIS COPES WITH NOT KNOWING YAHOO'S EXACT LAYOUT: the "Name TEAM - POS"
-# anchor is the one part of the rendering that has held still for years, so it
-# stays the anchor. Everything else is looked for in a window of lines around
-# it, which handles both the one-row-per-line rendering and the stacked one
-# where slot, opponent and projection land on their own lines. That is a
-# deliberately loose parse, so `roster_manager week --verify` prints every
-# field it extracted: check it against the page once, before trusting a lineup
-# to it.
+# TWO LAYOUTS, AND WHY: the My Team page stacks each row across several lines
+# and never puts the name on the same line as the position, so it gets its own
+# parser (_parse_stacked_myteam, below) anchored on the bare "Chi - QB" line.
+# The league-rosters and draft-room pages do render "Jahmyr Gibbs Det - RB" on
+# one line, and the inline parser further down still handles those.
+#
+# This was checked against a real Yahoo My Team page (2026 week 1), captured as
+# tests/fixtures/yahoo_myteam_week1.txt. The first version of this code assumed
+# the inline shape everywhere, passed every hand-written test, and parsed zero
+# players off the live page — hence the captured page is now the test. The
+# `week` command still prints every field it extracted, because a projection
+# read off the wrong column is invisible in a lineup and obvious in a table.
 
 SLOT_LABELS = {"QB", "RB", "WR", "TE", "K", "DEF", "BN", "BE", "IR", "IR-R",
                "W/R/T", "FLEX", "WRT", "Q/W/R/T", "OP", "NA"}
@@ -159,6 +163,111 @@ PROJECTION = re.compile(r"(?<![\d.])(?P<value>\d{1,2}\.\d{1,2})(?![\d.])")
 STATUS_AFTER_POS = re.compile(
     r"-\s*[A-Za-z]{1,3}(?:\s*,\s*[A-Za-z]{1,3})*\s+(?P<status>Q|D|O|IR(?:-R)?|SUSP|PUP|NA|GTD|P)\b"
 )
+
+
+# --- Yahoo's My Team layout -------------------------------------------------
+#
+# The real My Team page does NOT render a player as one "Name TEAM - POS" line.
+# It stacks a row across consecutive lines, and the name never shares a line
+# with the team/position:
+#
+#     QB                             <- roster slot
+#     Caleb Williams                 <- name, clean
+#     Caleb WilliamsPlayer Note      <- name with status + note chrome run on
+#     Chi - QB                       <- team and position, alone
+#     Sun 1:00 pm @ Car              <- kickoff and opponent
+#     10                             <- bye week
+#     -                              <- Fan Pts ("-" until a game is played)
+#     18.35                          <- Proj Pts
+#     81%                            <- % started
+#
+# So the anchor here is the bare "TEAM - POS" line, and everything else is
+# found by position relative to it. The inline parser below still handles the
+# league-rosters and draft-room pages, which really do put a name and position
+# on one line.
+
+TEAM_POS_LINE = re.compile(
+    r"^(?P<team>[A-Za-z]{2,3})\s*-\s*(?P<pos>QB|RB|WR|TE|K|PK|DEF|DST|D/ST)$", re.I)
+
+# A status letter is glued to the end of the name with no separator
+# ("Jeremiyah LoveQVideo Forecast"), so it is recognised by being followed by
+# an uppercase letter or the end of the line. That distinguishes a real "Q"
+# from the "P" of "Player Note" and the "N" of "No new player Notes", which
+# are note chrome rather than a designation.
+STATUS_AFTER_NAME = re.compile(r"^(SUSP|PUP|GTD|IR|NA|Q|D|O|P)(?=[A-Z]|$)")
+
+BARE_INT = re.compile(r"^\d{1,2}$")
+
+
+def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
+    """Parse the My Team page, where each roster row spans several lines."""
+    rows: list[dict] = []
+    seen: set[str] = set()
+    anchors = [i for i, line in enumerate(lines) if TEAM_POS_LINE.match(line.strip())]
+
+    for order, index in enumerate(anchors):
+        match = TEAM_POS_LINE.match(lines[index].strip())
+        pos = normalize_position(match.group("pos"))
+
+        # Name sits two lines up, with the chrome-laden copy directly above the
+        # anchor. Preferring the clean line keeps "Kyle Pitts Sr." intact
+        # instead of "Kyle Pitts Sr.No new player Notes".
+        name, extras = "", ""
+        if index >= 2:
+            candidate, adorned = lines[index - 2].strip(), lines[index - 1].strip()
+            if candidate and adorned.startswith(candidate):
+                name, extras = candidate, adorned[len(candidate):]
+            elif candidate:
+                name = candidate
+        if not name or not looks_like_a_player(name) or name in seen:
+            continue
+        seen.add(name)
+
+        slot = None
+        for back in range(3, 5):
+            if index - back < 0:
+                break
+            if lines[index - back].strip().upper() in SLOT_LABELS:
+                slot = lines[index - back].strip().upper()
+                break
+
+        status_match = STATUS_AFTER_NAME.match(extras)
+        status = status_match.group(1).upper() if status_match else ""
+
+        end = anchors[order + 1] - 3 if order + 1 < len(anchors) else len(lines)
+        forward = [line.strip() for line in lines[index + 1:max(index + 1, end)]]
+
+        opponent, bye_week, proj, on_bye = None, None, None, False
+        for line in forward:
+            if "%" in line:
+                # Columns run Bye, Fan Pts, Proj Pts, then percentages. Stopping
+                # at the first percentage and keeping the LAST decimal before it
+                # is what picks Proj Pts rather than Fan Pts — which is "-" in
+                # week 1 but a real number from week 2 on, and would otherwise
+                # silently become the projection for the rest of the season.
+                break
+            if opponent is None:
+                found = OPPONENT.search(line)
+                if found:
+                    opponent = (("@" if found.group("side").startswith("@") else "vs ")
+                                + found.group("team").upper())
+                    continue
+            if BYE_MARKER.fullmatch(line):
+                on_bye = True
+                continue
+            if bye_week is None and BARE_INT.fullmatch(line):
+                bye_week = int(line)
+                continue
+            number = PROJECTION.fullmatch(line)
+            if number:
+                proj = float(number.group("value"))
+
+        rows.append({
+            "name": name, "pos": pos, "team": match.group("team").upper(),
+            "slot": slot, "status": status, "opponent": opponent,
+            "proj": proj, "bye": on_bye, "bye_week": bye_week,
+        })
+    return rows
 
 
 def _blocks(lines: list[str]) -> list[tuple[int, re.Match, str]]:
@@ -207,6 +316,14 @@ def parse_weekly_text(text: str) -> list[dict]:
     engine imports and can be tested on a saved page with nothing else loaded.
     """
     lines = text.splitlines()
+
+    # Yahoo's own My Team page stacks each row, so try that shape first. The
+    # inline parser below still serves the league-rosters and draft-room pages,
+    # which really do render a name and position together on one line.
+    stacked = _parse_stacked_myteam(lines)
+    if stacked:
+        return stacked
+
     rows: list[dict] = []
     seen: set[str] = set()
 
@@ -246,6 +363,7 @@ def parse_weekly_text(text: str) -> list[dict]:
             ),
             "proj": float(projection_match.group("value")) if projection_match else None,
             "bye": on_bye,
+            "bye_week": None,
         })
 
     return rows
