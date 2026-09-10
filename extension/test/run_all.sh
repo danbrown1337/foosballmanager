@@ -19,7 +19,7 @@ node test/compare_with_python.js test/fixtures/robust_rb_golden.json
 node test/compare_with_python.js test/fixtures/zero_rb_golden.json
 
 echo
-echo "=== golden-master: JS weekly engine vs Python weekly engine ==="
+echo "=== golden-master: JS weekly parser + engine vs Python ==="
 node test/compare_weekly_with_python.js test/weekly_golden.json
 
 echo

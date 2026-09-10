@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /*
- * Golden-master test for the weekly engine: replays every case that
- * scripts/weekly_golden.py recorded from fantasy_manager/weekly.py, through
- * the ported JS engine, and diffs every field.
+ * Golden-master test for the weekly parser and engine: replays every case that
+ * scripts/weekly_golden.py recorded from Python — page text through
+ * browser_sync.parse_weekly_text, rosters through weekly.py — into the ported
+ * JS modules, and diffs every field.
  *
  * This is the same evidence standard the draft port is held to. Reading two
  * implementations side by side proves nothing — the draft port has already
@@ -30,6 +31,7 @@ import {
   lineupChanges,
   optimalLineup,
 } from "../src/engine/weekly.js";
+import { parseWeeklyText } from "../src/lib/weeklyParse.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const fixturePath = process.argv[2] || join(HERE, "weekly_golden.json");
@@ -50,6 +52,16 @@ function same(label, what, actual, expected) {
   } catch {
     fail(label, what, actual, expected);
   }
+}
+
+// --- Parsing -----------------------------------------------------------------
+//
+// Same bytes into both parsers, diff the rows out. The text is embedded in the
+// fixture rather than referenced by path, so there is no way for the two sides
+// to end up reading different input and quietly agreeing.
+for (const testCase of golden.parses) {
+  const { label, text, expected } = testCase;
+  same(`parse: ${label}`, "rows", parseWeeklyText(text), expected);
 }
 
 // --- Lineups -----------------------------------------------------------------
@@ -116,6 +128,7 @@ for (const testCase of golden.byes) {
 }
 
 console.log(`Fixture: ${fixturePath.replace(/.*\/extension\//, "extension/")}`);
-console.log(`Compared ${golden.lineups.length} lineup, ${golden.waivers.length} waiver `
-  + `and ${golden.byes.length} bye cases (${checks} field-level diffs).`);
-console.log("PASS: JS weekly engine matches Python, field for field.");
+console.log(`Compared ${golden.parses.length} parse, ${golden.lineups.length} lineup, `
+  + `${golden.waivers.length} waiver and ${golden.byes.length} bye cases `
+  + `(${checks} field-level diffs).`);
+console.log("PASS: JS weekly parser and engine match Python, field for field.");

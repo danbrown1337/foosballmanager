@@ -137,6 +137,52 @@ def bye_case(label, roster, week, starters, weeks_ahead=3):
     }
 
 
+def parse_cases() -> list[dict]:
+    """The page text and the rows Python's parser produced from it.
+
+    The text is embedded rather than referenced so both sides are guaranteed to
+    be parsing the same bytes — a path that resolves differently would turn a
+    real disagreement into a silently skipped test.
+    """
+    cases = []
+    for filename in ("yahoo_myteam_week1.txt", "yahoo_myteam_week5_kicker.txt"):
+        with open(os.path.join(FIXTURES, filename)) as f:
+            text = f.read()
+        cases.append({
+            "label": filename,
+            "text": text,
+            "expected": [
+                {"name": r["name"], "pos": r["pos"], "team": r["team"],
+                 "slot": r["slot"], "status": r["status"], "opponent": r["opponent"],
+                 "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"]}
+                for r in parse_weekly_text(text)
+            ],
+        })
+
+    # The other layout: a league-rosters / draft-room page really does put the
+    # name and position on one line, and the fallback parser has to keep working.
+    inline = (
+        "QB Josh Allen Buf - QB Sun 1:00 pm vs NYJ 22.45\n"
+        "W/R/T Jahmyr Gibbs Det - RB Q Sun 4:25 pm @ GB 15.10\n"
+        "BN Puka Nacua LAR - WR O Sun 1:00 pm vs SEA 0.00\n"
+        "BN Tank Bigsby Jax - RB Bye 0.00\n"
+    )
+    cases.append({
+        "label": "inline league-rosters rendering",
+        "text": inline,
+        "expected": [
+            {"name": r["name"], "pos": r["pos"], "team": r["team"],
+             "slot": r["slot"], "status": r["status"], "opponent": r["opponent"],
+             "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"]}
+            for r in parse_weekly_text(inline)
+        ],
+    })
+
+    cases.append({"label": "a page with no players on it",
+                  "text": "Nothing here\nStill nothing\n", "expected": []})
+    return cases
+
+
 def main() -> None:
     week1 = load_roster("yahoo_myteam_week1.txt")
     week5 = load_roster("yahoo_myteam_week5_kicker.txt")
@@ -186,7 +232,8 @@ def main() -> None:
         bye_case("no current week", week5, None, LEAGUES["kicker_one_flex"]),
     ]
 
-    json.dump({"lineups": lineups, "waivers": waivers, "byes": byes},
+    json.dump({"parses": parse_cases(),
+               "lineups": lineups, "waivers": waivers, "byes": byes},
               sys.stdout, indent=1, sort_keys=False)
     sys.stdout.write("\n")
 

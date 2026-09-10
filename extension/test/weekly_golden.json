@@ -1,4 +1,370 @@
 {
+ "parses": [
+  {
+   "label": "yahoo_myteam_week1.txt",
+   "text": "Pos\nOffense\nBye\nFan Pts\nProj Pts\n% Start\n% Ros\nYds\nTD\nInt\nAtt*\nYds\nTD\nTgt*\nRec\nYds\nTD\nTD\n2PT\nLost\nQB\nCaleb Williams\nCaleb WilliamsPlayer Note\nChi - QB\nSun 1:00 pm @ Car\n10\n\u2013\n18.35\n81%\n99%\n-\n-\n-\nRB\nBreece Hall\nBreece HallVideo ForecastNew Player Note\nNYJ - RB\nSun 1:00 pm @ Ten\n13\n\u2013\n14.91\n92%\n99%\n-\n-\n-\nRB\nJeremiyah Love\nJeremiyah LoveQVideo ForecastNew Player Note\nAri - RB\nSun 4:25 pm @ LAC\n14\n\u2013\n13.02\n81%\n100%\n-\n-\n-\nWR\nCeeDee Lamb\nCeeDee LambPlayer Note\nDal - WR\nSun 8:20 pm @ NYG\n14\n\u2013\n16.55\n100%\n100%\n-\n-\n-\nWR\nJustin Jefferson\nJustin JeffersonVideo ForecastPlayer Note\nMin - WR\nSun 4:25 pm vs GB\n6\n\u2013\n17.70\n100%\n100%\n-\n-\n-\nTE\nKyle Pitts Sr.\nKyle Pitts Sr.No new player Notes\nAtl - TE\nSun 1:00 pm @ Pit\n11\n\u2013\n11.17\n83%\n98%\n-\n-\n-\nW/R/T\nJadarian Price\nJadarian PriceVideo ForecastPlayer Note\nSea - RB\nWed 8:20 pm vs NE\n11\n\u2013\n11.47\n65%\n96%\n-\n-\n-\nW/R/T\nBhayshul Tuten\nBhayshul TutenVideo ForecastNew Player Note\nJax - RB\nSun 1:00 pm vs Cle\n7\n\u2013\n10.82\n56%\n96%\n-\n-\n-\nBN\nJosh Downs\nJosh DownsVideo ForecastNew Player Note\nInd - WR\nSun 1:00 pm vs Bal\n13\n\u2013\n11.56\n17%\n87%\n-\n-\n-\nBN\nStefon Diggs\nStefon DiggsPlayer Note\nWas - WR\nSun 4:25 pm @ Phi\n7\n\u2013\n10.29\n12%\n87%\n-\n-\n-\nBN\nTravis Kelce\nTravis KelceVideo ForecastNo new player Notes\nKC - TE\nMon 8:15 pm vs Den\n5\n\u2013\n10.32\n54%\n94%\n-\n-\n-\nBN\nAaron Jones Sr.\nAaron Jones Sr.Video ForecastPlayer Note\nMin - RB\nSun 4:25 pm vs GB\n6\n\u2013\n8.90\n7%\n70%\n-\n-\n-\nBN\nMitchell Evans\nMitchell EvansNo new player Notes\nCar - TE\nSun 1:00 pm vs Chi\n5\n\u2013\n1.03\n0%\n0%\n-\n-\n-\nDEF\nSeahawks\nSeahawksNo new player Notes\nSea - DEF\nWed 8:20 pm vs NE\n11\n\u2013\n6.97\n94%\n99%\n-\n-\nBN\nBroncos\nBroncosNo new player Notes\nDen - DEF\nMon 8:15 pm @ KC\n10\n\u2013\n6.67\n92%\n99%\n-\n-\n",
+   "expected": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ]
+  },
+  {
+   "label": "yahoo_myteam_week5_kicker.txt",
+   "text": "Pos\nOffense\nBye\nFan Pts\nProj Pts\n% Start\n% Ros\nQB\nJosh Allen\nJosh AllenPlayer Note\nBuf - QB\nSun 1:00 pm vs NYJ\n7\n24.60\n21.40\n99%\n100%\n-\n-\nRB\nBijan Robinson\nBijan RobinsonOVideo ForecastPlayer Note\nAtl - RB\nSun 1:00 pm @ TB\n8\n18.20\n17.80\n98%\n100%\n-\n-\nRB\nKenneth Walker III\nKenneth Walker IIIQVideo ForecastNew Player Note\nSea - RB\nSun 4:05 pm vs ARI\n11\n9.10\n11.20\n72%\n99%\n-\n-\nWR\nJa'Marr Chase\nJa'Marr ChaseVideo ForecastPlayer Note\nCin - WR\nSun 1:00 pm @ Bal\n6\n22.40\n18.90\n100%\n100%\n-\n-\nWR\nNico Collins\nNico CollinsNo new player Notes\nHou - WR\nBye\n5\n\u2013\n\u2013\n0%\n99%\n-\n-\nTE\nTaysom Hill\nTaysom HillPlayer Note\nNO - TE,QB\nSun 1:00 pm vs Atl\n9\n7.20\n9.40\n41%\n62%\n-\n-\nW/R/T\nJaylen Waddle\nJaylen WaddleVideo ForecastPlayer Note\nMia - WR\nSun 1:00 pm vs NE\n12\n12.30\n13.50\n88%\n99%\n-\n-\nK\nHarrison Butker\nHarrison ButkerNo new player Notes\nKC - K\nMon 8:15 pm vs Den\n10\n11.00\n8.60\n93%\n99%\n-\n-\nBN\nRome Odunze\nRome OdunzeVideo ForecastNew Player Note\nChi - WR\nSun 1:00 pm vs Min\n10\n8.80\n9.80\n34%\n91%\n-\n-\nBN\nTyler Allgeier\nTyler AllgeierNo new player Notes\nAtl - RB\nSun 1:00 pm @ TB\n8\n6.10\n8.20\n22%\n78%\n-\n-\nIR\nPuka Nacua\nPuka NacuaIRVideo ForecastPlayer Note\nLAR - WR\nSun 1:00 pm vs Sea\n11\n0.00\n0.00\n0%\n96%\n-\n-\nTeam 69's Defense/Special Teams roster for week 5.\nPos\nDefense/Special Teams\nBye\nFan Pts\nProj Pts\n% Start\n% Ros\nDEF\nRavens\nRavensNo new player Notes\nBal - DEF\nSun 1:00 pm vs Cin\n6\n5.00\n8.30\n94%\n99%\n-\n-\n",
+   "expected": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ]
+  },
+  {
+   "label": "inline league-rosters rendering",
+   "text": "QB Josh Allen Buf - QB Sun 1:00 pm vs NYJ 22.45\nW/R/T Jahmyr Gibbs Det - RB Q Sun 4:25 pm @ GB 15.10\nBN Puka Nacua LAR - WR O Sun 1:00 pm vs SEA 0.00\nBN Tank Bigsby Jax - RB Bye 0.00\n",
+   "expected": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 22.45,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Jahmyr Gibbs",
+     "pos": "RB",
+     "team": "DET",
+     "slot": "W/R/T",
+     "status": "Q",
+     "opponent": "@GB",
+     "proj": 15.1,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "BN",
+     "status": "O",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Tank Bigsby",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "BN",
+     "status": "",
+     "opponent": null,
+     "proj": 0.0,
+     "bye": true,
+     "byeWeek": null
+    }
+   ]
+  },
+  {
+   "label": "a page with no players on it",
+   "text": "Nothing here\nStill nothing\n",
+   "expected": []
+  }
+ ],
  "lineups": [
   {
    "label": "week1 / two flex, no kicker",
