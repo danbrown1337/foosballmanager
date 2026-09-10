@@ -184,6 +184,40 @@ def _rank_key(player: WeeklyPlayer):
     return (player.proj is None, -(player.proj or 0.0), player.name)
 
 
+@dataclass
+class SetLineup:
+    """The lineup Yahoo currently has, as distinct from the best one available."""
+    players: list[WeeklyPlayer]
+    projected: float
+    unprojected: list[str]
+
+
+def set_lineup(players: list[WeeklyPlayer]) -> SetLineup:
+    """Whoever is in a starting slot right now, and what they project.
+
+    Not the same question as optimal_lineup: this is what the page says is
+    set, not what it should be. Both numbers belong in the report — the gap
+    between them is what the recommended changes are actually worth.
+
+    It doubles as the one end-to-end check on the parser that exists. Yahoo
+    displays its own projected total for the week, and this sum reproduces it
+    to the cent on the captured page (120.96). That number is NOT in the page
+    text — only the "Proj Pts" column header is — so the comparison stays a
+    manual glance; showing the sum is what makes it a glance rather than
+    mental arithmetic over nine rows.
+
+    A starter with no projection is summed as nothing and named separately,
+    because a total quietly missing a player looks like a parser that works.
+    """
+    on_field = [p for p in players
+                if p.slot and p.slot.upper() not in BENCH_SLOTS]
+    return SetLineup(
+        players=on_field,
+        projected=round(sum(p.proj or 0.0 for p in on_field), 2),
+        unprojected=[p.name for p in on_field if p.proj is None],
+    )
+
+
 def optimal_lineup(
     players: list[WeeklyPlayer],
     starters: dict,

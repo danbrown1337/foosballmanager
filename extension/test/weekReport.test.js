@@ -42,7 +42,8 @@ function pagesFrom(...texts) {
   return { pages, tabCount: texts.length };
 }
 
-const buildReport = (text, config) => buildWeekReport(pagesFrom(text), config, NOW);
+const buildReport = (text, config, options = {}) =>
+  buildWeekReport(pagesFrom(text), config, { today: NOW, ...options });
 
 const NO_KICKER = {
   league: { superflex: false },
@@ -134,7 +135,7 @@ describe("degraded inputs", () => {
   });
 
   test("no Yahoo tab at all says so specifically", () => {
-    const report = buildWeekReport({ pages: [], tabCount: 0 }, NO_KICKER, NOW);
+    const report = buildWeekReport({ pages: [], tabCount: 0 }, NO_KICKER, { today: NOW });
     assert.match(report.error, /Open your Yahoo My Team page/);
   });
 
@@ -333,7 +334,7 @@ describe("two team pages open", () => {
   const RIVAL = fixture("yahoo_myteam_week5_kicker.txt");
 
   test("the week report counts the team tabs it did not use", () => {
-    const report = buildWeekReport(pagesFrom(MY_TEAM, RIVAL), NO_KICKER, NOW);
+    const report = buildWeekReport(pagesFrom(MY_TEAM, RIVAL), NO_KICKER, { today: NOW });
     assert.equal(report.otherRosterTabs, 1);
     assert.ok(report.url);
   });
@@ -345,7 +346,82 @@ describe("two team pages open", () => {
   });
 
   test("one team page is unambiguous and says nothing", () => {
-    assert.equal(buildWeekReport(pagesFrom(MY_TEAM), NO_KICKER, NOW).otherRosterTabs, 0);
+    assert.equal(buildWeekReport(pagesFrom(MY_TEAM), NO_KICKER, { today: NOW }).otherRosterTabs, 0);
     assert.equal(waivers(FAAB, MY_TEAM, WIRE).otherRosterTabs, 0);
+  });
+});
+
+describe("what Yahoo has set, against what it should be", () => {
+  test("the current total reproduces Yahoo's own displayed projection", () => {
+    // This is the only end-to-end check on the parser that exists: Yahoo showed
+    // 120.96 for the lineup it had set on the captured page. The number is not
+    // in the page text, so the comparison is the reader's — but if a column
+    // ever starts being read wrong, this is where it shows up first.
+    const report = buildReport(MY_TEAM, NO_KICKER);
+    assert.equal(report.currentProjected, 120.96);
+    assert.equal(report.currentCount, 9);
+    assert.deepEqual(report.currentUnprojected, []);
+  });
+
+  test("the optimum is higher than what is set, by the change it found", () => {
+    const report = buildReport(MY_TEAM, NO_KICKER);
+    assert.equal(report.projected, 121.7);
+    // The one upgrade: Downs for Tuten, +0.74.
+    assert.equal(Math.round((report.projected - report.currentProjected) * 100) / 100,
+      0.74);
+  });
+
+  test("a starter with no projection is named, not silently summed as zero", () => {
+    // A total quietly missing a player looks exactly like a parser that works.
+    const noProj = "BN Josh Allen Buf - QB\nQB Bijan Robinson Atl - RB\n";
+    const report = buildReport(noProj, NO_KICKER);
+    assert.deepEqual(report.currentUnprojected, ["Bijan Robinson"]);
+    assert.equal(report.currentProjected, 0);
+  });
+});
+
+describe("byes coming up", () => {
+  const BYE_WEEKS = JSON.parse(
+    readFileSync(join(HERE, "..", "data", "bye_weeks.json"), "utf-8"));
+  const at = (week) =>
+    new Date(Date.UTC(2026, 8, 10) + (week - 1) * 7 * 86400000);
+  const report = (week) =>
+    buildWeekReport(pagesFrom(MY_TEAM), NO_KICKER,
+      { today: at(week), byeWeeks: BYE_WEEKS, weeksAhead: 3 });
+
+  test("flags the week a bye would leave a slot short", () => {
+    // Caleb Williams is the only QB on this roster, so his week-10 bye empties
+    // the QB slot — visible from week 7, which is while a claim is still cheap.
+    const week7 = report(7);
+    assert.equal(week7.byesChecked, true);
+    assert.deepEqual(week7.byes,
+      [{ week: 10, players: [{ name: "Caleb Williams", pos: "QB" }] }]);
+  });
+
+  test("says nothing about a bye that is still four weeks out", () => {
+    assert.deepEqual(report(6).byes, []);
+    assert.equal(report(6).byesChecked, true);
+  });
+
+  test("uses the bye week the page reported, not only the shipped table", () => {
+    // The shipped table is a hand-maintained snapshot and cannot know about a
+    // moved game; the page can. Blanking the table leaves the answer intact.
+    const fromPage = buildWeekReport(pagesFrom(MY_TEAM), NO_KICKER,
+      { today: at(7), byeWeeks: {}, weeksAhead: 3 });
+    assert.deepEqual(fromPage.byes, report(7).byes);
+  });
+
+  test("without a season start it says so rather than 'nothing coming up'", () => {
+    const noSeason = buildWeekReport(pagesFrom(MY_TEAM),
+      { roster: NO_KICKER.roster }, { today: at(7), byeWeeks: BYE_WEEKS });
+    assert.equal(noSeason.byesChecked, false);
+    assert.deepEqual(noSeason.byes, []);
+  });
+
+  test("a failed bye-table load costs the outlook, not the report", () => {
+    const noTable = buildWeekReport(pagesFrom(MY_TEAM), NO_KICKER,
+      { today: at(7), byeWeeks: null });
+    assert.equal(noTable.byesChecked, false);
+    assert.equal(noTable.currentProjected, 120.96); // the rest still works
   });
 });

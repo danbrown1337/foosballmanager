@@ -159,7 +159,7 @@ ranked waiver targets with a bid. The pieces run on their own too:
 python3 -m fantasy_manager.roster_manager lineup         # start/sit only
 python3 -m fantasy_manager.roster_manager waivers        # waiver targets only
 python3 -m fantasy_manager.roster_manager summary        # roster by position
-python3 -m fantasy_manager.roster_manager byeweeks       # bye-week pileups
+python3 -m fantasy_manager.roster_manager byeweeks       # weeks a bye leaves a slot short
 python3 -m fantasy_manager.roster_manager overachievers  # beating their draft price
 
 python3 -m fantasy_manager.trade_targeter list-teams
@@ -275,8 +275,8 @@ only surface mid-draft.
 - **The Chrome extension now covers the whole weekly loop as well as drafting**:
   a Week tab that reads your My Team page for start/sit, and waiver targets off
   the Players → Available page — engine and parser both ported and pinned
-  against Python by a golden master. `byeweeks` and `overachievers` stay
-  CLI-only.
+  against Python by a golden master, plus the bye outlook and both projected
+  totals. `overachievers` stays CLI-only.
 - **Nothing weighs matchup strength.** Yahoo's own projection prices some of it
   in; no code here looks at whether a back is facing the worst run defence in
   the league.

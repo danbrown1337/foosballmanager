@@ -112,11 +112,10 @@ with its own click handler, a separate confirm dialog) — not Yahoo's actual
 one. If "your turn" never triggers, open **Options** and add whatever phrase
 your room actually shows to the turn-phrases list.
 
-**Honest scope note:** the CLI's `roster_manager.py` also has `byeweeks` and
-`overachievers`. Those aren't ported here — the extension covers drafting,
-trade offers, and the weekly loop (start/sit and waiver targets) fully, and
-roster viewing partially (your team + scarcity, not bye-week conflicts). Use
-the CLI or `python3 -m fantasy_manager.web` for the rest.
+**Honest scope note:** the CLI's `roster_manager.py` also has `overachievers`,
+which isn't ported here. The extension covers drafting, trade offers, and the
+weekly loop — start/sit, waiver targets, and the bye outlook. Use the CLI or
+`python3 -m fantasy_manager.web` for the rest.
 
 ## Install (load unpacked — no Chrome Web Store, no build step)
 
@@ -311,8 +310,21 @@ inside `background.js` can only be tested by reimplementing it — which tests
 the copy. The worker keeps the `chrome.*` calls and nothing else, so
 `test/weekReport.test.js` exercises the code that actually ships.
 
-**What it does not do:** `byeweeks` and `overachievers` stay CLI-only, and
-nothing here weighs matchup strength. See `WEEKLY.md`.
+**Byes coming up** sit under the lineup: the weeks in the next three where a
+bye would leave a starting slot *short*, which is a narrower question than
+"who's off". Three players out in week 9 is not a problem if you can still
+field a legal lineup, and listing it buries the week you actually have to plan
+for. It prefers the bye week the page reports over the shipped table, since the
+table is a hand-maintained snapshot and cannot know about a moved game.
+
+**Two totals, not one.** The panel shows the optimal lineup's projection and
+what Yahoo currently has set. The gap is what the changes are worth; the second
+number is the check — it should equal the projected total on your Yahoo page.
+That total is not in the page text, so the comparison stays your glance, but if
+a column ever starts being read wrong this is where it shows.
+
+**What it does not do:** `overachievers` stays CLI-only, and nothing here
+weighs matchup strength. See `WEEKLY.md`.
 
 **If the numbers look wrong**, the panel says so when a page carried no
 projections at all. For anything subtler, the check is the same one the CLI

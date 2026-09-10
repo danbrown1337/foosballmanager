@@ -223,7 +223,23 @@ async function readYahooPages() {
  * Yahoo's own UI. Nothing here clicks anything.
  */
 async function weekReport() {
-  return buildWeekReport(await readYahooPages(), await Storage.getConfig());
+  const [pages, config, byeWeeks] = await Promise.all([
+    readYahooPages(), Storage.getConfig(), loadByeWeeks(),
+  ]);
+  return buildWeekReport(pages, config, { byeWeeks });
+}
+
+/** The shipped bye table, for the weeks-ahead check. A page that reports its
+ * own bye week wins over this one — it is a hand-maintained snapshot and
+ * cannot know about a moved game — so a failed load costs the outlook, not
+ * the report. */
+async function loadByeWeeks() {
+  try {
+    const response = await fetch(chrome.runtime.getURL("data/bye_weeks.json"));
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -32,6 +32,7 @@ import {
   isFreeAgent,
   lineupChanges,
   optimalLineup,
+  setLineup,
   waiverClears,
 } from "../src/engine/weekly.js";
 import { parseWeeklyText } from "../src/lib/weeklyParse.js";
@@ -92,6 +93,17 @@ for (const testCase of golden.lineups) {
       emptyReason: a.emptyReason,
     })),
     expected.slots);
+
+  // What Yahoo has set, not what it should be — the other half of the panel's
+  // two totals, and the sum that reproduces Yahoo's own displayed 120.96.
+  const asSet = setLineup(roster);
+  same(label, "set lineup",
+    {
+      players: asSet.players.map((p) => p.name),
+      projected: asSet.projected,
+      unprojected: asSet.unprojected,
+    },
+    expected.setLineup);
 
   same(label, "bench", best.bench.map((p) => p.name), expected.bench);
   same(label, "projected total",
