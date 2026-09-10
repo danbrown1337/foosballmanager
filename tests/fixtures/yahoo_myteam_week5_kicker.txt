@@ -1,0 +1,159 @@
+Pos
+Offense
+Bye
+Fan Pts
+Proj Pts
+% Start
+% Ros
+QB
+Josh Allen
+Josh AllenPlayer Note
+Buf - QB
+Sun 1:00 pm vs NYJ
+7
+24.60
+21.40
+99%
+100%
+-
+-
+RB
+Bijan Robinson
+Bijan RobinsonOVideo ForecastPlayer Note
+Atl - RB
+Sun 1:00 pm @ TB
+8
+18.20
+17.80
+98%
+100%
+-
+-
+RB
+Kenneth Walker III
+Kenneth Walker IIIQVideo ForecastNew Player Note
+Sea - RB
+Sun 4:05 pm vs ARI
+11
+9.10
+11.20
+72%
+99%
+-
+-
+WR
+Ja'Marr Chase
+Ja'Marr ChaseVideo ForecastPlayer Note
+Cin - WR
+Sun 1:00 pm @ Bal
+6
+22.40
+18.90
+100%
+100%
+-
+-
+WR
+Nico Collins
+Nico CollinsNo new player Notes
+Hou - WR
+Bye
+5
+–
+–
+0%
+99%
+-
+-
+TE
+Taysom Hill
+Taysom HillPlayer Note
+NO - TE,QB
+Sun 1:00 pm vs Atl
+9
+7.20
+9.40
+41%
+62%
+-
+-
+W/R/T
+Jaylen Waddle
+Jaylen WaddleVideo ForecastPlayer Note
+Mia - WR
+Sun 1:00 pm vs NE
+12
+12.30
+13.50
+88%
+99%
+-
+-
+K
+Harrison Butker
+Harrison ButkerNo new player Notes
+KC - K
+Mon 8:15 pm vs Den
+10
+11.00
+8.60
+93%
+99%
+-
+-
+BN
+Rome Odunze
+Rome OdunzeVideo ForecastNew Player Note
+Chi - WR
+Sun 1:00 pm vs Min
+10
+8.80
+9.80
+34%
+91%
+-
+-
+BN
+Tyler Allgeier
+Tyler AllgeierNo new player Notes
+Atl - RB
+Sun 1:00 pm @ TB
+8
+6.10
+8.20
+22%
+78%
+-
+-
+IR
+Puka Nacua
+Puka NacuaIRVideo ForecastPlayer Note
+LAR - WR
+Sun 1:00 pm vs Sea
+11
+0.00
+0.00
+0%
+96%
+-
+-
+Team 69's Defense/Special Teams roster for week 5.
+Pos
+Defense/Special Teams
+Bye
+Fan Pts
+Proj Pts
+% Start
+% Ros
+DEF
+Ravens
+RavensNo new player Notes
+Bal - DEF
+Sun 1:00 pm vs Cin
+6
+5.00
+8.30
+94%
+99%
+-
+-

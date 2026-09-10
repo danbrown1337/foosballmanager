@@ -103,6 +103,13 @@ def _as_float(value):
         return None
 
 
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def load_weekly(path: str | None = None, week: int | None = None) -> list[WeeklyPlayer]:
     """This week's imported roster, or [] if nothing has been imported yet.
 
@@ -127,6 +134,7 @@ def load_weekly(path: str | None = None, week: int | None = None) -> list[Weekly
                 opponent=row.get("opponent") or None,
                 proj=_as_float(row.get("proj")),
                 bye=str(row.get("bye", "")).strip().lower() in {"true", "1", "yes"},
+                bye_week=_as_int(row.get("bye_week")),
             ))
     return out
 

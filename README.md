@@ -263,9 +263,10 @@ only surface mid-draft.
   best-available list.
 - **Weekly page parsing is verified against one real page.** A captured 2026
   week-1 My Team page is pinned as a test fixture, and the parsed projections
-  reproduce Yahoo's own displayed weekly total exactly. Rows that capture
-  doesn't contain — a kicker slot, an IR player, a bye, a player ruled Out —
-  are still untested, so `browser_sync week` prints every field it parsed.
+  reproduce Yahoo's own displayed weekly total exactly. A second fixture covers
+  a kicker slot, IR, byes, Out designations and mid-season Fan Pts, but it is
+  constructed from that layout rather than captured — so `browser_sync week`
+  still prints every field it parsed, for checking against your own page.
 - **`overachievers` runs on pre-season research.** Comparing actual points
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.

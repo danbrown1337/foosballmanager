@@ -479,3 +479,68 @@ class TestRealYahooMyTeamPage:
         from fantasy_manager.browser_sync import parse_weekly_text
         rows = parse_weekly_text(INLINE_PAGE)
         assert {r["name"] for r in rows} >= {"Josh Allen", "Jahmyr Gibbs"}
+
+
+# --- Row shapes the week-1 capture didn't contain ----------------------------
+#
+# yahoo_myteam_week5_kicker.txt covers what the first capture could not: a
+# kicker slot, a player on IR, a player on bye, a player ruled Out while still
+# sitting in a starting slot, a multi-position eligibility, and — the one that
+# only appears from week 2 — a populated Fan Pts column sitting immediately
+# before Proj Pts.
+#
+# UNLIKE the week-1 fixture, this one is CONSTRUCTED rather than captured. It
+# follows the row layout the real page established and extends it to rows that
+# page did not contain. That makes it a real test of the parser's handling of
+# those shapes and NOT evidence that Yahoo renders them this way — if one turns
+# out wrong on a live page, this fixture is what to correct.
+
+class TestKickerLeagueMidSeasonPage:
+    @pytest.fixture
+    def rows(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        return {r["name"]: r
+                for r in parse_weekly_text(_fixture("yahoo_myteam_week5_kicker.txt"))}
+
+    def test_parses_every_row(self, rows):
+        assert len(rows) == 12
+
+    def test_kicker_is_read_as_a_kicker(self, rows):
+        butker = rows["Harrison Butker"]
+        assert (butker["pos"], butker["slot"], butker["proj"]) == ("K", "K", 8.60)
+
+    def test_ir_player_carries_slot_and_status(self, rows):
+        assert rows["Puka Nacua"]["slot"] == "IR"
+        assert rows["Puka Nacua"]["status"] == "IR"
+
+    def test_bye_row_has_no_opponent_and_no_projection(self, rows):
+        collins = rows["Nico Collins"]
+        assert collins["bye"] is True
+        assert collins["opponent"] is None
+        # Both point columns render as a dash on a bye. "No projection" must not
+        # come back as 0.0, which would read as a real prediction of zero.
+        assert collins["proj"] is None
+
+    def test_out_designation_is_read(self, rows):
+        assert rows["Bijan Robinson"]["status"] == "O"
+
+    def test_multi_position_eligibility_keeps_the_player(self, rows):
+        # Regression: the anchor required a single position, so "NO - TE,QB" did
+        # not match at all and Taysom Hill vanished from the roster entirely —
+        # the lineup was then computed as though he weren't on the team.
+        assert "Taysom Hill" in rows
+        assert rows["Taysom Hill"]["pos"] == "TE"
+
+    def test_projection_is_proj_pts_with_fan_pts_populated(self, rows):
+        # From week 2 on, Fan Pts holds real points and sits before Proj Pts.
+        # Every one of these is the SECOND decimal in its row.
+        assert rows["Josh Allen"]["proj"] == 21.40        # Fan Pts was 24.60
+        assert rows["Bijan Robinson"]["proj"] == 17.80    # Fan Pts was 18.20
+        assert rows["Ja'Marr Chase"]["proj"] == 18.90     # Fan Pts was 22.40
+
+    def test_bye_week_column_is_captured(self, rows):
+        assert rows["Josh Allen"]["bye_week"] == 7
+        assert rows["Harrison Butker"]["bye_week"] == 10
+
+    def test_defense_section_after_the_offense_table(self, rows):
+        assert rows["Ravens"]["pos"] == "DEF" and rows["Ravens"]["slot"] == "DEF"

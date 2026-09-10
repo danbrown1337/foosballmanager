@@ -434,3 +434,84 @@ class TestByeOutlook:
 
     def test_returns_nothing_without_a_known_week(self):
         assert bye_outlook([player("X", "RB", team="KC")], {"KC": 5}, None, {"RB": 1}) == []
+
+
+class TestKickerLeagueEndToEnd:
+    """The engine over a page containing a kicker, an IR player, a bye, and a
+    starter ruled Out — shapes the week-1 capture did not contain.
+
+    That fixture is CONSTRUCTED, not captured: it follows the row layout the
+    real week-1 page established, extended to rows that page happened not to
+    have. So it pins the engine's handling of those shapes, and it does not
+    prove Yahoo renders them this way. The week-1 fixture is the real one.
+
+    tests/test_browser_sync.py pins the parse; this pins what the engine does
+    with it, because a correctly parsed Out player still has to be kept out of
+    the lineup.
+    """
+    STARTERS = {"QB": 1, "RB": 2, "WR": 2, "TE": 1, "FLEX": 1, "K": 1, "DEF": 1}
+
+    @pytest.fixture
+    def roster(self):
+        import pathlib
+        from fantasy_manager.browser_sync import parse_weekly_text
+        text = (pathlib.Path(__file__).parent / "fixtures"
+                / "yahoo_myteam_week5_kicker.txt").read_text()
+        return [WeeklyPlayer(**row) for row in parse_weekly_text(text)]
+
+    def test_the_whole_lineup(self, roster):
+        best = optimal_lineup(roster, self.STARTERS)
+        assert best.named() == {
+            "Josh Allen", "Kenneth Walker III", "Tyler Allgeier", "Ja'Marr Chase",
+            "Jaylen Waddle", "Taysom Hill", "Harrison Butker", "Ravens",
+            "Rome Odunze",
+        }
+        assert best.projected == pytest.approx(109.30)
+
+    def test_the_kicker_slot_is_filled(self, roster):
+        best = optimal_lineup(roster, self.STARTERS)
+        kicker = [a for a in best.starters if a.slot == "K"]
+        assert len(kicker) == 1 and kicker[0].player.name == "Harrison Butker"
+
+    def test_a_league_with_no_kicker_slot_never_starts_one(self, roster):
+        # The engine treats an absent position as "never," not "assume one" —
+        # the same rule the draft side follows.
+        no_kicker = dict(self.STARTERS)
+        del no_kicker["K"]
+        assert "Harrison Butker" not in optimal_lineup(roster, no_kicker).named()
+
+    def test_out_and_bye_starters_are_benched_and_warned(self, roster):
+        best = optimal_lineup(roster, self.STARTERS)
+        assert "Bijan Robinson" not in best.named()   # ruled Out
+        assert "Nico Collins" not in best.named()     # on bye
+        warnings = " ".join(best.warnings)
+        assert "Bijan Robinson" in warnings and "Nico Collins" in warnings
+
+    def test_ir_player_in_the_ir_slot_is_not_warned_about(self, roster):
+        # He is excluded, but an IR player parked in the IR slot is correct —
+        # warning about it every week would train the reader to ignore warnings.
+        best = optimal_lineup(roster, self.STARTERS)
+        assert "Puka Nacua" not in best.named()
+        assert "Puka Nacua" not in " ".join(best.warnings)
+
+    def test_questionable_starter_is_started_and_flagged(self, roster):
+        best = optimal_lineup(roster, self.STARTERS)
+        walker = next(a.player for a in best.starters
+                      if a.player and a.player.name == "Kenneth Walker III")
+        assert walker.flagged and walker.status_label == "Q"
+
+    def test_bye_outlook_uses_the_page_not_the_shipped_table(self, roster):
+        """The page carries each player's bye week, so a stale table must not win.
+
+        bye_weeks.py is a hand-maintained snapshot; the page is authoritative and
+        current. Passing a deliberately wrong table proves which one is used.
+        """
+        wrong_table = {"BUF": 99, "BAL": 99, "ATL": 99}
+        weeks = [w for w, _ in bye_outlook(roster, wrong_table, week=5,
+                                           starters=self.STARTERS, weeks_ahead=3)]
+        assert weeks == [6, 7, 8]   # Ravens (6), Josh Allen (7), the Falcons (8)
+
+    def test_bye_outlook_falls_back_to_the_table_without_page_data(self):
+        stripped = [player("QB1", "QB", 20.0, team="KC")]
+        out = bye_outlook(stripped, {"KC": 6}, week=5, starters={"QB": 1}, weeks_ahead=2)
+        assert [w for w, _ in out] == [6]
