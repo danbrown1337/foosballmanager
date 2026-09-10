@@ -318,7 +318,11 @@ def cmd_waivers(args):
         faab_remaining=faab if system == "faab" else None, top=args.top)
 
     if not targets:
-        print("Nothing on the wire clears your current starters.")
+        # Deliberately not "nothing clears your starters": a pickup who would be
+        # a downgrade is still listed, ranked and labelled as depth. An empty
+        # list means nobody in the pool can play this week at all.
+        print("No pickup candidates in that pool — everyone in it is already "
+              "yours, out, on IR, or on a bye.")
         return
 
     for target in targets:

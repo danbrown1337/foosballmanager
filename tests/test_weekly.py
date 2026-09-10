@@ -359,6 +359,29 @@ class TestWaiverTargets:
         assert targets[0].gain is None
         assert "yourself" in targets[0].rationale
 
+    def test_a_downgrade_is_still_listed_as_depth(self):
+        """The empty-list message depends on this.
+
+        Both the CLI and the extension panel say, when nothing comes back,
+        that the pool holds nobody who can play. That is only true because a
+        pickup who would be *worse* than the incumbent is still returned —
+        ranked last, with a negative gain and a "depth only" rationale. If
+        this ever started filtering on gain, both messages would quietly
+        become lies about why the list was empty.
+        """
+        targets = evaluate_waiver_targets(
+            [player("Worse", "RB", 0.5)], self._roster(), STARTERS, top=3)
+        assert [t.player.name for t in targets] == ["Worse"]
+        assert targets[0].gain < 0
+        assert "depth only" in targets[0].rationale
+
+    def test_empty_only_when_nobody_in_the_pool_can_play(self):
+        pool = [player("Shelved", "RB", 30.0, status="IR"),
+                player("Resting", "WR", 30.0, bye=True),
+                player("Sidelined", "TE", 30.0, status="O")]
+        assert evaluate_waiver_targets(pool, self._roster(), STARTERS, top=5) == []
+        assert evaluate_waiver_targets([], self._roster(), STARTERS, top=5) == []
+
 
 class TestCurrentWeek:
     def test_derives_week_from_kickoff(self):

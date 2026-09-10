@@ -11,8 +11,9 @@
  * only a diff catches. Here the cases deliberately cover the shapes where a
  * port is most likely to drift: a kicker league, a superflex (where slot fill
  * ORDER changes the answer), an empty slot, an empty roster, doubtful players
- * admitted and excluded, FAAB at two budgets and none, and a wire with an
- * unprojected player on it.
+ * admitted and excluded, FAAB at two budgets and none, a wire with an
+ * unprojected player on it, the captured available-players page as the wire,
+ * and every Roster Status shape that page renders.
  *
  * Regenerate the fixture whenever weekly.py changes:
  *   python3 scripts/weekly_golden.py > extension/test/weekly_golden.json
@@ -28,8 +29,10 @@ import assert from "node:assert/strict";
 import {
   byeOutlook,
   evaluateWaiverTargets,
+  isFreeAgent,
   lineupChanges,
   optimalLineup,
+  waiverClears,
 } from "../src/engine/weekly.js";
 import { parseWeeklyText } from "../src/lib/weeklyParse.js";
 
@@ -62,6 +65,19 @@ function same(label, what, actual, expected) {
 for (const testCase of golden.parses) {
   const { label, text, expected } = testCase;
   same(`parse: ${label}`, "rows", parseWeeklyText(text), expected);
+}
+
+// --- Free agent vs waiver claim ----------------------------------------------
+//
+// Two small properties that decide what the manager actually does: an "FA" goes
+// to whoever clicks first, a claim waits for the run. A JS regex hand-written
+// against a Python one is exactly where a translation drifts quietly.
+for (const testCase of golden.freeAgency || []) {
+  const { rosterStatus, expected } = testCase;
+  const player = { name: "X", pos: "RB", team: "FA", rosterStatus };
+  same(`rosterStatus ${JSON.stringify(rosterStatus)}`, "free agency",
+    { isFreeAgent: isFreeAgent(player), waiverClears: waiverClears(player) },
+    expected);
 }
 
 // --- Lineups -----------------------------------------------------------------
@@ -128,7 +144,8 @@ for (const testCase of golden.byes) {
 }
 
 console.log(`Fixture: ${fixturePath.replace(/.*\/extension\//, "extension/")}`);
-console.log(`Compared ${golden.parses.length} parse, ${golden.lineups.length} lineup, `
+console.log(`Compared ${golden.parses.length} parse, `
+  + `${(golden.freeAgency || []).length} free-agency, ${golden.lineups.length} lineup, `
   + `${golden.waivers.length} waiver and ${golden.byes.length} bye cases `
   + `(${checks} field-level diffs).`);
 console.log("PASS: JS weekly parser and engine match Python, field for field.");

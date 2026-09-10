@@ -187,9 +187,36 @@ def parse_cases() -> list[dict]:
     return cases
 
 
+def free_agency_cases() -> list[dict]:
+    """is_free_agent / waiver_clears over every Roster Status shape seen.
+
+    Two one-line properties, but they decide what the manager does: an "FA" is
+    gone to whoever clicks first, a claim waits for the waiver run. The JS port
+    is a hand-written regex against a Python one, which is exactly the kind of
+    small translation that drifts without anybody noticing.
+    """
+    statuses = ["FA", "fa", " FA ", "W (Sep 11)", "W (Sep 16)", "W(Sep 11)",
+                "w (mon)", "W", "W ()", None, "", "  "]
+    return [
+        {
+            "rosterStatus": status,
+            "expected": {
+                "isFreeAgent": WeeklyPlayer(
+                    name="X", pos="RB", team="FA", roster_status=status).is_free_agent,
+                "waiverClears": WeeklyPlayer(
+                    name="X", pos="RB", team="FA", roster_status=status).waiver_clears,
+            },
+        }
+        for status in statuses
+    ]
+
+
 def main() -> None:
     week1 = load_roster("yahoo_myteam_week1.txt")
     week5 = load_roster("yahoo_myteam_week5_kicker.txt")
+    # The real captured wire, as the pool — the same bytes the parser cases
+    # cover, carried one step further into the valuation.
+    wire_page = load_roster("yahoo_players_available_week1.txt")
 
     lineups = [
         lineup_case("week1 / two flex, no kicker", week1, LEAGUES["two_flex_no_kicker"]),
@@ -226,6 +253,11 @@ def main() -> None:
                     LEAGUES["kicker_one_flex"], faab_remaining=100),
         waiver_case("week5 wire", week5, wire,
                     LEAGUES["kicker_one_flex"], faab_remaining=50),
+        # The captured available-players page as the pool. Every gain on this
+        # pairing is negative — the roster is strong and the wire is thin — so
+        # it also pins that no band prices a target that would not upgrade you.
+        waiver_case("captured available-players page as the wire", week1, wire_page,
+                    LEAGUES["two_flex_no_kicker"], faab_remaining=100, top=8),
     ]
 
     byes = [
@@ -236,7 +268,7 @@ def main() -> None:
         bye_case("no current week", week5, None, LEAGUES["kicker_one_flex"]),
     ]
 
-    json.dump({"parses": parse_cases(),
+    json.dump({"parses": parse_cases(), "freeAgency": free_agency_cases(),
                "lineups": lineups, "waivers": waivers, "byes": byes},
               sys.stdout, indent=1, sort_keys=False)
     sys.stdout.write("\n")

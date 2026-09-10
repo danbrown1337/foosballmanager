@@ -75,6 +75,12 @@ python3 -m fantasy_manager.browser_sync week --free-agents --url <Players -> Ava
 python3 -m fantasy_manager.roster_manager waivers
 ```
 
+Or, without a terminal: open both pages in tabs, click the extension, and press
+**Waiver targets** on the Week tab. Same ranking, same numbers — the JS engine
+is diffed against this one field for field. If you have another team's page
+open as well, the panel says so and names the roster it used: every team in a
+league renders the same way, so it cannot tell which one is yours.
+
 You get, per target: the projected gain over the player they'd actually
 replace in your lineup, a suggested drop, either a FAAB bid range or a "worth
 your priority" verdict, and — when the page said — whether the player is a free
@@ -109,6 +115,8 @@ into zero points.
 ```bash
 python3 -m fantasy_manager.roster_manager lineup
 ```
+
+Or press **Read my team page** on the extension's Week tab.
 
 Check the `OPP` column against the Thursday matchup before you close the laptop.
 
@@ -224,5 +232,5 @@ through the parser.
 - **Trade offers as part of the weekly loop.** `trade_targeter.py` exists and
   works, but it isn't wired into `week` — it runs on season-long value, not
   this week's numbers.
-- **The Chrome extension.** All of the above is CLI-only. The extension covers
-  drafting; the weekly workflow hasn't been ported to it.
+- **Bye-week conflicts and overachievers in the extension.** `byeweeks` and
+  `overachievers` stay CLI-only. Start/sit and waivers are in both.
