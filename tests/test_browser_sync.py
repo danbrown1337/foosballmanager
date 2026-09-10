@@ -544,3 +544,61 @@ class TestKickerLeagueMidSeasonPage:
 
     def test_defense_section_after_the_offense_table(self, rows):
         assert rows["Ravens"]["pos"] == "DEF" and rows["Ravens"]["slot"] == "DEF"
+
+
+# --- The available-players page ----------------------------------------------
+#
+# yahoo_players_available_week1.txt is a real capture, and its columns are NOT
+# My Team's. The header there reads:
+#
+#     Offense | Roster Status | GP* | Bye | Fan Pts | Pre-Season | Actual | % Ros
+#
+# Two consequences. There is an extra integer column (GP*) sitting before Bye,
+# which made "the first bare integer is the bye week" read games-played as the
+# bye on every single row. And there is a Roster Status column that My Team has
+# no equivalent of, carrying the one thing that decides what the manager does:
+# "FA" can be added now, first-come, while "W (Sep 11)" needs a claim placed
+# before that date.
+
+class TestAvailablePlayersPage:
+    @pytest.fixture
+    def rows(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        return {r["name"]: r
+                for r in parse_weekly_text(_fixture("yahoo_players_available_week1.txt"))}
+
+    def test_parses_every_row(self, rows):
+        assert len(rows) == 8
+
+    def test_bye_week_is_bye_not_games_played(self, rows):
+        # Regression: GP* is 1 for every player this early in the season, so the
+        # old rule returned 1 as the bye week for all of them — a wrong number
+        # that looks like a plausible week.
+        assert rows["Baker Mayfield"]["bye_week"] == 10   # TB
+        assert rows["Tre Tucker"]["bye_week"] == 13       # LV
+        assert rows["Xavier Worthy"]["bye_week"] == 5     # KC
+        assert not any(r["bye_week"] == 1 for r in rows.values())
+
+    def test_projection_is_still_read_correctly(self, rows):
+        assert rows["Baker Mayfield"]["proj"] == 18.08
+        assert rows["Tyjae Spears"]["proj"] == 8.85
+
+    def test_free_agents_and_waiver_players_are_distinguished(self, rows):
+        assert rows["Tre Tucker"]["roster_status"] == "FA"
+        assert rows["Baker Mayfield"]["roster_status"] == "W (Sep 11)"
+
+    def test_injury_designation_still_read_on_this_layout(self, rows):
+        assert rows["Sam Darnold"]["status"] == "Q"
+
+    def test_a_finished_game_still_yields_its_opponent(self, rows):
+        # This page shows results for games already played: "Final W 13-10 vs NE".
+        assert rows["Sam Darnold"]["opponent"] == "vs NE"
+        assert rows["Hunter Henry"]["opponent"] == "@SEA"
+
+    def test_name_suffixes_survive_here_too(self, rows):
+        assert "Deebo Samuel Sr." in rows
+
+    def test_my_team_pages_carry_no_roster_status(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text(_fixture("yahoo_myteam_week1.txt"))
+        assert all(r["roster_status"] is None for r in rows)

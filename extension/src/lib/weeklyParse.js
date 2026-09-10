@@ -71,6 +71,12 @@ const PROJECTION_FULL = /^(?<value>\d{1,2}\.\d{1,2})$/;
 const PROJECTION_ANY = /(?<![\d.])(?<value>\d{1,2}\.\d{1,2})(?![\d.])/;
 const BARE_INT = /^\d{1,2}$/;
 
+// The available-players page carries a column My Team does not: whether a
+// player can be added now or has to be claimed. "FA" is first-come; "W (Sep 11)"
+// is a claim that processes on that date. The difference decides what the
+// manager actually does, so it is captured rather than dropped.
+const ROSTER_STATUS = /^(?:FA|W\s*\([^)]*\))$/i;
+
 export function normalizePosition(raw) {
   // Yahoo lists every eligible position ("TE,QB"); downstream code matches a
   // single one, so keep the first — the same rule the API client applies.
@@ -135,17 +141,26 @@ function parseStackedMyTeam(lines) {
     const forward = lines.slice(index + 1, Math.max(index + 1, end)).map((l) => l.trim());
 
     let opponent = null;
-    let byeWeek = null;
     let proj = null;
     let onBye = false;
+    let rosterStatus = null;
+    const integers = [];
+    let seenDecimal = false;
     for (const line of forward) {
       if (line.includes("%")) {
-        // Columns run Bye, Fan Pts, Proj Pts, then percentages. Stopping at the
-        // first percentage and keeping the LAST decimal before it is what picks
-        // Proj Pts rather than Fan Pts — which is "-" in week 1 but a real
-        // number from week 2 on, and would otherwise silently become the
-        // projection for the rest of the season.
+        // Both pages put a percentage column after the numbers that matter, so
+        // it is the stop line. Before it:
+        //   projection = the LAST decimal. My Team runs Fan Pts then Proj Pts,
+        //     and Fan Pts is "-" in week 1 but real from week 2 on — taking the
+        //     first decimal would silently return points already scored.
+        //   bye week = the last integer BEFORE the first decimal. My Team has
+        //     only Bye there; the players page has GP* then Bye, so "the first
+        //     integer" reads games-played as the bye on every row.
         break;
+      }
+      if (rosterStatus === null && ROSTER_STATUS.test(line)) {
+        rosterStatus = line.trim();
+        continue;
       }
       if (opponent === null) {
         const found = OPPONENT.exec(line);
@@ -156,14 +171,21 @@ function parseStackedMyTeam(lines) {
         }
       }
       if (BYE_MARKER.test(line)) { onBye = true; continue; }
-      if (byeWeek === null && BARE_INT.test(line)) { byeWeek = Number.parseInt(line, 10); continue; }
+      if (BARE_INT.test(line)) {
+        if (!seenDecimal) integers.push(Number.parseInt(line, 10));
+        continue;
+      }
       const number = PROJECTION_FULL.exec(line);
-      if (number) proj = Number.parseFloat(number.groups.value);
+      if (number) {
+        seenDecimal = true;
+        proj = Number.parseFloat(number.groups.value);
+      }
     }
+    const byeWeek = integers.length ? integers[integers.length - 1] : null;
 
     rows.push({
       name, pos, team: match.groups.team.toUpperCase(),
-      slot, status, opponent, proj, bye: onBye, byeWeek,
+      slot, status, opponent, proj, bye: onBye, byeWeek, rosterStatus,
     });
   });
   return rows;
@@ -225,6 +247,7 @@ function parseInline(lines) {
       proj: projectionMatch ? Number.parseFloat(projectionMatch.groups.value) : null,
       bye: /\bbye\b/i.test(tail) && !opponentMatch,
       byeWeek: null,
+      rosterStatus: null,
     });
   }
 

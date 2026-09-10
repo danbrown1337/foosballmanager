@@ -21,6 +21,7 @@ a script against a page it half-understands is how you start a player on bye.
 from __future__ import annotations
 
 import datetime
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -71,6 +72,22 @@ class WeeklyPlayer:
     # Preferred over the static table in bye_weeks.py, which goes stale the
     # moment the league moves a game and cannot know about a mid-season change.
     bye_week: int | None = None
+    # Only the available-players page carries this: "FA" (add now, first-come)
+    # or "W (Sep 11)" (claim required, processes then). None on My Team, where
+    # the question doesn't arise. It decides what the manager actually does, so
+    # it is reported rather than collapsed into "available".
+    roster_status: str | None = None
+
+    @property
+    def is_free_agent(self) -> bool:
+        return (self.roster_status or "").strip().upper() == "FA"
+
+    @property
+    def waiver_clears(self) -> str | None:
+        """When a claim on this player processes, if the page said."""
+        match = re.match(r"^W\s*\((?P<when>[^)]*)\)",
+                         (self.roster_status or "").strip(), re.I)
+        return match.group("when") if match else None
 
     @property
     def playable(self) -> bool:

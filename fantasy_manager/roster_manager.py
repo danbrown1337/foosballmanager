@@ -135,6 +135,7 @@ def load_weekly(path: str | None = None, week: int | None = None) -> list[Weekly
                 proj=_as_float(row.get("proj")),
                 bye=str(row.get("bye", "")).strip().lower() in {"true", "1", "yes"},
                 bye_week=_as_int(row.get("bye_week")),
+                roster_status=row.get("roster_status") or None,
             ))
     return out
 
@@ -332,6 +333,9 @@ def cmd_waivers(args):
             line += "worth your priority" if target.worth_priority else "not worth priority"
         print(line)
         print(f"      {target.rationale}" + (f" — {target.note}" if target.note else ""))
+        if player.roster_status:
+            clears = player.waiver_clears
+            print(f"      {'free agent — add now, first come' if player.is_free_agent else f'on waivers — claim by {clears}' if clears else 'on waivers — claim required'}")
         if target.drop:
             print(f"      drop candidate: {target.drop.name} "
                   f"({target.drop.pos}, lowest-value bench spot)")
