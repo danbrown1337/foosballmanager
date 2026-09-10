@@ -252,3 +252,32 @@ one-off checks for this build, not part of the shipped extension.
   surviving a reload. **Try it against a real mock draft before draft
   day**, the same advice the CLI's README already gives for
   `browser_sync.py watch`.
+
+
+## In-season weekly engine (ported, not yet wired to any UI)
+
+`src/engine/weekly.js` is a port of `fantasy_manager/weekly.py`: start/sit
+lineup optimisation, the diff against whatever Yahoo currently has set, waiver
+valuation with FAAB bid bands, and the season calendar.
+
+It is pinned to the Python original by a golden master — `scripts/weekly_golden.py`
+records what Python decides across kicker, superflex, empty-slot, empty-roster
+and doubtful-admitted cases, and `test/compare_weekly_with_python.js` replays
+every one through this engine and diffs each field. That diff caught a real
+divergence on its first run: Python's `round()` breaks a tie to even and
+JavaScript's `Math.round()` rounds it up, so on a $50 budget the port was
+saying "bid 13" where the Python report said 12.
+
+**Nothing in the popup or the overlay calls this yet.** To finish the port you
+need two more pieces:
+
+1. A weekly panel — the popup's Team tab is the natural home.
+2. A way to read the My Team page. The recommendation is to take
+   `document.body.innerText` and port `parse_weekly_text` from
+   `fantasy_manager/browser_sync.py`, rather than writing CSS selectors:
+   that parser is already verified against a real captured My Team page, and
+   Yahoo's generated class names change without notice while the rendered text
+   has held still for years. `tests/fixtures/yahoo_myteam_week1.txt` is exactly
+   what `innerText` yields, so it doubles as the fixture for that port.
+
+Until both land, the weekly workflow is CLI-only — see `WEEKLY.md`.

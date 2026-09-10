@@ -1,0 +1,3986 @@
+{
+ "lineups": [
+  {
+   "label": "week1 / two flex, no kicker",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "superflex": false,
+   "allowDoubtful": false,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": "Caleb Williams",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Breece Hall",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Jeremiyah Love",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Justin Jefferson",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "CeeDee Lamb",
+      "emptyReason": null
+     },
+     {
+      "slot": "TE",
+      "player": "Kyle Pitts Sr.",
+      "emptyReason": null
+     },
+     {
+      "slot": "DEF",
+      "player": "Seahawks",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": "Josh Downs",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": "Jadarian Price",
+      "emptyReason": null
+     }
+    ],
+    "bench": [
+     "Bhayshul Tuten",
+     "Travis Kelce",
+     "Stefon Diggs",
+     "Aaron Jones Sr.",
+     "Broncos",
+     "Mitchell Evans"
+    ],
+    "projected": 121.7,
+    "warnings": [],
+    "changes": [
+     {
+      "slot": "FLEX",
+      "start": "Josh Downs",
+      "bench": "Bhayshul Tuten",
+      "gain": 0.74,
+      "reason": "projects +0.74 over Bhayshul Tuten",
+      "moveOnly": false
+     }
+    ]
+   }
+  },
+  {
+   "label": "week1 / kicker league (no K on roster: empty slot)",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "K": 1,
+    "DEF": 1
+   },
+   "superflex": false,
+   "allowDoubtful": false,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": "Caleb Williams",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Breece Hall",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Jeremiyah Love",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Justin Jefferson",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "CeeDee Lamb",
+      "emptyReason": null
+     },
+     {
+      "slot": "TE",
+      "player": "Kyle Pitts Sr.",
+      "emptyReason": null
+     },
+     {
+      "slot": "K",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills K"
+     },
+     {
+      "slot": "DEF",
+      "player": "Seahawks",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": "Josh Downs",
+      "emptyReason": null
+     }
+    ],
+    "bench": [
+     "Jadarian Price",
+     "Bhayshul Tuten",
+     "Travis Kelce",
+     "Stefon Diggs",
+     "Aaron Jones Sr.",
+     "Broncos",
+     "Mitchell Evans"
+    ],
+    "projected": 110.23,
+    "warnings": [],
+    "changes": [
+     {
+      "slot": "FLEX",
+      "start": "Josh Downs",
+      "bench": "Jadarian Price",
+      "gain": 0.09,
+      "reason": "projects +0.09 over Jadarian Price",
+      "moveOnly": false
+     },
+     {
+      "slot": "W/R/T",
+      "start": null,
+      "bench": "Bhayshul Tuten",
+      "gain": null,
+      "reason": "Bhayshul Tuten is out-projected by your bench",
+      "moveOnly": false
+     }
+    ]
+   }
+  },
+  {
+   "label": "week1 / superflex",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "DEF": 1
+   },
+   "superflex": true,
+   "allowDoubtful": false,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": "Caleb Williams",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Breece Hall",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Jeremiyah Love",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Justin Jefferson",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "CeeDee Lamb",
+      "emptyReason": null
+     },
+     {
+      "slot": "TE",
+      "player": "Kyle Pitts Sr.",
+      "emptyReason": null
+     },
+     {
+      "slot": "DEF",
+      "player": "Seahawks",
+      "emptyReason": null
+     },
+     {
+      "slot": "SUPERFLEX",
+      "player": "Josh Downs",
+      "emptyReason": null
+     }
+    ],
+    "bench": [
+     "Jadarian Price",
+     "Bhayshul Tuten",
+     "Travis Kelce",
+     "Stefon Diggs",
+     "Aaron Jones Sr.",
+     "Broncos",
+     "Mitchell Evans"
+    ],
+    "projected": 110.23,
+    "warnings": [],
+    "changes": [
+     {
+      "slot": "SUPERFLEX",
+      "start": "Josh Downs",
+      "bench": "Jadarian Price",
+      "gain": 0.09,
+      "reason": "projects +0.09 over Jadarian Price",
+      "moveOnly": false
+     },
+     {
+      "slot": "W/R/T",
+      "start": null,
+      "bench": "Bhayshul Tuten",
+      "gain": null,
+      "reason": "Bhayshul Tuten is out-projected by your bench",
+      "moveOnly": false
+     }
+    ]
+   }
+  },
+  {
+   "label": "week5 / kicker league",
+   "roster": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "K": 1,
+    "DEF": 1
+   },
+   "superflex": false,
+   "allowDoubtful": false,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": "Josh Allen",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Kenneth Walker III",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Tyler Allgeier",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Ja'Marr Chase",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Jaylen Waddle",
+      "emptyReason": null
+     },
+     {
+      "slot": "TE",
+      "player": "Taysom Hill",
+      "emptyReason": null
+     },
+     {
+      "slot": "K",
+      "player": "Harrison Butker",
+      "emptyReason": null
+     },
+     {
+      "slot": "DEF",
+      "player": "Ravens",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": "Rome Odunze",
+      "emptyReason": null
+     }
+    ],
+    "bench": [
+     "Bijan Robinson",
+     "Nico Collins",
+     "Puka Nacua"
+    ],
+    "projected": 109.3,
+    "warnings": [
+     "Bijan Robinson is in your RB slot but is O \u2014 that slot scores 0 as it stands.",
+     "Nico Collins is in your WR slot but is BYE \u2014 that slot scores 0 as it stands."
+    ],
+    "changes": [
+     {
+      "slot": "RB",
+      "start": "Tyler Allgeier",
+      "bench": "Bijan Robinson",
+      "gain": -9.6,
+      "reason": "Bijan Robinson is O",
+      "moveOnly": false
+     },
+     {
+      "slot": "FLEX",
+      "start": "Rome Odunze",
+      "bench": "Nico Collins",
+      "gain": null,
+      "reason": "Nico Collins is BYE",
+      "moveOnly": false
+     },
+     {
+      "slot": "WR",
+      "start": "Jaylen Waddle",
+      "bench": null,
+      "gain": null,
+      "reason": "move from W/R/T to WR",
+      "moveOnly": true
+     }
+    ]
+   }
+  },
+  {
+   "label": "week5 / no kicker slot, so no kicker started",
+   "roster": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "superflex": false,
+   "allowDoubtful": false,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": "Josh Allen",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Kenneth Walker III",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Tyler Allgeier",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Ja'Marr Chase",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Jaylen Waddle",
+      "emptyReason": null
+     },
+     {
+      "slot": "TE",
+      "player": "Taysom Hill",
+      "emptyReason": null
+     },
+     {
+      "slot": "DEF",
+      "player": "Ravens",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": "Rome Odunze",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills FLEX"
+     }
+    ],
+    "bench": [
+     "Harrison Butker",
+     "Bijan Robinson",
+     "Nico Collins",
+     "Puka Nacua"
+    ],
+    "projected": 100.7,
+    "warnings": [
+     "Bijan Robinson is in your RB slot but is O \u2014 that slot scores 0 as it stands.",
+     "Nico Collins is in your WR slot but is BYE \u2014 that slot scores 0 as it stands."
+    ],
+    "changes": [
+     {
+      "slot": "RB",
+      "start": "Tyler Allgeier",
+      "bench": "Bijan Robinson",
+      "gain": -9.6,
+      "reason": "Bijan Robinson is O",
+      "moveOnly": false
+     },
+     {
+      "slot": "FLEX",
+      "start": "Rome Odunze",
+      "bench": "Nico Collins",
+      "gain": null,
+      "reason": "Nico Collins is BYE",
+      "moveOnly": false
+     },
+     {
+      "slot": "K",
+      "start": null,
+      "bench": "Harrison Butker",
+      "gain": null,
+      "reason": "Harrison Butker is out-projected by your bench",
+      "moveOnly": false
+     },
+     {
+      "slot": "WR",
+      "start": "Jaylen Waddle",
+      "bench": null,
+      "gain": null,
+      "reason": "move from W/R/T to WR",
+      "moveOnly": true
+     }
+    ]
+   }
+  },
+  {
+   "label": "week5 / doubtful admitted",
+   "roster": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "K": 1,
+    "DEF": 1
+   },
+   "superflex": false,
+   "allowDoubtful": true,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": "Josh Allen",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Kenneth Walker III",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Tyler Allgeier",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Ja'Marr Chase",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Jaylen Waddle",
+      "emptyReason": null
+     },
+     {
+      "slot": "TE",
+      "player": "Taysom Hill",
+      "emptyReason": null
+     },
+     {
+      "slot": "K",
+      "player": "Harrison Butker",
+      "emptyReason": null
+     },
+     {
+      "slot": "DEF",
+      "player": "Ravens",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": "Rome Odunze",
+      "emptyReason": null
+     }
+    ],
+    "bench": [
+     "Bijan Robinson",
+     "Nico Collins",
+     "Puka Nacua"
+    ],
+    "projected": 109.3,
+    "warnings": [
+     "Bijan Robinson is in your RB slot but is O \u2014 that slot scores 0 as it stands.",
+     "Nico Collins is in your WR slot but is BYE \u2014 that slot scores 0 as it stands."
+    ],
+    "changes": [
+     {
+      "slot": "RB",
+      "start": "Tyler Allgeier",
+      "bench": "Bijan Robinson",
+      "gain": -9.6,
+      "reason": "Bijan Robinson is O",
+      "moveOnly": false
+     },
+     {
+      "slot": "FLEX",
+      "start": "Rome Odunze",
+      "bench": "Nico Collins",
+      "gain": null,
+      "reason": "Nico Collins is BYE",
+      "moveOnly": false
+     },
+     {
+      "slot": "WR",
+      "start": "Jaylen Waddle",
+      "bench": null,
+      "gain": null,
+      "reason": "move from W/R/T to WR",
+      "moveOnly": true
+     }
+    ]
+   }
+  },
+  {
+   "label": "week5 / more slots than players",
+   "roster": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "K": 1,
+    "DEF": 1
+   },
+   "superflex": false,
+   "allowDoubtful": false,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": "Josh Allen",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Kenneth Walker III",
+      "emptyReason": null
+     },
+     {
+      "slot": "RB",
+      "player": "Tyler Allgeier",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Ja'Marr Chase",
+      "emptyReason": null
+     },
+     {
+      "slot": "WR",
+      "player": "Jaylen Waddle",
+      "emptyReason": null
+     },
+     {
+      "slot": "TE",
+      "player": "Taysom Hill",
+      "emptyReason": null
+     },
+     {
+      "slot": "K",
+      "player": "Harrison Butker",
+      "emptyReason": null
+     },
+     {
+      "slot": "DEF",
+      "player": "Ravens",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": "Rome Odunze",
+      "emptyReason": null
+     },
+     {
+      "slot": "FLEX",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills FLEX"
+     }
+    ],
+    "bench": [
+     "Bijan Robinson",
+     "Nico Collins",
+     "Puka Nacua"
+    ],
+    "projected": 109.3,
+    "warnings": [
+     "Bijan Robinson is in your RB slot but is O \u2014 that slot scores 0 as it stands.",
+     "Nico Collins is in your WR slot but is BYE \u2014 that slot scores 0 as it stands."
+    ],
+    "changes": [
+     {
+      "slot": "RB",
+      "start": "Tyler Allgeier",
+      "bench": "Bijan Robinson",
+      "gain": -9.6,
+      "reason": "Bijan Robinson is O",
+      "moveOnly": false
+     },
+     {
+      "slot": "FLEX",
+      "start": "Rome Odunze",
+      "bench": "Nico Collins",
+      "gain": null,
+      "reason": "Nico Collins is BYE",
+      "moveOnly": false
+     },
+     {
+      "slot": "WR",
+      "start": "Jaylen Waddle",
+      "bench": null,
+      "gain": null,
+      "reason": "move from W/R/T to WR",
+      "moveOnly": true
+     }
+    ]
+   }
+  },
+  {
+   "label": "empty roster",
+   "roster": [],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "superflex": false,
+   "allowDoubtful": false,
+   "expected": {
+    "slots": [
+     {
+      "slot": "QB",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills QB"
+     },
+     {
+      "slot": "RB",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills RB"
+     },
+     {
+      "slot": "RB",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills RB"
+     },
+     {
+      "slot": "WR",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills WR"
+     },
+     {
+      "slot": "WR",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills WR"
+     },
+     {
+      "slot": "TE",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills TE"
+     },
+     {
+      "slot": "DEF",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills DEF"
+     },
+     {
+      "slot": "FLEX",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills FLEX"
+     },
+     {
+      "slot": "FLEX",
+      "player": null,
+      "emptyReason": "nobody healthy on your roster fills FLEX"
+     }
+    ],
+    "bench": [],
+    "projected": 0,
+    "warnings": [],
+    "changes": []
+   }
+  }
+ ],
+ "waivers": [
+  {
+   "label": "week1 wire, $100 FAAB",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "available": [
+    {
+     "name": "Jordan Mason",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 14.9,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 11.7,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cam Little",
+     "pos": "K",
+     "team": "JAX",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 9.1,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "pos": "WR",
+     "team": "CLE",
+     "slot": null,
+     "status": "Q",
+     "opponent": null,
+     "proj": 7.4,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Injured Guy",
+     "pos": "WR",
+     "team": "NYJ",
+     "slot": null,
+     "status": "IR",
+     "opponent": null,
+     "proj": 18.0,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "pos": "RB",
+     "team": "SF",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": false,
+     "byeWeek": null
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "faabRemaining": 100,
+   "top": 6,
+   "expected": [
+    {
+     "name": "Cam Little",
+     "gain": 9.1,
+     "replaces": null,
+     "drop": "Mitchell Evans",
+     "rationale": "fills an empty K slot",
+     "bidLow": 30,
+     "bidHigh": 45,
+     "worthPriority": true,
+     "note": "clear starter upgrade at a position you're thin at"
+    },
+    {
+     "name": "Jordan Mason",
+     "gain": 3.43,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +3.43 over Jadarian Price",
+     "bidLow": 5,
+     "bidHigh": 12,
+     "worthPriority": false,
+     "note": "marginal starter / good bench"
+    },
+    {
+     "name": "Travis Kelce",
+     "gain": 0.53,
+     "replaces": "Kyle Pitts Sr.",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +0.53 over Kyle Pitts Sr.",
+     "bidLow": 1,
+     "bidHigh": 4,
+     "worthPriority": false,
+     "note": "depth, stash, or a one-week bye fill"
+    },
+    {
+     "name": "Tyler Allgeier",
+     "gain": -3.27,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "gain": -4.07,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "gain": null,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "no weekly projection \u2014 compare against Jadarian Price yourself",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    }
+   ]
+  },
+  {
+   "label": "week1 wire, $12 FAAB left",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "available": [
+    {
+     "name": "Jordan Mason",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 14.9,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 11.7,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cam Little",
+     "pos": "K",
+     "team": "JAX",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 9.1,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "pos": "WR",
+     "team": "CLE",
+     "slot": null,
+     "status": "Q",
+     "opponent": null,
+     "proj": 7.4,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Injured Guy",
+     "pos": "WR",
+     "team": "NYJ",
+     "slot": null,
+     "status": "IR",
+     "opponent": null,
+     "proj": 18.0,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "pos": "RB",
+     "team": "SF",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": false,
+     "byeWeek": null
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "faabRemaining": 12,
+   "top": 6,
+   "expected": [
+    {
+     "name": "Cam Little",
+     "gain": 9.1,
+     "replaces": null,
+     "drop": "Mitchell Evans",
+     "rationale": "fills an empty K slot",
+     "bidLow": 4,
+     "bidHigh": 5,
+     "worthPriority": true,
+     "note": "clear starter upgrade at a position you're thin at"
+    },
+    {
+     "name": "Jordan Mason",
+     "gain": 3.43,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +3.43 over Jadarian Price",
+     "bidLow": 1,
+     "bidHigh": 1,
+     "worthPriority": false,
+     "note": "marginal starter / good bench"
+    },
+    {
+     "name": "Travis Kelce",
+     "gain": 0.53,
+     "replaces": "Kyle Pitts Sr.",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +0.53 over Kyle Pitts Sr.",
+     "bidLow": 1,
+     "bidHigh": 1,
+     "worthPriority": false,
+     "note": "depth, stash, or a one-week bye fill"
+    },
+    {
+     "name": "Tyler Allgeier",
+     "gain": -3.27,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "gain": -4.07,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "gain": null,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "no weekly projection \u2014 compare against Jadarian Price yourself",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    }
+   ]
+  },
+  {
+   "label": "week1 wire, priority league (no budget)",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "available": [
+    {
+     "name": "Jordan Mason",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 14.9,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 11.7,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cam Little",
+     "pos": "K",
+     "team": "JAX",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 9.1,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "pos": "WR",
+     "team": "CLE",
+     "slot": null,
+     "status": "Q",
+     "opponent": null,
+     "proj": 7.4,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Injured Guy",
+     "pos": "WR",
+     "team": "NYJ",
+     "slot": null,
+     "status": "IR",
+     "opponent": null,
+     "proj": 18.0,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "pos": "RB",
+     "team": "SF",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": false,
+     "byeWeek": null
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "faabRemaining": null,
+   "top": 6,
+   "expected": [
+    {
+     "name": "Cam Little",
+     "gain": 9.1,
+     "replaces": null,
+     "drop": "Mitchell Evans",
+     "rationale": "fills an empty K slot",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": true,
+     "note": "clear starter upgrade at a position you're thin at"
+    },
+    {
+     "name": "Jordan Mason",
+     "gain": 3.43,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +3.43 over Jadarian Price",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": "marginal starter / good bench"
+    },
+    {
+     "name": "Travis Kelce",
+     "gain": 0.53,
+     "replaces": "Kyle Pitts Sr.",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +0.53 over Kyle Pitts Sr.",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": "depth, stash, or a one-week bye fill"
+    },
+    {
+     "name": "Tyler Allgeier",
+     "gain": -3.27,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "gain": -4.07,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "gain": null,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "no weekly projection \u2014 compare against Jadarian Price yourself",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    }
+   ]
+  },
+  {
+   "label": "kicker league with an empty K slot",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "available": [
+    {
+     "name": "Jordan Mason",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 14.9,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 11.7,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cam Little",
+     "pos": "K",
+     "team": "JAX",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 9.1,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "pos": "WR",
+     "team": "CLE",
+     "slot": null,
+     "status": "Q",
+     "opponent": null,
+     "proj": 7.4,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Injured Guy",
+     "pos": "WR",
+     "team": "NYJ",
+     "slot": null,
+     "status": "IR",
+     "opponent": null,
+     "proj": 18.0,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "pos": "RB",
+     "team": "SF",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": false,
+     "byeWeek": null
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "K": 1,
+    "DEF": 1
+   },
+   "faabRemaining": 100,
+   "top": 6,
+   "expected": [
+    {
+     "name": "Cam Little",
+     "gain": 9.1,
+     "replaces": null,
+     "drop": "Mitchell Evans",
+     "rationale": "fills an empty K slot",
+     "bidLow": 30,
+     "bidHigh": 45,
+     "worthPriority": true,
+     "note": "clear starter upgrade at a position you're thin at"
+    },
+    {
+     "name": "Jordan Mason",
+     "gain": 3.34,
+     "replaces": "Josh Downs",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +3.34 over Josh Downs",
+     "bidLow": 5,
+     "bidHigh": 12,
+     "worthPriority": false,
+     "note": "marginal starter / good bench"
+    },
+    {
+     "name": "Travis Kelce",
+     "gain": 0.53,
+     "replaces": "Kyle Pitts Sr.",
+     "drop": "Mitchell Evans",
+     "rationale": "projects +0.53 over Kyle Pitts Sr.",
+     "bidLow": 1,
+     "bidHigh": 4,
+     "worthPriority": false,
+     "note": "depth, stash, or a one-week bye fill"
+    },
+    {
+     "name": "Tyler Allgeier",
+     "gain": -3.36,
+     "replaces": "Josh Downs",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Josh Downs; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "gain": -4.16,
+     "replaces": "Josh Downs",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Josh Downs; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "gain": null,
+     "replaces": "Josh Downs",
+     "drop": "Mitchell Evans",
+     "rationale": "no weekly projection \u2014 compare against Josh Downs yourself",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    }
+   ]
+  },
+  {
+   "label": "week5 wire",
+   "roster": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ],
+   "available": [
+    {
+     "name": "Jordan Mason",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 14.9,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 11.7,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cam Little",
+     "pos": "K",
+     "team": "JAX",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 9.1,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Cedric Tillman",
+     "pos": "WR",
+     "team": "CLE",
+     "slot": null,
+     "status": "Q",
+     "opponent": null,
+     "proj": 7.4,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Injured Guy",
+     "pos": "WR",
+     "team": "NYJ",
+     "slot": null,
+     "status": "IR",
+     "opponent": null,
+     "proj": 18.0,
+     "bye": false,
+     "byeWeek": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "pos": "RB",
+     "team": "SF",
+     "slot": null,
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": false,
+     "byeWeek": null
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "K": 1,
+    "DEF": 1
+   },
+   "faabRemaining": 50,
+   "top": 6,
+   "expected": [
+    {
+     "name": "Jordan Mason",
+     "gain": 6.7,
+     "replaces": "Tyler Allgeier",
+     "drop": "Puka Nacua",
+     "rationale": "projects +6.70 over Tyler Allgeier",
+     "bidLow": 8,
+     "bidHigh": 12,
+     "worthPriority": true,
+     "note": "starts for you most weeks"
+    },
+    {
+     "name": "Travis Kelce",
+     "gain": 2.3,
+     "replaces": "Taysom Hill",
+     "drop": "Puka Nacua",
+     "rationale": "projects +2.30 over Taysom Hill",
+     "bidLow": 2,
+     "bidHigh": 6,
+     "worthPriority": false,
+     "note": "marginal starter / good bench"
+    },
+    {
+     "name": "Cam Little",
+     "gain": 0.5,
+     "replaces": "Harrison Butker",
+     "drop": "Puka Nacua",
+     "rationale": "projects +0.50 over Harrison Butker",
+     "bidLow": 1,
+     "bidHigh": 2,
+     "worthPriority": false,
+     "note": "depth, stash, or a one-week bye fill"
+    },
+    {
+     "name": "Tyler Allgeier",
+     "gain": 0.0,
+     "replaces": "Tyler Allgeier",
+     "drop": "Puka Nacua",
+     "rationale": "would sit behind Tyler Allgeier; depth only",
+     "bidLow": 1,
+     "bidHigh": 2,
+     "worthPriority": false,
+     "note": "depth, stash, or a one-week bye fill"
+    },
+    {
+     "name": "Cedric Tillman",
+     "gain": -2.4,
+     "replaces": "Rome Odunze",
+     "drop": "Puka Nacua",
+     "rationale": "would sit behind Rome Odunze; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Unknown Rookie",
+     "gain": null,
+     "replaces": "Tyler Allgeier",
+     "drop": "Puka Nacua",
+     "rationale": "no weekly projection \u2014 compare against Tyler Allgeier yourself",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    }
+   ]
+  }
+ ],
+ "byes": [
+  {
+   "label": "week5 roster, looking 3 weeks out",
+   "roster": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ],
+   "week": 5,
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "K": 1,
+    "DEF": 1
+   },
+   "weeksAhead": 3,
+   "byeWeeks": {
+    "KC": 5,
+    "CAR": 5,
+    "MIA": 6,
+    "CIN": 6,
+    "DET": 6,
+    "MIN": 6,
+    "BUF": 7,
+    "LAC": 7,
+    "WAS": 7,
+    "JAX": 7,
+    "NYG": 8,
+    "NO": 8,
+    "SF": 8,
+    "HOU": 8,
+    "TEN": 9,
+    "PIT": 9,
+    "DEN": 10,
+    "PHI": 10,
+    "CHI": 10,
+    "TB": 10,
+    "NE": 11,
+    "CLE": 11,
+    "SEA": 11,
+    "GB": 11,
+    "ATL": 11,
+    "LAR": 11,
+    "IND": 13,
+    "NYJ": 13,
+    "LV": 13,
+    "BAL": 13,
+    "DAL": 14,
+    "ARI": 14
+   },
+   "expected": [
+    {
+     "week": 6,
+     "players": [
+      "Ravens"
+     ]
+    },
+    {
+     "week": 7,
+     "players": [
+      "Josh Allen"
+     ]
+    },
+    {
+     "week": 8,
+     "players": [
+      "Bijan Robinson",
+      "Tyler Allgeier"
+     ]
+    }
+   ]
+  },
+  {
+   "label": "week1 roster, looking 6 weeks out",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10
+    }
+   ],
+   "week": 1,
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "weeksAhead": 6,
+   "byeWeeks": {
+    "KC": 5,
+    "CAR": 5,
+    "MIA": 6,
+    "CIN": 6,
+    "DET": 6,
+    "MIN": 6,
+    "BUF": 7,
+    "LAC": 7,
+    "WAS": 7,
+    "JAX": 7,
+    "NYG": 8,
+    "NO": 8,
+    "SF": 8,
+    "HOU": 8,
+    "TEN": 9,
+    "PIT": 9,
+    "DEN": 10,
+    "PHI": 10,
+    "CHI": 10,
+    "TB": 10,
+    "NE": 11,
+    "CLE": 11,
+    "SEA": 11,
+    "GB": 11,
+    "ATL": 11,
+    "LAR": 11,
+    "IND": 13,
+    "NYJ": 13,
+    "LV": 13,
+    "BAL": 13,
+    "DAL": 14,
+    "ARI": 14
+   },
+   "expected": []
+  },
+  {
+   "label": "no current week",
+   "roster": [
+    {
+     "name": "Josh Allen",
+     "pos": "QB",
+     "team": "BUF",
+     "slot": "QB",
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 21.4,
+     "bye": false,
+     "byeWeek": 7
+    },
+    {
+     "name": "Bijan Robinson",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "RB",
+     "status": "O",
+     "opponent": "@TB",
+     "proj": 17.8,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "vs ARI",
+     "proj": 11.2,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ja'Marr Chase",
+     "pos": "WR",
+     "team": "CIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@BAL",
+     "proj": 18.9,
+     "bye": false,
+     "byeWeek": 6
+    },
+    {
+     "name": "Nico Collins",
+     "pos": "WR",
+     "team": "HOU",
+     "slot": "WR",
+     "status": "",
+     "opponent": null,
+     "proj": null,
+     "bye": true,
+     "byeWeek": 5
+    },
+    {
+     "name": "Taysom Hill",
+     "pos": "TE",
+     "team": "NO",
+     "slot": "TE",
+     "status": "",
+     "opponent": "vs ATL",
+     "proj": 9.4,
+     "bye": false,
+     "byeWeek": 9
+    },
+    {
+     "name": "Jaylen Waddle",
+     "pos": "WR",
+     "team": "MIA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 13.5,
+     "bye": false,
+     "byeWeek": 12
+    },
+    {
+     "name": "Harrison Butker",
+     "pos": "K",
+     "team": "KC",
+     "slot": "K",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.6,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Rome Odunze",
+     "pos": "WR",
+     "team": "CHI",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs MIN",
+     "proj": 9.8,
+     "bye": false,
+     "byeWeek": 10
+    },
+    {
+     "name": "Tyler Allgeier",
+     "pos": "RB",
+     "team": "ATL",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@TB",
+     "proj": 8.2,
+     "bye": false,
+     "byeWeek": 8
+    },
+    {
+     "name": "Puka Nacua",
+     "pos": "WR",
+     "team": "LAR",
+     "slot": "IR",
+     "status": "IR",
+     "opponent": "vs SEA",
+     "proj": 0.0,
+     "bye": false,
+     "byeWeek": 11
+    },
+    {
+     "name": "Ravens",
+     "pos": "DEF",
+     "team": "BAL",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs CIN",
+     "proj": 8.3,
+     "bye": false,
+     "byeWeek": 6
+    }
+   ],
+   "week": null,
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "K": 1,
+    "DEF": 1
+   },
+   "weeksAhead": 3,
+   "byeWeeks": {
+    "KC": 5,
+    "CAR": 5,
+    "MIA": 6,
+    "CIN": 6,
+    "DET": 6,
+    "MIN": 6,
+    "BUF": 7,
+    "LAC": 7,
+    "WAS": 7,
+    "JAX": 7,
+    "NYG": 8,
+    "NO": 8,
+    "SF": 8,
+    "HOU": 8,
+    "TEN": 9,
+    "PIT": 9,
+    "DEN": 10,
+    "PHI": 10,
+    "CHI": 10,
+    "TB": 10,
+    "NE": 11,
+    "CLE": 11,
+    "SEA": 11,
+    "GB": 11,
+    "ATL": 11,
+    "LAR": 11,
+    "IND": 13,
+    "NYJ": 13,
+    "LV": 13,
+    "BAL": 13,
+    "DAL": 14,
+    "ARI": 14
+   },
+   "expected": []
+  }
+ ]
+}
