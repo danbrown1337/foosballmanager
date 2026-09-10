@@ -4,6 +4,8 @@ These guard the CSVs themselves rather than the code — a typo'd player name
 or a missing team abbreviation degrades the tool silently, so it's worth
 catching in CI instead of on draft night.
 """
+import datetime
+
 import pytest
 import yaml
 
@@ -131,6 +133,20 @@ class TestLeagueConfig:
         roster = config["roster"]
         total = sum(roster["starters"].values()) + roster["bench"] + roster["ir"]
         assert total > sum(roster["starters"].values())
+
+    def test_carries_the_in_season_sections(self):
+        config = load_config(TEMPLATE_CONFIG)
+        assert {"season", "waivers"} <= set(config)
+
+    def test_week1_start_parses_as_a_date(self):
+        # A malformed date here doesn't raise — current_week() just returns
+        # None and every weekly report reads "Week unknown" all season.
+        from fantasy_manager.weekly import current_week
+        assert current_week(load_config(TEMPLATE_CONFIG),
+                            datetime.date(2026, 9, 24)) == 3
+
+    def test_waiver_system_is_one_the_code_handles(self):
+        assert load_config(TEMPLATE_CONFIG)["waivers"]["system"] in {"faab", "priority"}
 
     def test_yaml_is_valid_utf8_and_loads_as_a_mapping(self):
         with open(TEMPLATE_CONFIG, encoding="utf-8") as f:

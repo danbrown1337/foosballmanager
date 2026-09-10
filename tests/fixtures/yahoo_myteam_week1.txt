@@ -1,0 +1,213 @@
+Pos
+Offense
+Bye
+Fan Pts
+Proj Pts
+% Start
+% Ros
+Yds
+TD
+Int
+Att*
+Yds
+TD
+Tgt*
+Rec
+Yds
+TD
+TD
+2PT
+Lost
+QB
+Caleb Williams
+Caleb WilliamsPlayer Note
+Chi - QB
+Sun 1:00 pm @ Car
+10
+–
+18.35
+81%
+99%
+-
+-
+-
+RB
+Breece Hall
+Breece HallVideo ForecastNew Player Note
+NYJ - RB
+Sun 1:00 pm @ Ten
+13
+–
+14.91
+92%
+99%
+-
+-
+-
+RB
+Jeremiyah Love
+Jeremiyah LoveQVideo ForecastNew Player Note
+Ari - RB
+Sun 4:25 pm @ LAC
+14
+–
+13.02
+81%
+100%
+-
+-
+-
+WR
+CeeDee Lamb
+CeeDee LambPlayer Note
+Dal - WR
+Sun 8:20 pm @ NYG
+14
+–
+16.55
+100%
+100%
+-
+-
+-
+WR
+Justin Jefferson
+Justin JeffersonVideo ForecastPlayer Note
+Min - WR
+Sun 4:25 pm vs GB
+6
+–
+17.70
+100%
+100%
+-
+-
+-
+TE
+Kyle Pitts Sr.
+Kyle Pitts Sr.No new player Notes
+Atl - TE
+Sun 1:00 pm @ Pit
+11
+–
+11.17
+83%
+98%
+-
+-
+-
+W/R/T
+Jadarian Price
+Jadarian PriceVideo ForecastPlayer Note
+Sea - RB
+Wed 8:20 pm vs NE
+11
+–
+11.47
+65%
+96%
+-
+-
+-
+W/R/T
+Bhayshul Tuten
+Bhayshul TutenVideo ForecastNew Player Note
+Jax - RB
+Sun 1:00 pm vs Cle
+7
+–
+10.82
+56%
+96%
+-
+-
+-
+BN
+Josh Downs
+Josh DownsVideo ForecastNew Player Note
+Ind - WR
+Sun 1:00 pm vs Bal
+13
+–
+11.56
+17%
+87%
+-
+-
+-
+BN
+Stefon Diggs
+Stefon DiggsPlayer Note
+Was - WR
+Sun 4:25 pm @ Phi
+7
+–
+10.29
+12%
+87%
+-
+-
+-
+BN
+Travis Kelce
+Travis KelceVideo ForecastNo new player Notes
+KC - TE
+Mon 8:15 pm vs Den
+5
+–
+10.32
+54%
+94%
+-
+-
+-
+BN
+Aaron Jones Sr.
+Aaron Jones Sr.Video ForecastPlayer Note
+Min - RB
+Sun 4:25 pm vs GB
+6
+–
+8.90
+7%
+70%
+-
+-
+-
+BN
+Mitchell Evans
+Mitchell EvansNo new player Notes
+Car - TE
+Sun 1:00 pm vs Chi
+5
+–
+1.03
+0%
+0%
+-
+-
+-
+DEF
+Seahawks
+SeahawksNo new player Notes
+Sea - DEF
+Wed 8:20 pm vs NE
+11
+–
+6.97
+94%
+99%
+-
+-
+BN
+Broncos
+BroncosNo new player Notes
+Den - DEF
+Mon 8:15 pm @ KC
+10
+–
+6.67
+92%
+99%
+-
+-

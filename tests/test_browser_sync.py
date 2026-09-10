@@ -297,3 +297,308 @@ class TestChromeAttach:
         finally:
             proc.terminate()
             proc.wait(timeout=10)
+
+
+# --- Weekly (My Team page) parsing -------------------------------------------
+#
+# Yahoo renders the same row two ways depending on viewport and page: stacked,
+# with slot / matchup / projection each on their own line, and inline, with the
+# whole row on one. Both are parsed here and both must produce identical rows —
+# that equivalence is what the first test below pins, because a parser that
+# only handles the layout the author happened to look at is a parser that
+# breaks on somebody else's screen.
+
+STACKED_PAGE = """
+My Team
+QB
+Josh Allen Buf - QB
+Sun 1:00 pm vs NYJ
+22.45
+W/R/T
+Jahmyr Gibbs Det - RB Q
+Sun 4:25 pm @ GB
+15.10
+BN
+Puka Nacua LAR - WR O
+Sun 1:00 pm vs SEA
+0.00
+BN
+Tank Bigsby Jax - RB
+Bye
+0.00
+"""
+
+INLINE_PAGE = """
+QB Josh Allen Buf - QB Sun 1:00 pm vs NYJ 22.45
+W/R/T Jahmyr Gibbs Det - RB Q Sun 4:25 pm @ GB 15.10
+BN Puka Nacua LAR - WR O Sun 1:00 pm vs SEA 0.00
+BN Tank Bigsby Jax - RB Bye 0.00
+"""
+
+
+class TestParseWeeklyText:
+    def test_both_renderings_agree(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        assert parse_weekly_text(STACKED_PAGE) == parse_weekly_text(INLINE_PAGE)
+
+    def test_reads_slot_status_opponent_and_projection(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+
+        allen = rows["Josh Allen"]
+        assert (allen["slot"], allen["status"], allen["opponent"], allen["proj"]) == \
+               ("QB", "", "vs NYJ", 22.45)
+
+        gibbs = rows["Jahmyr Gibbs"]
+        assert (gibbs["slot"], gibbs["status"], gibbs["opponent"], gibbs["proj"]) == \
+               ("W/R/T", "Q", "@GB", 15.10)
+
+    def test_at_sign_opponent_is_parsed(self):
+        # Regression: an earlier pattern anchored on \b before the "@", and a
+        # word boundary needs a word character on one side — " @" has none, so
+        # every away game silently picked up the *next* player's home opponent.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+        assert rows["Jahmyr Gibbs"]["opponent"] == "@GB"
+
+    def test_a_row_does_not_inherit_its_neighbours_numbers(self):
+        # Regression: a fixed window of surrounding lines gave the first player
+        # the second player's projection, which is invisible in a lineup and
+        # wrong every week.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+        assert rows["Josh Allen"]["proj"] == 22.45
+        assert rows["Josh Allen"]["opponent"] == "vs NYJ"
+
+    def test_bye_is_flagged_and_carries_no_opponent(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        bigsby = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}["Tank Bigsby"]
+        assert bigsby["bye"] is True and bigsby["opponent"] is None
+
+    def test_injury_designation_is_kept_not_swallowed_into_the_name(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = {r["name"]: r for r in parse_weekly_text(STACKED_PAGE)}
+        assert "Puka Nacua" in rows and rows["Puka Nacua"]["status"] == "O"
+
+    def test_slot_label_never_becomes_part_of_the_name(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        assert all(not r["name"].startswith(("BN ", "QB ", "W/R/T "))
+                   for r in parse_weekly_text(INLINE_PAGE))
+
+    def test_missing_projection_is_none_not_zero(self):
+        # "No projection on the page" and "projected to score nothing" are
+        # different claims and the engine treats them differently.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text("Bijan Robinson Atl - RB\nSun 1:00 pm vs TB\n")
+        assert rows[0]["proj"] is None
+
+    def test_empty_page_is_empty_not_an_error(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        assert parse_weekly_text("Nothing here\n") == []
+
+    def test_names_carry_periods_for_adp_matching(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text("BN A.J. Brown Phi - WR Sun 1:00 pm vs DAL 12.30\n")
+        assert rows[0]["name"] == "A.J. Brown"
+
+
+# --- The real Yahoo My Team layout -------------------------------------------
+#
+# tests/fixtures/yahoo_myteam_week1.txt is captured from an actual Yahoo My Team
+# page, and it is the reason this parser exists in its current form. The first
+# version anchored on "Name TEAM - POS" appearing together on one line, which
+# the real page never does — it stacks the row, putting the name two lines above
+# a bare "Chi - QB". That parsed zero players off a live page while passing
+# every hand-written test, so the captured page is now the test.
+
+def _fixture(name):
+    import pathlib
+    return (pathlib.Path(__file__).parent / "fixtures" / name).read_text()
+
+
+class TestRealYahooMyTeamPage:
+    @pytest.fixture
+    def rows(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        return {r["name"]: r for r in parse_weekly_text(_fixture("yahoo_myteam_week1.txt"))}
+
+    def test_parses_every_player_on_the_page(self, rows):
+        assert len(rows) == 15
+
+    def test_reads_the_full_row(self, rows):
+        qb = rows["Caleb Williams"]
+        assert (qb["pos"], qb["team"], qb["slot"]) == ("QB", "CHI", "QB")
+        assert (qb["opponent"], qb["proj"], qb["bye_week"]) == ("@CAR", 18.35, 10)
+
+    def test_injury_designation_glued_to_the_name_is_recovered(self, rows):
+        # Renders as "Jeremiyah LoveQVideo ForecastNew Player Note" — the Q has
+        # no separator before it, and the name must not absorb it either.
+        assert rows["Jeremiyah Love"]["status"] == "Q"
+        assert rows["Jeremiyah Love"]["proj"] == 13.02
+
+    def test_note_chrome_is_not_mistaken_for_a_status(self, rows):
+        # "Kyle Pitts Sr.No new player Notes" and "CeeDee LambPlayer Note" start
+        # with N and P; neither is a designation.
+        assert rows["Kyle Pitts Sr."]["status"] == ""
+        assert rows["CeeDee Lamb"]["status"] == ""
+
+    def test_name_suffixes_survive(self, rows):
+        # Exact-name matching is what attaches ADP value, so "Sr." must stay.
+        assert "Kyle Pitts Sr." in rows and "Aaron Jones Sr." in rows
+
+    def test_flex_and_bench_slots_are_read(self, rows):
+        assert rows["Jadarian Price"]["slot"] == "W/R/T"
+        assert rows["Josh Downs"]["slot"] == "BN"
+
+    def test_defense_rows_parse(self, rows):
+        assert rows["Seahawks"]["pos"] == "DEF"
+        assert rows["Seahawks"]["slot"] == "DEF"
+        assert rows["Broncos"]["slot"] == "BN"
+
+    def test_home_and_away_opponents(self, rows):
+        assert rows["Justin Jefferson"]["opponent"] == "vs GB"
+        assert rows["Breece Hall"]["opponent"] == "@TEN"
+
+    def test_projection_is_proj_pts_not_fan_pts(self):
+        """The columns run Bye, Fan Pts, Proj Pts, then percentages.
+
+        Fan Pts is "-" in week 1 but a real number from week 2 on, and it sits
+        *before* the projection. Taking the first decimal after the anchor would
+        silently return points already scored for the rest of the season.
+        """
+        from fantasy_manager.browser_sync import parse_weekly_text
+        scored = _fixture("yahoo_myteam_week1.txt").replace(
+            "Chi - QB\nSun 1:00 pm @ Car\n10\n–\n18.35",
+            "Chi - QB\nSun 1:00 pm @ Car\n10\n24.60\n18.35")
+        rows = {r["name"]: r for r in parse_weekly_text(scored)}
+        assert rows["Caleb Williams"]["proj"] == 18.35
+
+    def test_inline_pages_still_parse(self):
+        # The league-rosters and draft-room pages really do put name and
+        # position on one line; that path must survive the stacked one.
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text(INLINE_PAGE)
+        assert {r["name"] for r in rows} >= {"Josh Allen", "Jahmyr Gibbs"}
+
+
+# --- Row shapes the week-1 capture didn't contain ----------------------------
+#
+# yahoo_myteam_week5_kicker.txt covers what the first capture could not: a
+# kicker slot, a player on IR, a player on bye, a player ruled Out while still
+# sitting in a starting slot, a multi-position eligibility, and — the one that
+# only appears from week 2 — a populated Fan Pts column sitting immediately
+# before Proj Pts.
+#
+# UNLIKE the week-1 fixture, this one is CONSTRUCTED rather than captured. It
+# follows the row layout the real page established and extends it to rows that
+# page did not contain. That makes it a real test of the parser's handling of
+# those shapes and NOT evidence that Yahoo renders them this way — if one turns
+# out wrong on a live page, this fixture is what to correct.
+
+class TestKickerLeagueMidSeasonPage:
+    @pytest.fixture
+    def rows(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        return {r["name"]: r
+                for r in parse_weekly_text(_fixture("yahoo_myteam_week5_kicker.txt"))}
+
+    def test_parses_every_row(self, rows):
+        assert len(rows) == 12
+
+    def test_kicker_is_read_as_a_kicker(self, rows):
+        butker = rows["Harrison Butker"]
+        assert (butker["pos"], butker["slot"], butker["proj"]) == ("K", "K", 8.60)
+
+    def test_ir_player_carries_slot_and_status(self, rows):
+        assert rows["Puka Nacua"]["slot"] == "IR"
+        assert rows["Puka Nacua"]["status"] == "IR"
+
+    def test_bye_row_has_no_opponent_and_no_projection(self, rows):
+        collins = rows["Nico Collins"]
+        assert collins["bye"] is True
+        assert collins["opponent"] is None
+        # Both point columns render as a dash on a bye. "No projection" must not
+        # come back as 0.0, which would read as a real prediction of zero.
+        assert collins["proj"] is None
+
+    def test_out_designation_is_read(self, rows):
+        assert rows["Bijan Robinson"]["status"] == "O"
+
+    def test_multi_position_eligibility_keeps_the_player(self, rows):
+        # Regression: the anchor required a single position, so "NO - TE,QB" did
+        # not match at all and Taysom Hill vanished from the roster entirely —
+        # the lineup was then computed as though he weren't on the team.
+        assert "Taysom Hill" in rows
+        assert rows["Taysom Hill"]["pos"] == "TE"
+
+    def test_projection_is_proj_pts_with_fan_pts_populated(self, rows):
+        # From week 2 on, Fan Pts holds real points and sits before Proj Pts.
+        # Every one of these is the SECOND decimal in its row.
+        assert rows["Josh Allen"]["proj"] == 21.40        # Fan Pts was 24.60
+        assert rows["Bijan Robinson"]["proj"] == 17.80    # Fan Pts was 18.20
+        assert rows["Ja'Marr Chase"]["proj"] == 18.90     # Fan Pts was 22.40
+
+    def test_bye_week_column_is_captured(self, rows):
+        assert rows["Josh Allen"]["bye_week"] == 7
+        assert rows["Harrison Butker"]["bye_week"] == 10
+
+    def test_defense_section_after_the_offense_table(self, rows):
+        assert rows["Ravens"]["pos"] == "DEF" and rows["Ravens"]["slot"] == "DEF"
+
+
+# --- The available-players page ----------------------------------------------
+#
+# yahoo_players_available_week1.txt is a real capture, and its columns are NOT
+# My Team's. The header there reads:
+#
+#     Offense | Roster Status | GP* | Bye | Fan Pts | Pre-Season | Actual | % Ros
+#
+# Two consequences. There is an extra integer column (GP*) sitting before Bye,
+# which made "the first bare integer is the bye week" read games-played as the
+# bye on every single row. And there is a Roster Status column that My Team has
+# no equivalent of, carrying the one thing that decides what the manager does:
+# "FA" can be added now, first-come, while "W (Sep 11)" needs a claim placed
+# before that date.
+
+class TestAvailablePlayersPage:
+    @pytest.fixture
+    def rows(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        return {r["name"]: r
+                for r in parse_weekly_text(_fixture("yahoo_players_available_week1.txt"))}
+
+    def test_parses_every_row(self, rows):
+        assert len(rows) == 8
+
+    def test_bye_week_is_bye_not_games_played(self, rows):
+        # Regression: GP* is 1 for every player this early in the season, so the
+        # old rule returned 1 as the bye week for all of them — a wrong number
+        # that looks like a plausible week.
+        assert rows["Baker Mayfield"]["bye_week"] == 10   # TB
+        assert rows["Tre Tucker"]["bye_week"] == 13       # LV
+        assert rows["Xavier Worthy"]["bye_week"] == 5     # KC
+        assert not any(r["bye_week"] == 1 for r in rows.values())
+
+    def test_projection_is_still_read_correctly(self, rows):
+        assert rows["Baker Mayfield"]["proj"] == 18.08
+        assert rows["Tyjae Spears"]["proj"] == 8.85
+
+    def test_free_agents_and_waiver_players_are_distinguished(self, rows):
+        assert rows["Tre Tucker"]["roster_status"] == "FA"
+        assert rows["Baker Mayfield"]["roster_status"] == "W (Sep 11)"
+
+    def test_injury_designation_still_read_on_this_layout(self, rows):
+        assert rows["Sam Darnold"]["status"] == "Q"
+
+    def test_a_finished_game_still_yields_its_opponent(self, rows):
+        # This page shows results for games already played: "Final W 13-10 vs NE".
+        assert rows["Sam Darnold"]["opponent"] == "vs NE"
+        assert rows["Hunter Henry"]["opponent"] == "@SEA"
+
+    def test_name_suffixes_survive_here_too(self, rows):
+        assert "Deebo Samuel Sr." in rows
+
+    def test_my_team_pages_carry_no_roster_status(self):
+        from fantasy_manager.browser_sync import parse_weekly_text
+        rows = parse_weekly_text(_fixture("yahoo_myteam_week1.txt"))
+        assert all(r["roster_status"] is None for r in rows)
