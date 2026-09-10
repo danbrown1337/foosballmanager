@@ -261,11 +261,11 @@ only surface mid-draft.
   it excludes every rostered player and ranks by projected gain over the player
   a pickup would actually replace; without it, it says so and degrades to a
   best-available list.
-- **Weekly page parsing is unverified against a live 2026 page.** The
-  "Name TEAM - POS" anchor is the stable part; slot, injury tag, opponent and
-  especially the projection are read from the surrounding text. `browser_sync
-  week` prints every field it parsed for exactly this reason — check it once
-  against your own My Team page before trusting a lineup to it.
+- **Weekly page parsing is verified against one real page.** A captured 2026
+  week-1 My Team page is pinned as a test fixture, and the parsed projections
+  reproduce Yahoo's own displayed weekly total exactly. Rows that capture
+  doesn't contain — a kicker slot, an IR player, a bye, a player ruled Out —
+  are still untested, so `browser_sync week` prints every field it parsed.
 - **`overachievers` runs on pre-season research.** Comparing actual points
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.
