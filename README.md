@@ -271,12 +271,11 @@ only surface mid-draft.
 - **`overachievers` runs on pre-season research.** Comparing actual points
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.
-- **The Chrome extension covers drafting and trade offers fully, roster
-  viewing partially.** The weekly *engine* is now ported to
-  `extension/src/engine/weekly.js` and pinned against Python by a golden
-  master, but nothing in the extension's UI calls it yet — so in practice the
-  weekly workflow is still CLI-only. The remaining work is a panel plus
-  reading the My Team page; see `extension/README.md`.
+- **The Chrome extension now covers start/sit as well as drafting**, via a
+  Week tab that reads your My Team page — engine and parser both ported and
+  pinned against Python by a golden master. **Waivers are not in the extension
+  yet**: the valuation is ported, but nothing reads the free-agent page, so
+  `waivers`, `byeweeks` and `overachievers` stay CLI-only.
 - **Nothing weighs matchup strength.** Yahoo's own projection prices some of it
   in; no code here looks at whether a back is facing the worst run defence in
   the league.

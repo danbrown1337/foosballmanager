@@ -27,6 +27,8 @@ import {
   gradeDraft,
 } from "./lib/snapshot.js";
 import { Storage } from "./lib/storage.js";
+import { parseWeeklyText } from "./lib/weeklyParse.js";
+import { lineupChanges, optimalLineup, weekLabel } from "./engine/weekly.js";
 
 async function setBadge(text) {
   await chrome.action.setBadgeText({ text });
@@ -56,6 +58,9 @@ async function handle(message, sender) {
       if (result.changed) await setBadge("\u2022");
       return result;
     }
+
+    case "WEEK_REPORT":
+      return weekReport();
 
     case "SYNC_MY_TEAM":
       return syncMyTeam(message.names || [], message.keep || []);
@@ -177,3 +182,81 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     chrome.tabs.sendMessage(tab.id, { type: "HEARTBEAT" }).catch(() => {});
   }
 });
+
+
+/**
+ * Read the open My Team tab and turn it into a start/sit report.
+ *
+ * Recommend-only, exactly as on the Python side and everywhere else in this
+ * project: this returns what to change, and the manager makes the change in
+ * Yahoo's own UI. Nothing here clicks anything.
+ *
+ * Every failure is reported as a reason rather than an empty result, because
+ * "no lineup" and "I could not find your team page" call for different things
+ * from the reader, and a blank panel says neither.
+ */
+async function weekReport() {
+  const tabs = await chrome.tabs.query({
+    url: "https://*.fantasysports.yahoo.com/f1/*",
+  });
+  if (!tabs.length) {
+    return { error: "Open your Yahoo My Team page in a tab, then try again." };
+  }
+
+  let page = null;
+  for (const tab of tabs) {
+    try {
+      const reply = await chrome.tabs.sendMessage(tab.id, { type: "READ_PAGE_TEXT" });
+      if (reply?.text) {
+        const roster = parseWeeklyText(reply.text);
+        // More than one f1/ tab can be open — the league page, a matchup, the
+        // player list. Keep the one that actually parses as a roster instead of
+        // reporting failure from whichever happened to be first.
+        if (roster.length) { page = { roster, url: reply.url }; break; }
+      }
+    } catch {
+      // No content script in that tab yet (it loaded before the extension did).
+      // Try the next one rather than failing the whole read.
+    }
+  }
+  if (!page) {
+    return {
+      error: "Found a Yahoo tab but no roster on it. Open My Team and reload "
+        + "the page, then try again.",
+    };
+  }
+
+  const config = await Storage.getConfig();
+  const starters = config?.roster?.starters || {};
+  const superflex = !!config?.league?.superflex;
+  const best = optimalLineup(page.roster, starters, { superflex });
+
+  return {
+    label: weekLabel(config),
+    url: page.url,
+    starters: best.starters.map((a) => ({
+      slot: a.slot,
+      name: a.player ? a.player.name : null,
+      pos: a.player ? a.player.pos : null,
+      opponent: a.player ? a.player.opponent : null,
+      status: a.player ? (a.player.bye ? "BYE" : a.player.status) : "",
+      proj: a.player ? a.player.proj : null,
+      emptyReason: a.emptyReason,
+    })),
+    bench: best.bench.map((p) => ({
+      name: p.name, status: p.bye ? "BYE" : p.status,
+    })),
+    projected: Math.round(best.projected * 100) / 100,
+    warnings: best.warnings,
+    changes: lineupChanges(page.roster, best).map((c) => ({
+      slot: c.slot,
+      start: c.startPlayer ? c.startPlayer.name : null,
+      bench: c.benchPlayer ? c.benchPlayer.name : null,
+      reason: c.reason,
+      moveOnly: c.moveOnly,
+    })),
+    // Whether the numbers are real matters more than the numbers: with no
+    // projections this is position eligibility only, and the panel says so.
+    hasProjections: page.roster.some((p) => p.proj !== null && p.proj !== undefined),
+  };
+}

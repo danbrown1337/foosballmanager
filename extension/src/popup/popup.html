@@ -11,6 +11,7 @@
     <nav>
       <button data-tab="draft" class="tab active">Draft</button>
       <button data-tab="team" class="tab">Team</button>
+      <button data-tab="week" class="tab">Week</button>
       <button data-tab="trades" class="tab">Trades</button>
     </nav>
     <span id="version" class="muted"></span>
@@ -60,6 +61,19 @@
       <button id="gradeBtn">Grade this draft</button>
       <button id="copyLog">Copy decision log</button>
       <button id="copyPanelLog">Copy panel log</button>
+    </div>
+  </section>
+
+  <section id="tab-week" class="tab-panel" hidden>
+    <div class="label"><span id="weekLabel">Weekly lineup</span></div>
+    <div id="weekOut" class="muted">
+      Open your Yahoo My Team page, then read the week.
+    </div>
+    <div style="display:flex; gap:6px; margin-top:6px">
+      <button id="weekBtn" class="primary">Read my team page</button>
+    </div>
+    <div class="muted" style="margin-top:8px; font-size:11px">
+      Recommendations only — set the lineup yourself in Yahoo.
     </div>
   </section>
 
