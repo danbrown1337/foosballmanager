@@ -112,11 +112,11 @@ with its own click handler, a separate confirm dialog) — not Yahoo's actual
 one. If "your turn" never triggers, open **Options** and add whatever phrase
 your room actually shows to the turn-phrases list.
 
-**Honest scope note:** the CLI's `roster_manager.py` also has `byeweeks`,
-`overachievers`, and `waivers` commands. Those aren't ported here yet — the
-extension currently covers drafting and trade offers fully, and roster
-viewing partially (your team + scarcity, not bye-week conflicts or waiver
-targets). Use the CLI or `python3 -m fantasy_manager.web` for those.
+**Honest scope note:** the CLI's `roster_manager.py` also has `byeweeks` and
+`overachievers`. Those aren't ported here — the extension covers drafting,
+trade offers, and the weekly loop (start/sit and waiver targets) fully, and
+roster viewing partially (your team + scarcity, not bye-week conflicts). Use
+the CLI or `python3 -m fantasy_manager.web` for the rest.
 
 ## Install (load unpacked — no Chrome Web Store, no build step)
 
@@ -261,8 +261,9 @@ lineup optimisation, the diff against whatever Yahoo currently has set, waiver
 valuation with FAAB bid bands, and the season calendar.
 
 It is pinned to the Python original by a golden master — `scripts/weekly_golden.py`
-records what Python decides across kicker, superflex, empty-slot, empty-roster
-and doubtful-admitted cases, and `test/compare_weekly_with_python.js` replays
+records what Python decides across kicker, superflex, empty-slot, empty-roster,
+doubtful-admitted and every Roster Status case, and
+`test/compare_weekly_with_python.js` replays
 every one through this engine and diffs each field. That diff caught a real
 divergence on its first run: Python's `round()` breaks a tie to even and
 JavaScript's `Math.round()` rounds it up, so on a $50 budget the port was
@@ -273,9 +274,27 @@ extension, go to the **Week** tab, and press *Read my team page*. You get the
 changes to make first, then the lineup they produce, then any warnings — a
 starter on bye or ruled Out, a slot with nobody eligible for it.
 
-It recommends and nothing more. Setting the lineup stays your click in Yahoo's
-own UI, the same line this project draws around roster moves and trades
-everywhere else.
+**Waiver targets** need a second tab: **Players → Available**, with its Stats
+selector set to *Week N (proj)*. With both open, press *Waiver targets*. Each
+one is ranked by what it adds to *your* lineup — the projected gain over the
+starter it would actually replace, not over the rest of the wire — with a FAAB
+bid range or a priority verdict, a drop candidate, and whether the player is a
+free agent you can add now or a claim with a date on it. Those are different
+actions on different clocks, so the panel keeps them apart.
+
+Neither page has to be told apart by you: the panel classifies what it reads,
+because My Team and the player list live under the same `/f1/` URL shape. If it
+can't find one of them it says which.
+
+One thing it genuinely cannot resolve: **every team's page in a league renders
+identically**, and nothing in the extension's config records which team id is
+yours. With two team tabs open, the roster used is whichever Chrome listed
+first. So the panel counts them and names the page it read — if that line
+appears and the URL isn't your team, close the other tab and read it again.
+
+It recommends and nothing more. Setting the lineup and placing the claim stay
+your clicks in Yahoo's own UI, the same line this project draws around roster
+moves and trades everywhere else.
 
 **How it reads the page:** `src/lib/weeklyParse.js`, a port of
 `parse_weekly_text`, working on `document.body.innerText` rather than CSS
@@ -286,9 +305,14 @@ text has held still for years, and the draft side matches on text throughout
 test fixtures too — and both parsers are diffed against each other over the
 same bytes by the golden master.
 
-**What it does not do yet:** waivers. `evaluateWaiverTargets` is ported and
-pinned, but no panel calls it — the free-agent page needs reading as well, and
-that page has not been captured. The CLI has it: see `WEEKLY.md`.
+**Where the composition lives:** `src/lib/weeklyReport.js`, not the service
+worker. Both panels are the seam between three well-tested parts, and a seam
+inside `background.js` can only be tested by reimplementing it — which tests
+the copy. The worker keeps the `chrome.*` calls and nothing else, so
+`test/weekReport.test.js` exercises the code that actually ships.
+
+**What it does not do:** `byeweeks` and `overachievers` stay CLI-only, and
+nothing here weighs matchup strength. See `WEEKLY.md`.
 
 **If the numbers look wrong**, the panel says so when a page carried no
 projections at all. For anything subtler, the check is the same one the CLI

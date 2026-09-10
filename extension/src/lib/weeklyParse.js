@@ -261,6 +261,38 @@ function parseInline(lines) {
   });
 }
 
+/* One team's roster, at the outside. Yahoo's deepest common shape is about
+ * nine starters, seven bench and a few IR slots; anything past this is not one
+ * team, it is the league-rosters page, which renders every team's players and
+ * carries slot labels exactly like My Team does. Telling them apart matters
+ * more than it looks: measuring a pickup against a rival's bench prices every
+ * claim against the wrong incumbent, and the answer still reads plausibly. */
+const MAX_ROSTER_ROWS = 30;
+
+/**
+ * Which Yahoo page these rows came off: "roster", "wire", or "unknown".
+ *
+ * The waiver report needs both pages at once and cannot ask the user which tab
+ * is which, so it classifies what it read. Deliberately on content and not on
+ * the URL: /f1/799857/6 is My Team only because 6 happens to be the team id,
+ * and a rival's roster sits at the same shape of URL.
+ *
+ * The primary signal is the column that only one page has. My Team puts every
+ * row in a roster slot and has no Roster Status column; the available-players
+ * page is the reverse. The two captured pages separate 15:0 and 0:8, so the
+ * majority rule is slack rather than a coin toss.
+ *
+ * Everything it cannot place comes back "unknown" and is reported as a reason,
+ * because a wrong roster here is invisible in the output.
+ */
+export function classifyWeeklyPage(rows) {
+  const slots = rows.filter((r) => r.slot).length;
+  const statuses = rows.filter((r) => r.rosterStatus).length;
+  if (!slots && !statuses) return "unknown";
+  if (statuses > slots) return "wire";
+  return rows.length > MAX_ROSTER_ROWS ? "unknown" : "roster";
+}
+
 /**
  * Parse a rendered Yahoo page into weekly roster rows.
  *

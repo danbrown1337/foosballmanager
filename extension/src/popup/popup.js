@@ -345,6 +345,7 @@ function renderWeek(report) {
   for (const warning of report.warnings) {
     parts.push(`<div class="muted" style="margin-top:6px">! ${escapeHtml(warning)}</div>`);
   }
+  parts.push(otherTabsWarning(report));
 
   out.innerHTML = parts.join("");
 }
@@ -356,5 +357,117 @@ document.getElementById("weekBtn")?.addEventListener("click", async () => {
     renderWeek(await sendMessage({ type: "WEEK_REPORT" }));
   } catch (err) {
     out.textContent = `Could not read the page: ${err.message || err}`;
+  }
+});
+
+
+/* Two team pages open means the roster used was whichever tab Chrome listed
+ * first, and a rival's roster is indistinguishable from yours on the page.
+ * Silence here produces confident advice measured against someone else's
+ * bench, so the panel names the page it actually read. */
+function otherTabsWarning(report) {
+  if (!report.otherRosterTabs) return "";
+  const url = escapeHtml(report.url || report.rosterUrl || "");
+  return '<div class="muted" style="margin-top:6px">! Read your roster from '
+    + `${url} — ${report.otherRosterTabs} other team page`
+    + `${report.otherRosterTabs > 1 ? "s were" : " was"} also open. `
+    + "Close the ones that aren't yours if that isn't your team.</div>";
+}
+
+/* --- Waiver targets -------------------------------------------------------
+ *
+ * The same ranking the CLI's `waivers` prints, off the two open Yahoo tabs.
+ * Each target leads with what it upgrades rather than what it costs: the price
+ * only matters once the gain justifies the claim, and a list sorted by name
+ * recognition is how you spend a third of a budget on a backup.
+ */
+function renderWaivers(report) {
+  const out = document.getElementById("weekOut");
+  const label = document.getElementById("weekLabel");
+
+  if (report.error) {
+    label.textContent = "Waiver targets";
+    out.innerHTML = `<div class="muted">${escapeHtml(report.error)}</div>`;
+    return;
+  }
+
+  label.textContent = `${report.label || "Week"} — waiver targets`;
+  const parts = [];
+
+  if (!report.hasProjections) {
+    parts.push('<div class="muted">No weekly projections on that player list, so '
+      + "these aren't ranked by what they'd add — check the Stats selector says "
+      + '"Week N (proj)" and read it again.</div>');
+  }
+
+  if (!report.targets.length) {
+    // Not "nothing clears your starters" — a player who would be a downgrade
+    // still shows up, ranked and labelled as depth. An empty list means nobody
+    // on the page can play at all.
+    parts.push('<div class="muted">No pickup candidates on that page — everyone '
+      + "listed is already yours, out, on IR, or on a bye.</div>");
+    out.innerHTML = parts.join("");
+    return;
+  }
+
+  // Ranked worst-to-least-bad still looks like a shopping list. When the best
+  // thing on the wire would still be a downgrade, say so before the list rather
+  // than leaving the reader to notice every gain is negative.
+  if (report.hasProjections
+      && report.targets.every((t) => t.gain !== null && t.gain <= 0)) {
+    parts.push('<div class="muted">Nothing here upgrades a starting slot — '
+      + "the closest are below, as depth only.</div>");
+  }
+
+  parts.push('<ul class="plain">');
+  for (const t of report.targets) {
+    const flags = [t.pos, t.team, t.status].filter(Boolean).map(escapeHtml).join(" · ");
+
+    let price = "";
+    if (report.system === "faab" && t.bidLow !== null) {
+      price = `bid ${t.bidLow}–${t.bidHigh}`
+        + (report.faab ? ` of ${report.faab}` : "");
+    } else if (report.system === "priority") {
+      price = t.worthPriority ? "worth your priority" : "not worth priority";
+    }
+
+    // Two different clocks: a free agent is gone to whoever clicks first, a
+    // waiver claim waits for the run. Saying "available" for both would hand
+    // someone a deadline they don't have, or hide one they do.
+    let how = "";
+    if (t.freeAgent) how = "free agent — add now, first come";
+    else if (t.clears) how = `on waivers — claim by ${escapeHtml(t.clears)}`;
+    else if (t.rosterStatus) how = "on waivers — claim required";
+
+    parts.push(`<li><b>${escapeHtml(t.name)}</b> <span class="muted">${flags}</span>`
+      + (price ? ` — ${escapeHtml(price)}` : "")
+      + `<br><span class="muted">${escapeHtml(t.rationale)}`
+      + (t.note ? ` — ${escapeHtml(t.note)}` : "") + "</span>"
+      + (how ? `<br><span class="muted">${how}</span>` : "")
+      + (t.drop
+        ? `<br><span class="muted">drop candidate: ${escapeHtml(t.drop.name)} `
+          + `(${escapeHtml(t.drop.pos)}, lowest-value bench spot)</span>`
+        : "")
+      + "</li>");
+  }
+  parts.push("</ul>");
+
+  // Which system it assumed, every time. A priority league acting on a bid
+  // range finds out at the worst moment otherwise; it's set in Settings.
+  parts.push(`<div class="muted" style="margin-top:6px">Assuming ${escapeHtml(report.system)}`
+    + (report.system === "faab" && report.faab ? `, ${report.faab} left` : "")
+    + `. Pool read: ${report.poolSize} players. Claims are yours to place.</div>`);
+  parts.push(otherTabsWarning(report));
+
+  out.innerHTML = parts.join("");
+}
+
+document.getElementById("waiverBtn")?.addEventListener("click", async () => {
+  const out = document.getElementById("weekOut");
+  out.textContent = "Reading your team and the player list...";
+  try {
+    renderWaivers(await sendMessage({ type: "WAIVER_REPORT" }));
+  } catch (err) {
+    out.textContent = `Could not read the pages: ${err.message || err}`;
   }
 });

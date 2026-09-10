@@ -81,6 +81,22 @@ export function statusLabel(player) {
   return player.bye ? "BYE" : upper(player.status);
 }
 
+/* The available-players page distinguishes two things the manager does
+ * differently, and collapsing them into "available" would hand someone a
+ * deadline they don't have or hide one they do:
+ *   "FA"          — add right now, first come.
+ *   "W (Sep 11)"  — a claim, placed before that date, processed then.
+ * Ports WeeklyPlayer.is_free_agent / .waiver_clears. */
+export function isFreeAgent(player) {
+  return upper((player || {}).rosterStatus).trim() === "FA";
+}
+
+/** When a claim on this player processes, if the page said. */
+export function waiverClears(player) {
+  const match = /^W\s*\(([^)]*)\)/i.exec(String((player || {}).rosterStatus || "").trim());
+  return match ? match[1] : null;
+}
+
 /**
  * Turn {QB: 1, RB: 2, FLEX: 2} into ["QB", "RB", "RB", "FLEX", "FLEX"].
  *

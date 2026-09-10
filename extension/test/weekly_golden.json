@@ -498,6 +498,92 @@
    "expected": []
   }
  ],
+ "freeAgency": [
+  {
+   "rosterStatus": "FA",
+   "expected": {
+    "isFreeAgent": true,
+    "waiverClears": null
+   }
+  },
+  {
+   "rosterStatus": "fa",
+   "expected": {
+    "isFreeAgent": true,
+    "waiverClears": null
+   }
+  },
+  {
+   "rosterStatus": " FA ",
+   "expected": {
+    "isFreeAgent": true,
+    "waiverClears": null
+   }
+  },
+  {
+   "rosterStatus": "W (Sep 11)",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": "Sep 11"
+   }
+  },
+  {
+   "rosterStatus": "W (Sep 16)",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": "Sep 16"
+   }
+  },
+  {
+   "rosterStatus": "W(Sep 11)",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": "Sep 11"
+   }
+  },
+  {
+   "rosterStatus": "w (mon)",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": "mon"
+   }
+  },
+  {
+   "rosterStatus": "W",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": null
+   }
+  },
+  {
+   "rosterStatus": "W ()",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": ""
+   }
+  },
+  {
+   "rosterStatus": null,
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": null
+   }
+  },
+  {
+   "rosterStatus": "",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": null
+   }
+  },
+  {
+   "rosterStatus": "  ",
+   "expected": {
+    "isFreeAgent": false,
+    "waiverClears": null
+   }
+  }
+ ],
  "lineups": [
   {
    "label": "week1 / two flex, no kicker",
@@ -4071,6 +4157,389 @@
      "replaces": "Tyler Allgeier",
      "drop": "Puka Nacua",
      "rationale": "no weekly projection \u2014 compare against Tyler Allgeier yourself",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    }
+   ]
+  },
+  {
+   "label": "captured available-players page as the wire",
+   "roster": [
+    {
+     "name": "Caleb Williams",
+     "pos": "QB",
+     "team": "CHI",
+     "slot": "QB",
+     "status": "",
+     "opponent": "@CAR",
+     "proj": 18.35,
+     "bye": false,
+     "byeWeek": 10,
+     "rosterStatus": null
+    },
+    {
+     "name": "Breece Hall",
+     "pos": "RB",
+     "team": "NYJ",
+     "slot": "RB",
+     "status": "",
+     "opponent": "@TEN",
+     "proj": 14.91,
+     "bye": false,
+     "byeWeek": 13,
+     "rosterStatus": null
+    },
+    {
+     "name": "Jeremiyah Love",
+     "pos": "RB",
+     "team": "ARI",
+     "slot": "RB",
+     "status": "Q",
+     "opponent": "@LAC",
+     "proj": 13.02,
+     "bye": false,
+     "byeWeek": 14,
+     "rosterStatus": null
+    },
+    {
+     "name": "CeeDee Lamb",
+     "pos": "WR",
+     "team": "DAL",
+     "slot": "WR",
+     "status": "",
+     "opponent": "@NYG",
+     "proj": 16.55,
+     "bye": false,
+     "byeWeek": 14,
+     "rosterStatus": null
+    },
+    {
+     "name": "Justin Jefferson",
+     "pos": "WR",
+     "team": "MIN",
+     "slot": "WR",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 17.7,
+     "bye": false,
+     "byeWeek": 6,
+     "rosterStatus": null
+    },
+    {
+     "name": "Kyle Pitts Sr.",
+     "pos": "TE",
+     "team": "ATL",
+     "slot": "TE",
+     "status": "",
+     "opponent": "@PIT",
+     "proj": 11.17,
+     "bye": false,
+     "byeWeek": 11,
+     "rosterStatus": null
+    },
+    {
+     "name": "Jadarian Price",
+     "pos": "RB",
+     "team": "SEA",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 11.47,
+     "bye": false,
+     "byeWeek": 11,
+     "rosterStatus": null
+    },
+    {
+     "name": "Bhayshul Tuten",
+     "pos": "RB",
+     "team": "JAX",
+     "slot": "W/R/T",
+     "status": "",
+     "opponent": "vs CLE",
+     "proj": 10.82,
+     "bye": false,
+     "byeWeek": 7,
+     "rosterStatus": null
+    },
+    {
+     "name": "Josh Downs",
+     "pos": "WR",
+     "team": "IND",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs BAL",
+     "proj": 11.56,
+     "bye": false,
+     "byeWeek": 13,
+     "rosterStatus": null
+    },
+    {
+     "name": "Stefon Diggs",
+     "pos": "WR",
+     "team": "WAS",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@PHI",
+     "proj": 10.29,
+     "bye": false,
+     "byeWeek": 7,
+     "rosterStatus": null
+    },
+    {
+     "name": "Travis Kelce",
+     "pos": "TE",
+     "team": "KC",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 10.32,
+     "bye": false,
+     "byeWeek": 5,
+     "rosterStatus": null
+    },
+    {
+     "name": "Aaron Jones Sr.",
+     "pos": "RB",
+     "team": "MIN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs GB",
+     "proj": 8.9,
+     "bye": false,
+     "byeWeek": 6,
+     "rosterStatus": null
+    },
+    {
+     "name": "Mitchell Evans",
+     "pos": "TE",
+     "team": "CAR",
+     "slot": "BN",
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 1.03,
+     "bye": false,
+     "byeWeek": 5,
+     "rosterStatus": null
+    },
+    {
+     "name": "Seahawks",
+     "pos": "DEF",
+     "team": "SEA",
+     "slot": "DEF",
+     "status": "",
+     "opponent": "vs NE",
+     "proj": 6.97,
+     "bye": false,
+     "byeWeek": 11,
+     "rosterStatus": null
+    },
+    {
+     "name": "Broncos",
+     "pos": "DEF",
+     "team": "DEN",
+     "slot": "BN",
+     "status": "",
+     "opponent": "@KC",
+     "proj": 6.67,
+     "bye": false,
+     "byeWeek": 10,
+     "rosterStatus": null
+    }
+   ],
+   "available": [
+    {
+     "name": "Baker Mayfield",
+     "pos": "QB",
+     "team": "TB",
+     "slot": null,
+     "status": "",
+     "opponent": "@CIN",
+     "proj": 18.08,
+     "bye": false,
+     "byeWeek": 10,
+     "rosterStatus": "W (Sep 11)"
+    },
+    {
+     "name": "Bryce Young",
+     "pos": "QB",
+     "team": "CAR",
+     "slot": null,
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 17.09,
+     "bye": false,
+     "byeWeek": 5,
+     "rosterStatus": "W (Sep 11)"
+    },
+    {
+     "name": "Sam Darnold",
+     "pos": "QB",
+     "team": "SEA",
+     "slot": null,
+     "status": "Q",
+     "opponent": "vs NE",
+     "proj": 16.13,
+     "bye": false,
+     "byeWeek": 11,
+     "rosterStatus": "W (Sep 16)"
+    },
+    {
+     "name": "Tre Tucker",
+     "pos": "WR",
+     "team": "LV",
+     "slot": null,
+     "status": "",
+     "opponent": "vs MIA",
+     "proj": 10.95,
+     "bye": false,
+     "byeWeek": 13,
+     "rosterStatus": "FA"
+    },
+    {
+     "name": "Tyjae Spears",
+     "pos": "RB",
+     "team": "TEN",
+     "slot": null,
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 8.85,
+     "bye": false,
+     "byeWeek": 9,
+     "rosterStatus": "FA"
+    },
+    {
+     "name": "Hunter Henry",
+     "pos": "TE",
+     "team": "NE",
+     "slot": null,
+     "status": "",
+     "opponent": "@SEA",
+     "proj": 8.84,
+     "bye": false,
+     "byeWeek": 11,
+     "rosterStatus": "W (Sep 16)"
+    },
+    {
+     "name": "Deebo Samuel Sr.",
+     "pos": "WR",
+     "team": "SF",
+     "slot": null,
+     "status": "",
+     "opponent": "@LAR",
+     "proj": 8.8,
+     "bye": false,
+     "byeWeek": 8,
+     "rosterStatus": "W (Sep 11)"
+    },
+    {
+     "name": "Xavier Worthy",
+     "pos": "WR",
+     "team": "KC",
+     "slot": null,
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.34,
+     "bye": false,
+     "byeWeek": 5,
+     "rosterStatus": "FA"
+    }
+   ],
+   "starters": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 2,
+    "DEF": 1
+   },
+   "faabRemaining": 100,
+   "top": 8,
+   "expected": [
+    {
+     "name": "Baker Mayfield",
+     "gain": -0.27,
+     "replaces": "Caleb Williams",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Caleb Williams; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Tre Tucker",
+     "gain": -0.52,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Bryce Young",
+     "gain": -1.26,
+     "replaces": "Caleb Williams",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Caleb Williams; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Sam Darnold",
+     "gain": -2.22,
+     "replaces": "Caleb Williams",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Caleb Williams; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Hunter Henry",
+     "gain": -2.33,
+     "replaces": "Kyle Pitts Sr.",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Kyle Pitts Sr.; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Tyjae Spears",
+     "gain": -2.62,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Deebo Samuel Sr.",
+     "gain": -2.67,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
+     "bidLow": null,
+     "bidHigh": null,
+     "worthPriority": false,
+     "note": null
+    },
+    {
+     "name": "Xavier Worthy",
+     "gain": -3.13,
+     "replaces": "Jadarian Price",
+     "drop": "Mitchell Evans",
+     "rationale": "would sit behind Jadarian Price; depth only",
      "bidLow": null,
      "bidHigh": null,
      "worthPriority": false,
