@@ -165,8 +165,8 @@ def parse_cases() -> list[dict]:
             "expected": [
                 {"name": r["name"], "pos": r["pos"], "team": r["team"],
                  "slot": r["slot"], "status": r["status"], "opponent": r["opponent"],
-                 "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"],
-                 "rosterStatus": r["roster_status"]}
+                 "proj": r["proj"], "actual": r["actual"], "bye": r["bye"],
+                 "byeWeek": r["bye_week"], "rosterStatus": r["roster_status"]}
                 for r in parse_weekly_text(text)
             ],
         })
@@ -185,8 +185,8 @@ def parse_cases() -> list[dict]:
         "expected": [
             {"name": r["name"], "pos": r["pos"], "team": r["team"],
              "slot": r["slot"], "status": r["status"], "opponent": r["opponent"],
-             "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"],
-             "rosterStatus": r["roster_status"]}
+             "proj": r["proj"], "actual": r["actual"], "bye": r["bye"],
+             "byeWeek": r["bye_week"], "rosterStatus": r["roster_status"]}
             for r in parse_weekly_text(inline)
         ],
     })

@@ -253,8 +253,8 @@ def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
         end = anchors[order + 1] - 3 if order + 1 < len(anchors) else len(lines)
         forward = [line.strip() for line in lines[index + 1:max(index + 1, end)]]
 
-        opponent, proj, on_bye, roster_status = None, None, False, None
-        integers, seen_decimal = [], False
+        opponent, on_bye, roster_status = None, False, None
+        integers, decimals = [], []
         for line in forward:
             if "%" in line:
                 # Both pages put a percentage column after the numbers that
@@ -263,6 +263,11 @@ def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
                 #     Proj Pts, and Fan Pts is "-" in week 1 but real from week
                 #     2 on — taking the first decimal would silently return
                 #     points already scored for the rest of the season.
+                #   actual = the FIRST decimal, but only when there are two.
+                #     One decimal means the row has no Fan Pts yet (week 1) or
+                #     is the players page, which shows a single value column.
+                #     Guessing which one it was would put points already scored
+                #     into the projection field or the reverse.
                 #   bye week = the last integer BEFORE the first decimal. My
                 #     Team has only Bye there; the players page has GP* then
                 #     Bye, so "the first integer" reads games-played as the bye
@@ -282,19 +287,23 @@ def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
                 on_bye = True
                 continue
             if BARE_INT.fullmatch(line):
-                if not seen_decimal:
+                # An NFL season is 18 weeks, so anything outside that is some
+                # other column — a whole-number Fan Pts, most likely — and
+                # letting it through would report a bye week of 0.
+                if not decimals and 1 <= int(line) <= 18:
                     integers.append(int(line))
                 continue
             number = PROJECTION.fullmatch(line)
             if number:
-                seen_decimal = True
-                proj = float(number.group("value"))
+                decimals.append(float(number.group("value")))
         bye_week = integers[-1] if integers else None
+        proj = decimals[-1] if decimals else None
+        actual = decimals[0] if len(decimals) >= 2 else None
 
         rows.append({
             "name": name, "pos": pos, "team": match.group("team").upper(),
             "slot": slot, "status": status, "opponent": opponent,
-            "proj": proj, "bye": on_bye, "bye_week": bye_week,
+            "proj": proj, "actual": actual, "bye": on_bye, "bye_week": bye_week,
             "roster_status": roster_status,
         })
     return rows
@@ -392,6 +401,9 @@ def parse_weekly_text(text: str) -> list[dict]:
                 if opponent_match else None
             ),
             "proj": float(projection_match.group("value")) if projection_match else None,
+            # The inline layout carries one value column, so there is no way to
+            # tell a projection from points already scored. Null beats a guess.
+            "actual": None,
             "bye": on_bye,
             "bye_week": None,
             "roster_status": None,
@@ -407,7 +419,7 @@ def write_weekly(rows: list[dict], week: int | None = None) -> str:
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(
             f, fieldnames=["name", "pos", "team", "slot", "status", "opponent",
-                           "proj", "bye", "bye_week", "roster_status"])
+                           "proj", "actual", "bye", "bye_week", "roster_status"])
         writer.writeheader()
         for row in rows:
             writer.writerow({k: ("" if row.get(k) is None else row.get(k)) for k in writer.fieldnames})

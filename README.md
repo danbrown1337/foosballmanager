@@ -158,6 +158,7 @@ ranked waiver targets with a bid. The pieces run on their own too:
 ```bash
 python3 -m fantasy_manager.roster_manager lineup         # start/sit only
 python3 -m fantasy_manager.roster_manager waivers        # waiver targets only
+python3 -m fantasy_manager.roster_manager matchup        # what each defence has allowed
 python3 -m fantasy_manager.roster_manager summary        # roster by position
 python3 -m fantasy_manager.roster_manager byeweeks       # weeks a bye leaves a slot short
 python3 -m fantasy_manager.roster_manager overachievers  # beating their draft price
@@ -220,6 +221,8 @@ fantasy_manager/
   roster_manager.py    post-draft weekly CLI (start/sit, waivers, week review)
   weekly.py            in-season engine: lineup optimiser + waiver valuation
                        (ported to extension/src/engine/weekly.js)
+  matchup.py           defensive matchup read, built from your own imports
+                       (reported beside the projection, never folded into it)
   trade_targeter.py    trade offer generator
   yahoo_client.py      Yahoo OAuth2 + read endpoints
   profiles.py          per-person settings, rosters and draft state
@@ -277,6 +280,11 @@ only surface mid-draft.
   the Players → Available page — engine and parser both ported and pinned
   against Python by a golden master, plus the bye outlook and both projected
   totals. `overachievers` stays CLI-only.
-- **Nothing weighs matchup strength.** Yahoo's own projection prices some of it
-  in; no code here looks at whether a back is facing the worst run defence in
-  the league.
+- **Matchup is your own data, not the league's.** `matchup.py` rates defences
+  from your imported weeks — the average points a fantasy-relevant player at
+  each position scored against them. It is not the league-wide "points allowed"
+  a stats site would give you, it says nothing until a few weeks are in, and it
+  cannot be backfilled. It is also never folded into a projection or a lineup:
+  Yahoo's number already prices some matchup in, so adding more on top would
+  double-count by an unknown amount. A test pins that `weekly.py` never imports
+  it.

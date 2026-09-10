@@ -67,6 +67,13 @@ class WeeklyPlayer:
     status: str = ""               # "", Q, D, O, IR, SUSP, BYE, ...
     opponent: str | None = None    # "@GB", "vs NYJ", None
     proj: float | None = None      # this week's projected points, per Yahoo
+    # What the player actually scored this week, off the page's Fan Pts column.
+    # None until the games are played, and None on any page that shows a single
+    # value column — there is no way to tell a projection from a result there,
+    # and guessing would put points already scored into a lineup decision.
+    # This is the raw material for matchup.py: nothing else in the project
+    # records what really happened.
+    actual: float | None = None
     bye: bool = False              # on bye *this* week
     # Which week this player's team is off, as the page itself reported it.
     # Preferred over the static table in bye_weeks.py, which goes stale the

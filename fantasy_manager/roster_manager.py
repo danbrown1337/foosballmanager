@@ -32,7 +32,7 @@ import csv
 import os
 from collections import defaultdict
 
-from fantasy_manager import profiles, weekly
+from fantasy_manager import matchup, profiles, weekly
 from fantasy_manager.board import POS_ALIASES, apply_draft_state, build_board, load_config
 from fantasy_manager.bye_weeks import BYE_WEEKS
 from fantasy_manager.weekly import WeeklyPlayer
@@ -216,19 +216,36 @@ def rostered_names() -> set[str]:
         return {row["name"] for row in csv.DictReader(f) if row.get("name")}
 
 
-def _print_lineup(lineup, show_bench: bool = True) -> None:
-    print(f"{'SLOT':<8}{'PLAYER':<24}{'POS':<5}{'OPP':<8}{'ST':<5}PROJ")
+def _print_lineup(lineup, show_bench: bool = True, ratings: dict | None = None) -> None:
+    """The lineup table. `ratings` adds a matchup column and nothing else.
+
+    Deliberately nothing else: the column sits beside Yahoo's projection and
+    never alters it or the ordering. Yahoo already prices some matchup in, so
+    an adjustment on top would double-count by an unknown amount and quietly
+    change which nine players start — invisibly, because the result still looks
+    like a lineup. Showing the reader the signal and letting them override is
+    the only version of this that can't be wrong in a way nobody notices.
+    """
+    matchup_col = f"{'MATCH':<8}" if ratings else ""
+    print(f"{'SLOT':<8}{'PLAYER':<24}{'POS':<5}{'OPP':<8}{'ST':<5}{matchup_col}PROJ")
     for assignment in lineup.starters:
         player = assignment.player
         if player is None:
             print(f"{assignment.slot:<8}{'— EMPTY —':<24}{'':<5}{'':<8}{'':<5}"
+                  f"{'':<8}  ({assignment.empty_reason})" if ratings else
+                  f"{assignment.slot:<8}{'— EMPTY —':<24}{'':<5}{'':<8}{'':<5}"
                   f"  ({assignment.empty_reason})")
             continue
+        cell = ""
+        if ratings:
+            rating = matchup.rate(player, ratings)
+            cell = f"{(rating.verdict if rating else '—'):<8}"
         print(f"{assignment.slot:<8}{player.name:<24}{player.pos:<5}"
               f"{(player.opponent or '—'):<8}{(player.status_label or '—'):<5}"
-              f"{'—' if player.proj is None else f'{player.proj:.2f}'}")
+              f"{cell}{'—' if player.proj is None else f'{player.proj:.2f}'}")
     if lineup.has_projections:
-        print(f"{'':<8}{'':<24}{'':<5}{'':<8}{'TOTAL':<5} {lineup.projected:.2f}")
+        pad = f"{'':<8}" if ratings else ""
+        print(f"{'':<8}{'':<24}{'':<5}{'':<8}{pad}{'TOTAL':<5} {lineup.projected:.2f}")
 
     if show_bench and lineup.bench:
         bench = ", ".join(
@@ -262,7 +279,11 @@ def cmd_lineup(args):
 
     best = weekly.optimal_lineup(roster, starters, superflex=superflex,
                                  allow_doubtful=args.allow_doubtful)
-    _print_lineup(best)
+
+    # Matchup is shown, never applied. See _print_lineup and matchup.py.
+    history = matchup.load_history()
+    ratings = matchup.build_ratings(history)
+    _print_lineup(best, ratings=ratings or None)
 
     # What Yahoo currently has set, next to what it should be. Two jobs: the
     # gap is what the changes below are worth, and the "as set" number is the
@@ -273,7 +294,8 @@ def cmd_lineup(args):
     as_set = weekly.set_lineup(roster)
     if has_weekly and as_set.players:
         gain = best.projected - as_set.projected
-        print(f"{'':<8}{'':<24}{'':<5}{'':<8}{'AS SET':<5} {as_set.projected:.2f}"
+        pad = f"{'':<8}" if ratings else ""
+        print(f"{'':<8}{'':<24}{'':<5}{'':<8}{pad}{'AS SET':<5} {as_set.projected:.2f}"
               + (f"   (+{gain:.2f} from the changes below)" if gain > 0.005 else ""))
         print("        ^ this should match the projected total on your Yahoo page.")
         if as_set.unprojected:
@@ -298,6 +320,11 @@ def cmd_lineup(args):
             else:
                 print(f"  - {change.slot}: start {change.start_player.name}, "
                       f"bench {change.bench_player.name}  ({change.reason})")
+
+    if ratings:
+        # The caveat travels with the conclusion rather than living in a doc.
+        print(f"\nMATCH is what that defence has allowed the position, from your own\n"
+              f"imports — it is NOT folded into PROJ. {matchup.coverage(history, ratings)}")
 
     for warning in best.warnings:
         print(f"\n  ! {warning}")
@@ -429,6 +456,44 @@ def cmd_week(args):
           "  when in the week each piece matters.")
 
 
+def cmd_matchup(args):
+    """What each defence has allowed, built from your own weekly imports.
+
+    Separate from `lineup` on purpose. There it is one column beside the
+    projection; here it is the whole table, including how thin the sample is,
+    because a matchup read this small should be inspectable before it is
+    trusted rather than only glanceable.
+    """
+    history = matchup.load_history()
+    ratings = matchup.build_ratings(history)
+
+    print("Defensive matchups, from your imported weeks\n")
+    print(matchup.coverage(history, ratings))
+    if not ratings:
+        # No table, and no pretending. The reason is the useful output here.
+        print("\nNothing to rank yet. Every `browser_sync week` import adds to this;\n"
+              "there is no backfill, so a week not imported is a week not counted.")
+        return
+
+    wanted = [args.pos.upper()] if args.pos else list(matchup.RATED_POSITIONS)
+    for pos in wanted:
+        in_pos = sorted((r for (t, p), r in ratings.items() if p == pos),
+                        key=lambda r: r.rank)
+        if not in_pos:
+            print(f"\n{pos}: no defence has enough data yet.")
+            continue
+        print(f"\n{pos} — most points allowed first (rank 1 is the matchup you want)")
+        print(f"  {'DEF':<6}{'RANK':<8}{'PTS/PLAYER':<12}{'SAMPLE':<16}VERDICT")
+        for rating in in_pos:
+            sample = f"{rating.observations} in {rating.games} gm"
+            print(f"  {rating.team:<6}{f'{rating.rank}/{rating.of}':<8}"
+                  f"{rating.points_per_player:<12.2f}{sample:<16}{rating.verdict}")
+
+    print("\nThis is never folded into a projection or a lineup. Yahoo's number\n"
+          "already prices some matchup in, and adding more on top would double-\n"
+          "count by an unknown amount. Read it beside PROJ, not instead of it.")
+
+
 def cmd_overachievers(args):
     """
     Players analysts expect to outperform their draft price — i.e. beating
@@ -493,6 +558,11 @@ def main():
     p_wai.add_argument("--top", type=int, default=15)
     p_wai.add_argument("--week", type=int, default=None)
     p_wai.set_defaults(func=cmd_waivers)
+
+    p_match = sub.add_parser("matchup",
+                             help="What each defence has allowed, from your imports")
+    p_match.add_argument("--pos", default=None, help="Just one position (QB/RB/WR/TE)")
+    p_match.set_defaults(func=cmd_matchup)
 
     p_over = sub.add_parser("overachievers", help="Players expected to beat their draft price")
     p_over.add_argument("--pos", default=None)

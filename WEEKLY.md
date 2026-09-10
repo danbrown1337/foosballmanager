@@ -178,6 +178,51 @@ a flex and a superflex, the narrower slot is filled first on purpose; fill the
 wider one first and it swallows the only eligible running back and strands the
 other slot.
 
+## Matchup: what the defence has actually allowed
+
+`lineup` grows a **MATCH** column once there's enough history, and
+`matchup` prints the whole table:
+
+```bash
+python3 -m fantasy_manager.roster_manager matchup
+python3 -m fantasy_manager.roster_manager matchup --pos RB
+```
+
+**It is never folded into PROJ, and it never reorders your lineup.** That is
+the whole design. Yahoo's projection already prices some matchup in — nobody
+knows how much — so an adjustment layered on top double-counts by an unknown
+amount and quietly changes which nine players you start. The lineup would still
+look reasonable, which is what makes it the worst kind of bug. So the column
+sits beside the projection and you decide. A test pins that `weekly.py` never
+imports `matchup.py`.
+
+**Where the numbers come from: your own imports, and nothing else.** Every
+`browser_sync week` saves a snapshot, and from week 2 those rows carry the
+points each player actually scored plus the defence he faced. Accumulate them
+and you have a real record.
+
+Three consequences worth being blunt about:
+
+- **It says nothing for the first few weeks.** A defence needs three games and
+  four players at a position before it's rated. Two games is a result, not a
+  pattern, and a confident ranking off two games is worse than none because
+  it'll be believed.
+- **It cannot be backfilled.** A week you didn't import is a week that isn't
+  counted, ever. That is the argument for importing every week from the start.
+- **It is not "points allowed to RBs".** That statistic is a league-wide total
+  over every back in the NFL, and this has no such data. What it measures is
+  *the average points a fantasy-relevant player at that position scored against
+  that defence* — your league's rosters and its wire. Comparable across
+  defences, which is all a matchup read needs, but a different number from the
+  one on a stats site, and it's labelled that way.
+
+Kickers and defences aren't rated at all: their scoring turns on game script
+and their own offence, not on who they're facing.
+
+Rows from players who were Out, Doubtful or on bye are excluded. A zero from
+someone who didn't play is about his hamstring, and counting it would mark
+every defence that happened to face an injured starter as tough.
+
 ## When it can't answer
 
 The report tells you which of these it's in rather than papering over it:
@@ -238,9 +283,10 @@ through the parser.
 
 ## What isn't here yet
 
-- **Matchup strength.** Nothing looks at whether your running back is facing
-  the league's worst run defence. Yahoo's projection prices some of that in
-  already; nothing in this repo does it independently.
+- **A matchup read from outside your own league.** What's here is built from
+  your imports only — see below. It is not the league-wide "points allowed to
+  RBs" you'd find on a stats site, and no data source in this repo provides
+  that.
 - **Trade offers as part of the weekly loop.** `trade_targeter.py` exists and
   works, but it isn't wired into `week` — it runs on season-long value, not
   this week's numbers.
