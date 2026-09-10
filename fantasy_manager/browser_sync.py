@@ -140,8 +140,14 @@ def parse_roster_text(text: str) -> list[dict]:
 # This was checked against a real Yahoo My Team page (2026 week 1), captured as
 # tests/fixtures/yahoo_myteam_week1.txt. The first version of this code assumed
 # the inline shape everywhere, passed every hand-written test, and parsed zero
-# players off the live page — hence the captured page is now the test. The
-# `week` command still prints every field it extracted, because a projection
+# players off the live page — hence the captured page is now the test.
+#
+# A second fixture (yahoo_myteam_week5_kicker.txt) covers rows that page lacked:
+# a kicker, an IR player, a bye, an Out designation, a multi-position player,
+# and a populated Fan Pts column. It is constructed from this layout rather than
+# captured, so it tests the parser without proving the rendering.
+#
+# The `week` command still prints every field it extracted, because a projection
 # read off the wrong column is invisible in a lineup and obvious in a table.
 
 SLOT_LABELS = {"QB", "RB", "WR", "TE", "K", "DEF", "BN", "BE", "IR", "IR-R",
@@ -186,8 +192,12 @@ STATUS_AFTER_POS = re.compile(
 # league-rosters and draft-room pages, which really do put a name and position
 # on one line.
 
+_POS = r"QB|RB|WR|TE|K|PK|DEF|DST|D/ST"
+# Yahoo lists every position a player is eligible at ("NO - TE,QB"). Requiring a
+# single one made the row fail to match at all, which dropped the player from the
+# roster entirely rather than merely mislabelling him.
 TEAM_POS_LINE = re.compile(
-    r"^(?P<team>[A-Za-z]{2,3})\s*-\s*(?P<pos>QB|RB|WR|TE|K|PK|DEF|DST|D/ST)$", re.I)
+    rf"^(?P<team>[A-Za-z]{{2,3}})\s*-\s*(?P<pos>(?:{_POS})(?:\s*,\s*(?:{_POS}))*)$", re.I)
 
 # A status letter is glued to the end of the name with no separator
 # ("Jeremiyah LoveQVideo Forecast"), so it is recognised by being followed by
@@ -375,7 +385,8 @@ def write_weekly(rows: list[dict], week: int | None = None) -> str:
     path = profiles.weekly_path(week)
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(
-            f, fieldnames=["name", "pos", "team", "slot", "status", "opponent", "proj", "bye"])
+            f, fieldnames=["name", "pos", "team", "slot", "status", "opponent",
+                           "proj", "bye", "bye_week"])
         writer.writeheader()
         for row in rows:
             writer.writerow({k: ("" if row.get(k) is None else row.get(k)) for k in writer.fieldnames})
@@ -667,7 +678,8 @@ def cmd_week(args):
         profiles.ensure_profile()
         with open(path, "w", newline="") as f:
             writer = csv.DictWriter(
-                f, fieldnames=["name", "pos", "team", "slot", "status", "opponent", "proj", "bye"])
+                f, fieldnames=["name", "pos", "team", "slot", "status", "opponent",
+                           "proj", "bye", "bye_week"])
             writer.writeheader()
             for row in rows:
                 writer.writerow({k: ("" if row.get(k) is None else row.get(k))

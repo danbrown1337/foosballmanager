@@ -66,7 +66,11 @@ class WeeklyPlayer:
     status: str = ""               # "", Q, D, O, IR, SUSP, BYE, ...
     opponent: str | None = None    # "@GB", "vs NYJ", None
     proj: float | None = None      # this week's projected points, per Yahoo
-    bye: bool = False
+    bye: bool = False              # on bye *this* week
+    # Which week this player's team is off, as the page itself reported it.
+    # Preferred over the static table in bye_weeks.py, which goes stale the
+    # moment the league moves a game and cannot know about a mid-season change.
+    bye_week: int | None = None
 
     @property
     def playable(self) -> bool:
@@ -519,10 +523,16 @@ def bye_outlook(roster: list[WeeklyPlayer], bye_weeks: dict, week: int | None,
             continue
         needed[slot] += 1
 
+    def bye_for(player: WeeklyPlayer) -> int | None:
+        """The page's own number when we have it, the shipped table otherwise."""
+        if player.bye_week is not None:
+            return player.bye_week
+        return bye_weeks.get(player.team.upper())
+
     out: list[tuple[int, list[WeeklyPlayer]]] = []
     for ahead in range(1, weeks_ahead + 1):
         target_week = week + ahead
-        on_bye = [p for p in roster if bye_weeks.get(p.team.upper()) == target_week]
+        on_bye = [p for p in roster if bye_for(p) == target_week]
         if not on_bye:
             continue
         by_pos = defaultdict(int)

@@ -180,9 +180,11 @@ against a real My Team page (2026 week 1, captured as
 matters: summing the parsed projections for the nine players Yahoo had starting
 reproduced Yahoo's own displayed projected total to the cent.
 
-That is one page, though, from one league. A different roster shape — a kicker
-slot, an IR player, a bye week, a player listed Out — renders rows this capture
-does not contain.
+That capture had no kicker, no IR player, nobody on bye and nobody ruled Out,
+so those rows are covered by a second fixture that is *constructed* from the
+same layout rather than captured — a real test of the parser, not evidence that
+Yahoo renders them that way. A superflex slot and the SUSP/PUP designations are
+not covered at all.
 
 So the first time you run it, the import prints every field it extracted:
 
