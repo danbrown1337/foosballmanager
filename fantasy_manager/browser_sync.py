@@ -208,6 +208,12 @@ STATUS_AFTER_NAME = re.compile(r"^(SUSP|PUP|GTD|IR|NA|Q|D|O|P)(?=[A-Z]|$)")
 
 BARE_INT = re.compile(r"^\d{1,2}$")
 
+# The available-players page carries a column My Team does not: whether each
+# player can be added right now or has to be claimed. "FA" is first-come;
+# "W (Sep 11)" means a waiver claim that processes on that date. The difference
+# decides what the manager actually does, so it is captured rather than dropped.
+ROSTER_STATUS = re.compile(r"^(?:FA|W\s*\([^)]*\))$", re.I)
+
 
 def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
     """Parse the My Team page, where each roster row spans several lines."""
@@ -247,15 +253,25 @@ def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
         end = anchors[order + 1] - 3 if order + 1 < len(anchors) else len(lines)
         forward = [line.strip() for line in lines[index + 1:max(index + 1, end)]]
 
-        opponent, bye_week, proj, on_bye = None, None, None, False
+        opponent, proj, on_bye, roster_status = None, None, False, None
+        integers, seen_decimal = [], False
         for line in forward:
             if "%" in line:
-                # Columns run Bye, Fan Pts, Proj Pts, then percentages. Stopping
-                # at the first percentage and keeping the LAST decimal before it
-                # is what picks Proj Pts rather than Fan Pts — which is "-" in
-                # week 1 but a real number from week 2 on, and would otherwise
-                # silently become the projection for the rest of the season.
+                # Both pages put a percentage column after the numbers that
+                # matter, so it is the stop line. Before it:
+                #   projection = the LAST decimal. My Team runs Fan Pts then
+                #     Proj Pts, and Fan Pts is "-" in week 1 but real from week
+                #     2 on — taking the first decimal would silently return
+                #     points already scored for the rest of the season.
+                #   bye week = the last integer BEFORE the first decimal. My
+                #     Team has only Bye there; the players page has GP* then
+                #     Bye, so "the first integer" reads games-played as the bye
+                #     on every row. Taking the last one before the decimal is
+                #     the rule that holds on both.
                 break
+            if roster_status is None and ROSTER_STATUS.fullmatch(line):
+                roster_status = line.strip()
+                continue
             if opponent is None:
                 found = OPPONENT.search(line)
                 if found:
@@ -265,17 +281,21 @@ def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
             if BYE_MARKER.fullmatch(line):
                 on_bye = True
                 continue
-            if bye_week is None and BARE_INT.fullmatch(line):
-                bye_week = int(line)
+            if BARE_INT.fullmatch(line):
+                if not seen_decimal:
+                    integers.append(int(line))
                 continue
             number = PROJECTION.fullmatch(line)
             if number:
+                seen_decimal = True
                 proj = float(number.group("value"))
+        bye_week = integers[-1] if integers else None
 
         rows.append({
             "name": name, "pos": pos, "team": match.group("team").upper(),
             "slot": slot, "status": status, "opponent": opponent,
             "proj": proj, "bye": on_bye, "bye_week": bye_week,
+            "roster_status": roster_status,
         })
     return rows
 
@@ -374,6 +394,7 @@ def parse_weekly_text(text: str) -> list[dict]:
             "proj": float(projection_match.group("value")) if projection_match else None,
             "bye": on_bye,
             "bye_week": None,
+            "roster_status": None,
         })
 
     return rows
@@ -386,7 +407,7 @@ def write_weekly(rows: list[dict], week: int | None = None) -> str:
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(
             f, fieldnames=["name", "pos", "team", "slot", "status", "opponent",
-                           "proj", "bye", "bye_week"])
+                           "proj", "bye", "bye_week", "roster_status"])
         writer.writeheader()
         for row in rows:
             writer.writerow({k: ("" if row.get(k) is None else row.get(k)) for k in writer.fieldnames})
@@ -679,7 +700,7 @@ def cmd_week(args):
         with open(path, "w", newline="") as f:
             writer = csv.DictWriter(
                 f, fieldnames=["name", "pos", "team", "slot", "status", "opponent",
-                           "proj", "bye", "bye_week"])
+                           "proj", "bye", "bye_week", "roster_status"])
             writer.writeheader()
             for row in rows:
                 writer.writerow({k: ("" if row.get(k) is None else row.get(k))

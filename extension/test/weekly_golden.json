@@ -13,7 +13,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -24,7 +25,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -35,7 +37,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -46,7 +49,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -57,7 +61,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -68,7 +73,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -79,7 +85,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -90,7 +97,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -101,7 +109,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -112,7 +121,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -123,7 +133,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -134,7 +145,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -145,7 +157,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -156,7 +169,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -167,7 +181,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ]
   },
@@ -184,7 +199,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -195,7 +211,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -206,7 +223,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -217,7 +235,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -228,7 +247,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -239,7 +259,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -250,7 +271,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -261,7 +283,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -272,7 +295,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -283,7 +307,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -294,7 +319,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -305,7 +331,110 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
+    }
+   ]
+  },
+  {
+   "label": "yahoo_players_available_week1.txt",
+   "text": "Player List\nStatus\n\nAll Available Players\nStats\n\n\nWeek 1 (proj)\nFantasy\nRankings\nTrends\nPassing\nRushing\nReceiving\nRet\nMisc\nFum\n \n \nOffense\nRoster Status\nGP*\nBye\nFan Pts\nPre-Season\nActual\n% Ros\nYds\nTD\nInt\nAtt*\nYds\nTD\nTgt*\nRec\nYds\nTD\nTD\n2PT\nLost\n\n\nBaker Mayfield\nBaker MayfieldVideo ForecastPlayer Note\nTB - QB\nSun 1:00 pm @ Cin\nW (Sep 11)\n1\n10\n18.08\n137\n17\n56%\n238\n1.8\n0.8\n3.3\n18.0\n0.1\n-\n-\n-\n-\n-\n0.1\n0.2\n\n\nBryce Young\nBryce YoungVideo ForecastNew Player Note\nCar - QB\nSun 1:00 pm vs Chi\nW (Sep 11)\n1\n5\n17.09\n182\n46\n13%\n229\n1.6\n0.8\n3.6\n17.2\n0.1\n-\n-\n-\n-\n-\n0.1\n0.2\n\n\nSam Darnold\nSam DarnoldQVideo ForecastNew Player Note\nSea - QB\nFinal W 13-10 vs NE\nW (Sep 16)\n1\n11\n16.13\n156\n45\n37%\n245\n1.5\n0.8\n2.6\n8.8\n0.1\n-\n-\n-\n-\n-\n0.1\n0.2\n\n\nTre Tucker\nTre TuckerVideo ForecastNo new player Notes\nLV - WR\nSun 4:25 pm vs Mia\nFA\n1\n13\n10.95\n142\n168\n31%\n-\n-\n-\n0.5\n2.8\n0.0\n6.2\n3.9\n50.0\n0.3\n-\n0.0\n0.0\n\n\nTyjae Spears\nTyjae SpearsVideo ForecastPlayer Note\nTen - RB\nSun 1:00 pm vs NYJ\nFA\n1\n9\n8.85\n140\n148\n39%\n-\n-\n-\n6.5\n26.9\n0.2\n3.3\n2.4\n16.9\n0.1\n-\n0.0\n0.0\n\n\nHunter Henry\nHunter HenryNew Player Note\nNE - TE\nFinal L 10-13 @ Sea\nW (Sep 16)\n1\n11\n8.84\n166\n124\n55%\n-\n-\n-\n-\n-\n-\n4.7\n3.4\n37.5\n0.3\n-\n0.0\n0.0\n\n\nDeebo Samuel Sr.\nDeebo Samuel Sr.No new player Notes\nSF - WR\nThu 8:35 pm @ LAR\nW (Sep 11)\n1\n8\n8.80\n154\n842\n47%\n-\n-\n-\n1.0\n3.6\n0.0\n4.7\n3.1\n37.6\n0.2\n0.0\n0.0\n0.0\n\n\nXavier Worthy\nXavier WorthyNo new player Notes\nKC - WR\nMon 8:15 pm vs Den\nFA\n1\n5\n8.34\n131\n129\n57%\n-\n-\n-\n0.9\n5.0\n0.0\n5.4\n2.8\n35.5\n0.2\n-\n0.0\n0.0\n",
+   "expected": [
+    {
+     "name": "Baker Mayfield",
+     "pos": "QB",
+     "team": "TB",
+     "slot": null,
+     "status": "",
+     "opponent": "@CIN",
+     "proj": 18.08,
+     "bye": false,
+     "byeWeek": 10,
+     "rosterStatus": "W (Sep 11)"
+    },
+    {
+     "name": "Bryce Young",
+     "pos": "QB",
+     "team": "CAR",
+     "slot": null,
+     "status": "",
+     "opponent": "vs CHI",
+     "proj": 17.09,
+     "bye": false,
+     "byeWeek": 5,
+     "rosterStatus": "W (Sep 11)"
+    },
+    {
+     "name": "Sam Darnold",
+     "pos": "QB",
+     "team": "SEA",
+     "slot": null,
+     "status": "Q",
+     "opponent": "vs NE",
+     "proj": 16.13,
+     "bye": false,
+     "byeWeek": 11,
+     "rosterStatus": "W (Sep 16)"
+    },
+    {
+     "name": "Tre Tucker",
+     "pos": "WR",
+     "team": "LV",
+     "slot": null,
+     "status": "",
+     "opponent": "vs MIA",
+     "proj": 10.95,
+     "bye": false,
+     "byeWeek": 13,
+     "rosterStatus": "FA"
+    },
+    {
+     "name": "Tyjae Spears",
+     "pos": "RB",
+     "team": "TEN",
+     "slot": null,
+     "status": "",
+     "opponent": "vs NYJ",
+     "proj": 8.85,
+     "bye": false,
+     "byeWeek": 9,
+     "rosterStatus": "FA"
+    },
+    {
+     "name": "Hunter Henry",
+     "pos": "TE",
+     "team": "NE",
+     "slot": null,
+     "status": "",
+     "opponent": "@SEA",
+     "proj": 8.84,
+     "bye": false,
+     "byeWeek": 11,
+     "rosterStatus": "W (Sep 16)"
+    },
+    {
+     "name": "Deebo Samuel Sr.",
+     "pos": "WR",
+     "team": "SF",
+     "slot": null,
+     "status": "",
+     "opponent": "@LAR",
+     "proj": 8.8,
+     "bye": false,
+     "byeWeek": 8,
+     "rosterStatus": "W (Sep 11)"
+    },
+    {
+     "name": "Xavier Worthy",
+     "pos": "WR",
+     "team": "KC",
+     "slot": null,
+     "status": "",
+     "opponent": "vs DEN",
+     "proj": 8.34,
+     "bye": false,
+     "byeWeek": 5,
+     "rosterStatus": "FA"
     }
    ]
   },
@@ -322,7 +451,8 @@
      "opponent": "vs NYJ",
      "proj": 22.45,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Jahmyr Gibbs",
@@ -333,7 +463,8 @@
      "opponent": "@GB",
      "proj": 15.1,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -344,7 +475,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Tank Bigsby",
@@ -355,7 +487,8 @@
      "opponent": null,
      "proj": 0.0,
      "bye": true,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     }
    ]
   },
@@ -378,7 +511,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -389,7 +523,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -400,7 +535,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -411,7 +547,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -422,7 +559,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -433,7 +571,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -444,7 +583,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -455,7 +595,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -466,7 +607,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -477,7 +619,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -488,7 +631,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -499,7 +643,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -510,7 +655,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -521,7 +667,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -532,7 +679,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -627,7 +775,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -638,7 +787,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -649,7 +799,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -660,7 +811,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -671,7 +823,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -682,7 +835,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -693,7 +847,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -704,7 +859,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -715,7 +871,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -726,7 +883,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -737,7 +895,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -748,7 +907,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -759,7 +919,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -770,7 +931,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -781,7 +943,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -886,7 +1049,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -897,7 +1061,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -908,7 +1073,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -919,7 +1085,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -930,7 +1097,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -941,7 +1109,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -952,7 +1121,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -963,7 +1133,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -974,7 +1145,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -985,7 +1157,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -996,7 +1169,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -1007,7 +1181,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -1018,7 +1193,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -1029,7 +1205,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -1040,7 +1217,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -1139,7 +1317,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -1150,7 +1329,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -1161,7 +1341,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -1172,7 +1353,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -1183,7 +1365,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -1194,7 +1377,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -1205,7 +1389,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -1216,7 +1401,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -1227,7 +1413,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -1238,7 +1425,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -1249,7 +1437,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -1260,7 +1449,8 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -1372,7 +1562,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -1383,7 +1574,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -1394,7 +1586,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -1405,7 +1598,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -1416,7 +1610,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -1427,7 +1622,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -1438,7 +1634,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -1449,7 +1646,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -1460,7 +1658,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -1471,7 +1670,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -1482,7 +1682,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -1493,7 +1694,8 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -1613,7 +1815,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -1624,7 +1827,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -1635,7 +1839,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -1646,7 +1851,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -1657,7 +1863,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -1668,7 +1875,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -1679,7 +1887,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -1690,7 +1899,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -1701,7 +1911,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -1712,7 +1923,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -1723,7 +1935,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -1734,7 +1947,8 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -1846,7 +2060,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -1857,7 +2072,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -1868,7 +2084,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -1879,7 +2096,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -1890,7 +2108,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -1901,7 +2120,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -1912,7 +2132,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -1923,7 +2144,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -1934,7 +2156,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -1945,7 +2168,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -1956,7 +2180,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -1967,7 +2192,8 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -2153,7 +2379,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -2164,7 +2391,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -2175,7 +2403,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -2186,7 +2415,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -2197,7 +2427,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -2208,7 +2439,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -2219,7 +2451,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -2230,7 +2463,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -2241,7 +2475,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -2252,7 +2487,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -2263,7 +2499,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -2274,7 +2511,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -2285,7 +2523,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -2296,7 +2535,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -2307,7 +2547,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "available": [
@@ -2320,7 +2561,8 @@
      "opponent": null,
      "proj": 14.9,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -2331,7 +2573,8 @@
      "opponent": null,
      "proj": 11.7,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cam Little",
@@ -2342,7 +2585,8 @@
      "opponent": null,
      "proj": 9.1,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -2353,7 +2597,8 @@
      "opponent": null,
      "proj": 8.2,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cedric Tillman",
@@ -2364,7 +2609,8 @@
      "opponent": null,
      "proj": 7.4,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Injured Guy",
@@ -2375,7 +2621,8 @@
      "opponent": null,
      "proj": 18.0,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Unknown Rookie",
@@ -2386,7 +2633,8 @@
      "opponent": null,
      "proj": null,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -2480,7 +2728,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -2491,7 +2740,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -2502,7 +2752,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -2513,7 +2764,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -2524,7 +2776,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -2535,7 +2788,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -2546,7 +2800,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -2557,7 +2812,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -2568,7 +2824,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -2579,7 +2836,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -2590,7 +2848,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -2601,7 +2860,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -2612,7 +2872,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -2623,7 +2884,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -2634,7 +2896,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "available": [
@@ -2647,7 +2910,8 @@
      "opponent": null,
      "proj": 14.9,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -2658,7 +2922,8 @@
      "opponent": null,
      "proj": 11.7,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cam Little",
@@ -2669,7 +2934,8 @@
      "opponent": null,
      "proj": 9.1,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -2680,7 +2946,8 @@
      "opponent": null,
      "proj": 8.2,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cedric Tillman",
@@ -2691,7 +2958,8 @@
      "opponent": null,
      "proj": 7.4,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Injured Guy",
@@ -2702,7 +2970,8 @@
      "opponent": null,
      "proj": 18.0,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Unknown Rookie",
@@ -2713,7 +2982,8 @@
      "opponent": null,
      "proj": null,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -2807,7 +3077,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -2818,7 +3089,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -2829,7 +3101,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -2840,7 +3113,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -2851,7 +3125,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -2862,7 +3137,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -2873,7 +3149,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -2884,7 +3161,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -2895,7 +3173,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -2906,7 +3185,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -2917,7 +3197,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -2928,7 +3209,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -2939,7 +3221,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -2950,7 +3233,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -2961,7 +3245,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "available": [
@@ -2974,7 +3259,8 @@
      "opponent": null,
      "proj": 14.9,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -2985,7 +3271,8 @@
      "opponent": null,
      "proj": 11.7,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cam Little",
@@ -2996,7 +3283,8 @@
      "opponent": null,
      "proj": 9.1,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -3007,7 +3295,8 @@
      "opponent": null,
      "proj": 8.2,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cedric Tillman",
@@ -3018,7 +3307,8 @@
      "opponent": null,
      "proj": 7.4,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Injured Guy",
@@ -3029,7 +3319,8 @@
      "opponent": null,
      "proj": 18.0,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Unknown Rookie",
@@ -3040,7 +3331,8 @@
      "opponent": null,
      "proj": null,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -3134,7 +3426,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -3145,7 +3438,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -3156,7 +3450,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -3167,7 +3462,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -3178,7 +3474,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -3189,7 +3486,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -3200,7 +3498,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -3211,7 +3510,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -3222,7 +3522,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -3233,7 +3534,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -3244,7 +3546,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -3255,7 +3558,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -3266,7 +3570,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -3277,7 +3582,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -3288,7 +3594,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "available": [
@@ -3301,7 +3608,8 @@
      "opponent": null,
      "proj": 14.9,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -3312,7 +3620,8 @@
      "opponent": null,
      "proj": 11.7,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cam Little",
@@ -3323,7 +3632,8 @@
      "opponent": null,
      "proj": 9.1,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -3334,7 +3644,8 @@
      "opponent": null,
      "proj": 8.2,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cedric Tillman",
@@ -3345,7 +3656,8 @@
      "opponent": null,
      "proj": 7.4,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Injured Guy",
@@ -3356,7 +3668,8 @@
      "opponent": null,
      "proj": 18.0,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Unknown Rookie",
@@ -3367,7 +3680,8 @@
      "opponent": null,
      "proj": null,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -3462,7 +3776,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -3473,7 +3788,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -3484,7 +3800,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -3495,7 +3812,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -3506,7 +3824,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -3517,7 +3836,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -3528,7 +3848,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -3539,7 +3860,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -3550,7 +3872,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -3561,7 +3884,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -3572,7 +3896,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -3583,7 +3908,8 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     }
    ],
    "available": [
@@ -3596,7 +3922,8 @@
      "opponent": null,
      "proj": 14.9,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -3607,7 +3934,8 @@
      "opponent": null,
      "proj": 11.7,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cam Little",
@@ -3618,7 +3946,8 @@
      "opponent": null,
      "proj": 9.1,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -3629,7 +3958,8 @@
      "opponent": null,
      "proj": 8.2,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Cedric Tillman",
@@ -3640,7 +3970,8 @@
      "opponent": null,
      "proj": 7.4,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Injured Guy",
@@ -3651,7 +3982,8 @@
      "opponent": null,
      "proj": 18.0,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     },
     {
      "name": "Unknown Rookie",
@@ -3662,7 +3994,8 @@
      "opponent": null,
      "proj": null,
      "bye": false,
-     "byeWeek": null
+     "byeWeek": null,
+     "rosterStatus": null
     }
    ],
    "starters": {
@@ -3759,7 +4092,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -3770,7 +4104,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -3781,7 +4116,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -3792,7 +4128,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -3803,7 +4140,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -3814,7 +4152,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -3825,7 +4164,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -3836,7 +4176,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -3847,7 +4188,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -3858,7 +4200,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -3869,7 +4212,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -3880,7 +4224,8 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     }
    ],
    "week": 5,
@@ -3962,7 +4307,8 @@
      "opponent": "@CAR",
      "proj": 18.35,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Breece Hall",
@@ -3973,7 +4319,8 @@
      "opponent": "@TEN",
      "proj": 14.91,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Jeremiyah Love",
@@ -3984,7 +4331,8 @@
      "opponent": "@LAC",
      "proj": 13.02,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "CeeDee Lamb",
@@ -3995,7 +4343,8 @@
      "opponent": "@NYG",
      "proj": 16.55,
      "bye": false,
-     "byeWeek": 14
+     "byeWeek": 14,
+     "rosterStatus": null
     },
     {
      "name": "Justin Jefferson",
@@ -4006,7 +4355,8 @@
      "opponent": "vs GB",
      "proj": 17.7,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Kyle Pitts Sr.",
@@ -4017,7 +4367,8 @@
      "opponent": "@PIT",
      "proj": 11.17,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Jadarian Price",
@@ -4028,7 +4379,8 @@
      "opponent": "vs NE",
      "proj": 11.47,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Bhayshul Tuten",
@@ -4039,7 +4391,8 @@
      "opponent": "vs CLE",
      "proj": 10.82,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Josh Downs",
@@ -4050,7 +4403,8 @@
      "opponent": "vs BAL",
      "proj": 11.56,
      "bye": false,
-     "byeWeek": 13
+     "byeWeek": 13,
+     "rosterStatus": null
     },
     {
      "name": "Stefon Diggs",
@@ -4061,7 +4415,8 @@
      "opponent": "@PHI",
      "proj": 10.29,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Travis Kelce",
@@ -4072,7 +4427,8 @@
      "opponent": "vs DEN",
      "proj": 10.32,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Aaron Jones Sr.",
@@ -4083,7 +4439,8 @@
      "opponent": "vs GB",
      "proj": 8.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Mitchell Evans",
@@ -4094,7 +4451,8 @@
      "opponent": "vs CHI",
      "proj": 1.03,
      "bye": false,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Seahawks",
@@ -4105,7 +4463,8 @@
      "opponent": "vs NE",
      "proj": 6.97,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Broncos",
@@ -4116,7 +4475,8 @@
      "opponent": "@KC",
      "proj": 6.67,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     }
    ],
    "week": 1,
@@ -4177,7 +4537,8 @@
      "opponent": "vs NYJ",
      "proj": 21.4,
      "bye": false,
-     "byeWeek": 7
+     "byeWeek": 7,
+     "rosterStatus": null
     },
     {
      "name": "Bijan Robinson",
@@ -4188,7 +4549,8 @@
      "opponent": "@TB",
      "proj": 17.8,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Kenneth Walker III",
@@ -4199,7 +4561,8 @@
      "opponent": "vs ARI",
      "proj": 11.2,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ja'Marr Chase",
@@ -4210,7 +4573,8 @@
      "opponent": "@BAL",
      "proj": 18.9,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     },
     {
      "name": "Nico Collins",
@@ -4221,7 +4585,8 @@
      "opponent": null,
      "proj": null,
      "bye": true,
-     "byeWeek": 5
+     "byeWeek": 5,
+     "rosterStatus": null
     },
     {
      "name": "Taysom Hill",
@@ -4232,7 +4597,8 @@
      "opponent": "vs ATL",
      "proj": 9.4,
      "bye": false,
-     "byeWeek": 9
+     "byeWeek": 9,
+     "rosterStatus": null
     },
     {
      "name": "Jaylen Waddle",
@@ -4243,7 +4609,8 @@
      "opponent": "vs NE",
      "proj": 13.5,
      "bye": false,
-     "byeWeek": 12
+     "byeWeek": 12,
+     "rosterStatus": null
     },
     {
      "name": "Harrison Butker",
@@ -4254,7 +4621,8 @@
      "opponent": "vs DEN",
      "proj": 8.6,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Rome Odunze",
@@ -4265,7 +4633,8 @@
      "opponent": "vs MIN",
      "proj": 9.8,
      "bye": false,
-     "byeWeek": 10
+     "byeWeek": 10,
+     "rosterStatus": null
     },
     {
      "name": "Tyler Allgeier",
@@ -4276,7 +4645,8 @@
      "opponent": "@TB",
      "proj": 8.2,
      "bye": false,
-     "byeWeek": 8
+     "byeWeek": 8,
+     "rosterStatus": null
     },
     {
      "name": "Puka Nacua",
@@ -4287,7 +4657,8 @@
      "opponent": "vs SEA",
      "proj": 0.0,
      "bye": false,
-     "byeWeek": 11
+     "byeWeek": 11,
+     "rosterStatus": null
     },
     {
      "name": "Ravens",
@@ -4298,7 +4669,8 @@
      "opponent": "vs CIN",
      "proj": 8.3,
      "bye": false,
-     "byeWeek": 6
+     "byeWeek": 6,
+     "rosterStatus": null
     }
    ],
    "week": null,

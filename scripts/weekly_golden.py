@@ -60,6 +60,7 @@ def as_row(player: WeeklyPlayer | None) -> dict | None:
         "name": player.name, "pos": player.pos, "team": player.team,
         "slot": player.slot, "status": player.status, "opponent": player.opponent,
         "proj": player.proj, "bye": player.bye, "byeWeek": player.bye_week,
+        "rosterStatus": player.roster_status,
     }
 
 
@@ -145,7 +146,8 @@ def parse_cases() -> list[dict]:
     real disagreement into a silently skipped test.
     """
     cases = []
-    for filename in ("yahoo_myteam_week1.txt", "yahoo_myteam_week5_kicker.txt"):
+    for filename in ("yahoo_myteam_week1.txt", "yahoo_myteam_week5_kicker.txt",
+                     "yahoo_players_available_week1.txt"):
         with open(os.path.join(FIXTURES, filename)) as f:
             text = f.read()
         cases.append({
@@ -154,7 +156,8 @@ def parse_cases() -> list[dict]:
             "expected": [
                 {"name": r["name"], "pos": r["pos"], "team": r["team"],
                  "slot": r["slot"], "status": r["status"], "opponent": r["opponent"],
-                 "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"]}
+                 "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"],
+                 "rosterStatus": r["roster_status"]}
                 for r in parse_weekly_text(text)
             ],
         })
@@ -173,7 +176,8 @@ def parse_cases() -> list[dict]:
         "expected": [
             {"name": r["name"], "pos": r["pos"], "team": r["team"],
              "slot": r["slot"], "status": r["status"], "opponent": r["opponent"],
-             "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"]}
+             "proj": r["proj"], "bye": r["bye"], "byeWeek": r["bye_week"],
+             "rosterStatus": r["roster_status"]}
             for r in parse_weekly_text(inline)
         ],
     })

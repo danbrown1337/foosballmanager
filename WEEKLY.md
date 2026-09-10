@@ -76,8 +76,10 @@ python3 -m fantasy_manager.roster_manager waivers
 ```
 
 You get, per target: the projected gain over the player they'd actually
-replace in your lineup, a suggested drop, and either a FAAB bid range or a
-"worth your priority" verdict.
+replace in your lineup, a suggested drop, either a FAAB bid range or a "worth
+your priority" verdict, and — when the page said — whether the player is a free
+agent you can add right now or is on waivers with a claim date. Those are
+different actions and the deadline only applies to one of them.
 
 **Read the gain, not the ranking.** A player is worth a claim because he
 upgrades a slot you're starting, not because he's the best name available. The
@@ -180,11 +182,17 @@ against a real My Team page (2026 week 1, captured as
 matters: summing the parsed projections for the nine players Yahoo had starting
 reproduced Yahoo's own displayed projected total to the cent.
 
-That capture had no kicker, no IR player, nobody on bye and nobody ruled Out,
-so those rows are covered by a second fixture that is *constructed* from the
-same layout rather than captured — a real test of the parser, not evidence that
-Yahoo renders them that way. A superflex slot and the SUSP/PUP designations are
-not covered at all.
+The available-players page is captured too, and it does **not** share My Team's
+columns — it has a Roster Status column and an extra GP\* column before Bye.
+Rows the My Team capture lacked (kicker, IR, bye, Out) are covered by a third
+fixture that is *constructed* from that layout rather than captured — a real
+test of the parser, not evidence Yahoo renders them that way. A superflex slot
+and the SUSP/PUP designations are not covered at all.
+
+**One thing to set on the players page**: the Stats selector at the top must say
+**Week N (proj)**. That column is what gets read as the projection; leave it on
+actual points and the waiver advice is comparing last week's results against
+this week's forecasts.
 
 So the first time you run it, the import prints every field it extracted:
 

@@ -262,12 +262,13 @@ only surface mid-draft.
   it excludes every rostered player and ranks by projected gain over the player
   a pickup would actually replace; without it, it says so and degrades to a
   best-available list.
-- **Weekly page parsing is verified against one real page.** A captured 2026
-  week-1 My Team page is pinned as a test fixture, and the parsed projections
-  reproduce Yahoo's own displayed weekly total exactly. A second fixture covers
-  a kicker slot, IR, byes, Out designations and mid-season Fan Pts, but it is
-  constructed from that layout rather than captured — so `browser_sync week`
-  still prints every field it parsed, for checking against your own page.
+- **Weekly page parsing is verified against two real pages** — a 2026 week-1
+  My Team page and an available-players page, both pinned as fixtures. The
+  parsed projections reproduce Yahoo's own displayed weekly total exactly. A
+  third fixture covers a kicker slot, IR, byes, Out designations and mid-season
+  Fan Pts, but it is constructed from that layout rather than captured — so
+  `browser_sync week` still prints every field it parsed, for checking against
+  your own page.
 - **`overachievers` runs on pre-season research.** Comparing actual points
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.

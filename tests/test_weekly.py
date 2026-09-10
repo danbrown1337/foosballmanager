@@ -384,6 +384,24 @@ class TestCurrentWeek:
         assert current_week(config, datetime.date(2027, 6, 1)) == 18
 
 
+class TestRosterStatus:
+    """Only the available-players page carries this, and it decides the action:
+    a free agent is first-come, a waiver player needs a claim before the run."""
+
+    def test_free_agent(self):
+        p = player("X", "RB", 10.0, roster_status="FA")
+        assert p.is_free_agent and p.waiver_clears is None
+
+    def test_on_waivers_reports_when_it_clears(self):
+        p = player("X", "RB", 10.0, roster_status="W (Sep 11)")
+        assert not p.is_free_agent
+        assert p.waiver_clears == "Sep 11"
+
+    def test_absent_on_my_team_rows(self):
+        p = player("X", "RB", 10.0)
+        assert not p.is_free_agent and p.waiver_clears is None
+
+
 class TestWeekLabel:
     """Two different "no current week" states that must not read the same:
     one is a date to wait for, the other is a line of YAML to go and fill in."""
