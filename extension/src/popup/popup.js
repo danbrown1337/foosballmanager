@@ -19,6 +19,16 @@ function sendMessage(message) {
 
 let STATE = null;
 
+/* Player names and warnings in the Week tab come off a scraped Yahoo page, so
+ * they are foreign text going into innerHTML. Nothing in a roster ought to
+ * contain markup, but "ought to" is not a reason to interpolate a page's own
+ * strings unescaped into an extension popup. */
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[ch]));
+}
+
 function showErr(msg) {
   const el = document.getElementById("err");
   el.hidden = !msg;
@@ -270,5 +280,81 @@ document.getElementById("copyPanelLog").addEventListener("click", async () => {
       `Copied ${rooms.length} room log(s), ${newest.lines.length} lines from the most recent.`;
   } catch (err) {
     out.textContent = `Couldn't copy the panel log: ${err.message}`;
+  }
+});
+
+
+/* --- Week tab -------------------------------------------------------------
+ *
+ * Reads the open My Team page and renders the start/sit call. The CHANGES
+ * block leads, not the lineup: "start these nine" makes the reader re-derive
+ * what to click, while "bench X for Y" is the move. Same reasoning as the CLI
+ * report in roster_manager.py.
+ */
+function renderWeek(report) {
+  const out = document.getElementById("weekOut");
+  const label = document.getElementById("weekLabel");
+
+  if (report.error) {
+    label.textContent = "Weekly lineup";
+    out.innerHTML = `<div class="muted">${escapeHtml(report.error)}</div>`;
+    return;
+  }
+
+  label.textContent = report.label || "Weekly lineup";
+  const parts = [];
+
+  if (!report.hasProjections) {
+    parts.push('<div class="muted">No projections found on that page, so this is '
+      + "position eligibility and byes only — not a ranking.</div>");
+  }
+
+  if (report.changes.length) {
+    parts.push('<div class="label">Changes to make in Yahoo</div><ul class="plain">');
+    for (const c of report.changes) {
+      let text;
+      if (c.moveOnly) text = `Move <b>${escapeHtml(c.start)}</b> to ${escapeHtml(c.slot)}`;
+      else if (!c.start) text = `Bench <b>${escapeHtml(c.bench)}</b>`;
+      else if (!c.bench) text = `Start <b>${escapeHtml(c.start)}</b> into ${escapeHtml(c.slot)}`;
+      else text = `${escapeHtml(c.slot)}: start <b>${escapeHtml(c.start)}</b>, bench <b>${escapeHtml(c.bench)}</b>`;
+      parts.push(`<li>${text}<br><span class="muted">${escapeHtml(c.reason)}</span></li>`);
+    }
+    parts.push("</ul>");
+  } else {
+    parts.push('<div class="muted">No changes needed — Yahoo already has your '
+      + "best lineup set.</div>");
+  }
+
+  parts.push('<div class="label" style="margin-top:10px">Lineup</div><ul class="plain">');
+  for (const slot of report.starters) {
+    if (!slot.name) {
+      parts.push(`<li><b>${escapeHtml(slot.slot)}</b> — <span class="muted">empty: `
+        + `${escapeHtml(slot.emptyReason || "")}</span></li>`);
+      continue;
+    }
+    const flags = [slot.opponent, slot.status].filter(Boolean).map(escapeHtml).join(" · ");
+    const proj = slot.proj === null || slot.proj === undefined ? "—" : slot.proj.toFixed(2);
+    parts.push(`<li><b>${escapeHtml(slot.slot)}</b> ${escapeHtml(slot.name)} `
+      + `<span class="muted">${flags}</span> — ${proj}</li>`);
+  }
+  parts.push("</ul>");
+  if (report.hasProjections) {
+    parts.push(`<div class="muted">Projected total: ${report.projected.toFixed(2)}</div>`);
+  }
+
+  for (const warning of report.warnings) {
+    parts.push(`<div class="muted" style="margin-top:6px">! ${escapeHtml(warning)}</div>`);
+  }
+
+  out.innerHTML = parts.join("");
+}
+
+document.getElementById("weekBtn")?.addEventListener("click", async () => {
+  const out = document.getElementById("weekOut");
+  out.textContent = "Reading your My Team page...";
+  try {
+    renderWeek(await sendMessage({ type: "WEEK_REPORT" }));
+  } catch (err) {
+    out.textContent = `Could not read the page: ${err.message || err}`;
   }
 });

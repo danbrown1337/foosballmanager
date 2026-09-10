@@ -254,7 +254,7 @@ one-off checks for this build, not part of the shipped extension.
   `browser_sync.py watch`.
 
 
-## In-season weekly engine (ported, not yet wired to any UI)
+## In-season weekly management (the Week tab)
 
 `src/engine/weekly.js` is a port of `fantasy_manager/weekly.py`: start/sit
 lineup optimisation, the diff against whatever Yahoo currently has set, waiver
@@ -268,16 +268,29 @@ divergence on its first run: Python's `round()` breaks a tie to even and
 JavaScript's `Math.round()` rounds it up, so on a $50 budget the port was
 saying "bid 13" where the Python report said 12.
 
-**Nothing in the popup or the overlay calls this yet.** To finish the port you
-need two more pieces:
+**How to use it:** open your Yahoo **My Team** page in a tab, click the
+extension, go to the **Week** tab, and press *Read my team page*. You get the
+changes to make first, then the lineup they produce, then any warnings — a
+starter on bye or ruled Out, a slot with nobody eligible for it.
 
-1. A weekly panel — the popup's Team tab is the natural home.
-2. A way to read the My Team page. The recommendation is to take
-   `document.body.innerText` and port `parse_weekly_text` from
-   `fantasy_manager/browser_sync.py`, rather than writing CSS selectors:
-   that parser is already verified against a real captured My Team page, and
-   Yahoo's generated class names change without notice while the rendered text
-   has held still for years. `tests/fixtures/yahoo_myteam_week1.txt` is exactly
-   what `innerText` yields, so it doubles as the fixture for that port.
+It recommends and nothing more. Setting the lineup stays your click in Yahoo's
+own UI, the same line this project draws around roster moves and trades
+everywhere else.
 
-Until both land, the weekly workflow is CLI-only — see `WEEKLY.md`.
+**How it reads the page:** `src/lib/weeklyParse.js`, a port of
+`parse_weekly_text`, working on `document.body.innerText` rather than CSS
+selectors. Yahoo's generated class names change without notice; the rendered
+text has held still for years, and the draft side matches on text throughout
+`domActions.js` for the same reason. It also means the captured pages in
+`tests/fixtures/` are byte-for-byte what the extension sees, so they are its
+test fixtures too — and both parsers are diffed against each other over the
+same bytes by the golden master.
+
+**What it does not do yet:** waivers. `evaluateWaiverTargets` is ported and
+pinned, but no panel calls it — the free-agent page needs reading as well, and
+that page has not been captured. The CLI has it: see `WEEKLY.md`.
+
+**If the numbers look wrong**, the panel says so when a page carried no
+projections at all. For anything subtler, the check is the same one the CLI
+doc gives: the projections for whoever Yahoo currently has starting should add
+up to the weekly total Yahoo itself displays.
