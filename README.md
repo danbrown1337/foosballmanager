@@ -219,6 +219,7 @@ fantasy_manager/
   browser_sync.py      roster import + live draft watching via your Chrome
   roster_manager.py    post-draft weekly CLI (start/sit, waivers, week review)
   weekly.py            in-season engine: lineup optimiser + waiver valuation
+                       (ported to extension/src/engine/weekly.js)
   trade_targeter.py    trade offer generator
   yahoo_client.py      Yahoo OAuth2 + read endpoints
   profiles.py          per-person settings, rosters and draft state
@@ -271,8 +272,11 @@ only surface mid-draft.
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.
 - **The Chrome extension covers drafting and trade offers fully, roster
-  viewing partially.** The whole weekly workflow — `week`, `lineup`,
-  `waivers`, `byeweeks`, `overachievers` — is CLI-only for now.
+  viewing partially.** The weekly *engine* is now ported to
+  `extension/src/engine/weekly.js` and pinned against Python by a golden
+  master, but nothing in the extension's UI calls it yet — so in practice the
+  weekly workflow is still CLI-only. The remaining work is a panel plus
+  reading the My Team page; see `extension/README.md`.
 - **Nothing weighs matchup strength.** Yahoo's own projection prices some of it
   in; no code here looks at whether a back is facing the worst run defence in
   the league.

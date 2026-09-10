@@ -19,6 +19,10 @@ node test/compare_with_python.js test/fixtures/robust_rb_golden.json
 node test/compare_with_python.js test/fixtures/zero_rb_golden.json
 
 echo
+echo "=== golden-master: JS weekly engine vs Python weekly engine ==="
+node test/compare_weekly_with_python.js test/weekly_golden.json
+
+echo
 echo "=== browser checks (skipped without playwright) ==="
 if node -e "require.resolve('playwright')" 2>/dev/null; then
   node test/domActions.check.js
