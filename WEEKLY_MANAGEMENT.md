@@ -56,7 +56,8 @@ no current personal roster or Yahoo session.
 
 - **No weekly projection column / wrong stats:** select the specific week's
   projected points. Season totals and actual points are not weekly forecasts.
-  The player-page importer recognizes Yahoo's `stat1=S_PW_<week>` view and
+  The player-page importer recognizes Yahoo's `stat1=S_PW_<week>` view from
+  the selected stats control or URL, saves the explicit week for refresh, and
   reads fantasy points by header; the team page needs an explicit projection
   header. Unknown layouts fail with a message instead of guessing columns.
 - **No lineup slot / no player rows:** use the full team table in a signed-in
@@ -70,9 +71,11 @@ no current personal roster or Yahoo session.
 - **Drops, IR moves, FAAB and trades:** no automatic transactions. A one-week
   streaming upgrade is not evidence that a valuable season-long player should
   be dropped. Claim deadlines, roster room and season value need review.
-- **Live compatibility:** validated with synthetic Yahoo-shaped browser
-  fixtures, not this user's authenticated Yahoo page. First real import is
-  still required to confirm the live table layout and diagnose the actual team.
+- **Live compatibility:** the parser passed authenticated Yahoo DOM captures
+  containing a complete 15-player roster and 25 available-player rows, with
+  projections and waiver labels checked. Regression fixtures also cover
+  default page URLs, roster week captions, and same-city defenses. Loading
+  and messaging in an actual installed Chrome extension still need validation.
 
 ## Verification
 
@@ -84,3 +87,5 @@ ownership, freshness, league/week isolation and multi-page refresh semantics.
 exercises table parsing and the actual popup: import, report rendering,
 refresh success/failure and week changes. `FM_CHROME` may select a local browser.
 It is also included in the browser portion of `extension/test/run_all.sh`.
+Optional `FM_YAHOO_ROSTER` and `FM_YAHOO_WAIVERS` paths run parser checks on
+private Week 3 HTML captures; keep account captures outside the repository.

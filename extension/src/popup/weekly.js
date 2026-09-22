@@ -48,7 +48,7 @@ async function save(next) {
 async function capture(kind) {
   const opts = await options(kind);
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  weeklyPageContext(tab?.url || "", kind, opts.week);
+  weeklyPageContext(tab?.url || "", kind, opts.week, { deferStats: true });
   el("weeklyStatus").textContent = "Reading the current Yahoo page…";
   let response;
   try { response = await chrome.tabs.sendMessage(tab.id, { type: "CAPTURE_WEEKLY_PAGE", options: opts }); }
