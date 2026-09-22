@@ -145,6 +145,15 @@ the parser can be corrected.
 
 ## After the draft
 
+Use the Chrome extension's **Weekly** tab for in-season management. It reads
+your current Yahoo roster and league-scored weekly projections, flags out/bye
+starters, optimizes the complete lineup (including both flex spots), and ranks
+verified available players by the improvement to your lineup. Draft ADP and
+mock-draft picks are not used. See [WEEKLY_MANAGEMENT.md](WEEKLY_MANAGEMENT.md)
+for import, refresh and troubleshooting instructions.
+
+The older CLI views below are roster/research utilities, not a live weekly agent:
+
 ```bash
 python3 -m fantasy_manager.roster_manager summary        # roster by position
 python3 -m fantasy_manager.roster_manager byeweeks       # bye-week pileups
@@ -241,12 +250,18 @@ only surface mid-draft.
 - **Yahoo API** access is pending approval. The client is written and
   unit-tested against Yahoo's documented response shapes but has not run
   against a live account. Until it's approved, use the browser import above.
-- **`waivers` doesn't yet exclude players on rival rosters** — it filters only
-  against your own, so treat it as a best-available list rather than a true
-  waiver wire.
+- **Weekly management is in the extension's Weekly tab.** Import your current
+  team and weekly projected available-player pages from Yahoo, then refresh
+  saved pages when needed. Imports older than 24 hours, the wrong week/season,
+  or mismatched leagues cannot produce current waiver advice. Only imported
+  pages are covered; this is not an unattended background monitor.
+- **The legacy CLI `waivers` command is a preseason watchlist.** It excludes
+  names in saved own/rival rosters and prominently labels availability as
+  unverified. It does not have current ownership or weekly projections.
 - **`overachievers` runs on pre-season research.** Comparing actual points
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.
-- **The Chrome extension covers drafting and trade offers fully, roster
-  viewing partially.** `byeweeks`, `overachievers`, and `waivers` aren't
-  ported there yet — those stay CLI/web-app-only for now.
+- **The extension's Weekly tab covers weekly lineups and waiver upgrades.**
+  The separate Picks tab shows draft history, not your current team. Trade
+  offers and `overachievers` still use preseason values; they are not weekly
+  trade valuations or live breakout detection.

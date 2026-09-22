@@ -22,6 +22,7 @@ echo
 echo "=== browser checks (skipped without playwright) ==="
 if node -e "require.resolve('playwright')" 2>/dev/null; then
   node test/domActions.check.js
+  node test/weekly.check.js
   node test/load_check.js
 else
   echo "playwright not installed — run: npm install playwright && npx playwright install chromium"

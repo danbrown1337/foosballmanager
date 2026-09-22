@@ -32,6 +32,7 @@ const KEYS = {
   roomLog: "fm_room_log",
   roomStatus: "fm_room_status",
   consensus: "fm_consensus_adp",
+  weekly: "fm_weekly",
 };
 
 /* Yahoo's standard mock draft room starts one W/R/T flex and a kicker; the
@@ -73,6 +74,8 @@ async function set(key, value) {
 }
 
 export const Storage = {
+  async getWeekly() { return get(KEYS.weekly, {}); },
+  async setWeekly(state) { return set(KEYS.weekly, state); },
   async getConfig() {
     return get(KEYS.config, DEFAULT_CONFIG);
   },
