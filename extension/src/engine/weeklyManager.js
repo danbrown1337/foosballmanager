@@ -5,7 +5,7 @@ const ELIGIBLE = { FLEX: ["RB", "WR", "TE"], SUPERFLEX: ["QB", "RB", "WR", "TE"]
 const OUT = new Set(["O", "OUT", "IR", "IR-R", "PUP", "PUP-R", "NFI", "NFI-R", "SUSP", "NA"]);
 const BENCH = new Set(["BN", "BE", "BENCH", "IR", "IR+"]);
 export const position = (value) => ALIASES[String(value || "").trim().toUpperCase()] || String(value || "").trim().toUpperCase();
-export const playerKey = (p) => `${String(p.name || "").toLowerCase().replace(/[^a-z0-9]/g, "")}:${position(p.pos)}`;
+export const playerKey = (p) => p.playerId ? `yahoo:${p.playerId}` : `${String(position(p.pos) === "DEF" && p.team ? p.team : p.name || "").toLowerCase().replace(/[^a-z0-9]/g, "")}:${position(p.pos)}`;
 const round = (n) => Math.round(n * 100) / 100;
 const number = (n) => typeof n === "number" && Number.isFinite(n);
 const isStarter = (p) => p.slot && !BENCH.has(p.slot);
