@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import re
 from collections import defaultdict
 
 from fantasy_manager import profiles
@@ -85,16 +86,26 @@ def cmd_byeweeks(args):
 
 
 def cmd_waivers(args):
-    """Best remaining players by ADP not on your roster — a reasonable proxy
-    for waiver-wire priority until live Yahoo transactions data is wired in."""
-    players, config = build_board()
-    mine = {r["name"] for r in load_my_roster()}
+    """Legacy research list, explicitly not a current waiver recommendation.
 
-    avail = [p for p in players if p.name not in mine]
+    Current weekly decisions live in the extension's Weekly tab, which reads
+    league-scored weekly projections and positive Yahoo availability evidence.
+    """
+    players, config = build_board()
+    # Local import avoids the trade module's roster-loader dependency cycle.
+    from fantasy_manager.trade_targeter import load_league_rosters
+    key = lambda name: re.sub(r"[^a-z0-9]", "", name.lower())
+    owned = {key(r["name"]) for r in load_my_roster()}
+    for roster in load_league_rosters().values():
+        owned.update(key(r["name"]) for r in roster)
+
+    avail = [p for p in players if key(p.name) not in owned]
     if args.pos:
         avail = [p for p in avail if p.pos == args.pos.upper()]
     avail.sort(key=lambda p: p.adp)
 
+    print("PRESEASON WATCHLIST — availability unverified; saved roster imports may be stale.")
+    print("Use the extension's Weekly tab for current waiver decisions and weekly projections.")
     print(f"{'PLAYER':<26}{'POS':<5}{'TEAM':<6}{'ADP':<8}TIER")
     for p in avail[: args.top]:
         print(f"{p.name:<26}{p.pos:<5}{p.team:<6}{p.adp:<8}{p.tier}")
@@ -144,7 +155,7 @@ def main():
     p_bye = sub.add_parser("byeweeks", help="Flag bye-week pileups")
     p_bye.set_defaults(func=cmd_byeweeks)
 
-    p_wai = sub.add_parser("waivers", help="Best available players not on your roster")
+    p_wai = sub.add_parser("waivers", help="Legacy preseason watchlist (availability unverified); use the extension Weekly tab for current decisions")
     p_wai.add_argument("--pos", default=None)
     p_wai.add_argument("--top", type=int, default=15)
     p_wai.set_defaults(func=cmd_waivers)

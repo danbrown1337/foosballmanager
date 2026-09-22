@@ -1,3 +1,18 @@
+# Weekly management update — v0.94.0
+
+Weekly management now has its own extension tab, pure optimizer, Yahoo page
+parser, local snapshots and refresh workflow. Read `WEEKLY_MANAGEMENT.md` before
+using it. No current personal roster was present in this checkout, so the
+user's actual lineup still needs importing. Browser fixtures cover the workflow;
+the user's authenticated Yahoo layout has not been verified. Nothing runs on
+a weekly schedule or submits lineup/waiver transactions.
+
+The CLI `waivers` view remains a legacy preseason watchlist, now excluding
+saved rival rosters and labeling its availability as unverified. Draft and
+trade engines otherwise retain their existing behavior.
+
+The earlier draft handoff below is historical (its version and HEAD are old):
+
 # Handoff — morning of 2026-09-08
 
 State at end of the 2026-09-07 session. HEAD `565ab65`, extension **v0.71.0**,
