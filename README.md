@@ -145,15 +145,31 @@ the parser can be corrected.
 
 ## After the draft
 
+The weekly loop is two commands — import what Yahoo shows, then read the week:
+
 ```bash
+python3 -m fantasy_manager.browser_sync week --url <My Team URL>   # this week's page
+python3 -m fantasy_manager.roster_manager week                     # the whole review
+```
+
+`week` gives you start/sit with the changes to make, bye trouble coming up, and
+ranked waiver targets with a bid. The pieces run on their own too:
+
+```bash
+python3 -m fantasy_manager.roster_manager lineup         # start/sit only
+python3 -m fantasy_manager.roster_manager waivers        # waiver targets only
+python3 -m fantasy_manager.roster_manager matchup        # what each defence has allowed
 python3 -m fantasy_manager.roster_manager summary        # roster by position
-python3 -m fantasy_manager.roster_manager byeweeks       # bye-week pileups
-python3 -m fantasy_manager.roster_manager waivers --pos RB --top 10
+python3 -m fantasy_manager.roster_manager byeweeks       # weeks a bye leaves a slot short
 python3 -m fantasy_manager.roster_manager overachievers  # beating their draft price
 
 python3 -m fantasy_manager.trade_targeter list-teams
 python3 -m fantasy_manager.trade_targeter offers --all --count 2
 ```
+
+**[WEEKLY.md](WEEKLY.md) is the run-through** — what to do on which day, how to
+read the flags, and the one thing to verify against your own Yahoo page first.
+Nothing sets a lineup or places a claim for you; you execute in Yahoo.
 
 These read your profile's `my_roster.csv` and `league_rosters.csv`. Fill them in
 by hand, or import them from the browser:
@@ -202,7 +218,11 @@ fantasy_manager/
   draft_assistant.py   draft-day CLI
   web.py               point-and-click app (stdlib only)
   browser_sync.py      roster import + live draft watching via your Chrome
-  roster_manager.py    post-draft weekly CLI
+  roster_manager.py    post-draft weekly CLI (start/sit, waivers, week review)
+  weekly.py            in-season engine: lineup optimiser + waiver valuation
+                       (ported to extension/src/engine/weekly.js)
+  matchup.py           defensive matchup read, built from your own imports
+                       (reported beside the projection, never folded into it)
   trade_targeter.py    trade offer generator
   yahoo_client.py      Yahoo OAuth2 + read endpoints
   profiles.py          per-person settings, rosters and draft state
@@ -241,12 +261,30 @@ only surface mid-draft.
 - **Yahoo API** access is pending approval. The client is written and
   unit-tested against Yahoo's documented response shapes but has not run
   against a live account. Until it's approved, use the browser import above.
-- **`waivers` doesn't yet exclude players on rival rosters** — it filters only
-  against your own, so treat it as a best-available list rather than a true
-  waiver wire.
+- **`waivers` needs `league_rosters.csv` to be a real wire.** With it imported
+  it excludes every rostered player and ranks by projected gain over the player
+  a pickup would actually replace; without it, it says so and degrades to a
+  best-available list.
+- **Weekly page parsing is verified against two real pages** — a 2026 week-1
+  My Team page and an available-players page, both pinned as fixtures. The
+  parsed projections reproduce Yahoo's own displayed weekly total exactly. A
+  third fixture covers a kicker slot, IR, byes, Out designations and mid-season
+  Fan Pts, but it is constructed from that layout rather than captured — so
+  `browser_sync week` still prints every field it parsed, for checking against
+  your own page.
 - **`overachievers` runs on pre-season research.** Comparing actual points
   against tier expectation needs a weekly stats file that doesn't exist yet;
   the tiering plumbing is already in place for it.
-- **The Chrome extension covers drafting and trade offers fully, roster
-  viewing partially.** `byeweeks`, `overachievers`, and `waivers` aren't
-  ported there yet — those stay CLI/web-app-only for now.
+- **The Chrome extension now covers the whole weekly loop as well as drafting**:
+  a Week tab that reads your My Team page for start/sit, and waiver targets off
+  the Players → Available page — engine and parser both ported and pinned
+  against Python by a golden master, plus the bye outlook and both projected
+  totals. `overachievers` stays CLI-only.
+- **Matchup is your own data, not the league's.** `matchup.py` rates defences
+  from your imported weeks — the average points a fantasy-relevant player at
+  each position scored against them. It is not the league-wide "points allowed"
+  a stats site would give you, it says nothing until a few weeks are in, and it
+  cannot be backfilled. It is also never folded into a projection or a lineup:
+  Yahoo's number already prices some matchup in, so adding more on top would
+  double-count by an unknown amount. A test pins that `weekly.py` never imports
+  it.

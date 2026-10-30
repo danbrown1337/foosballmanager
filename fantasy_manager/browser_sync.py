@@ -123,6 +123,331 @@ def parse_roster_text(text: str) -> list[dict]:
     return rows
 
 
+# --- Weekly (My Team / free agents) ------------------------------------------
+#
+# The roster parser above deliberately throws away everything except name, team
+# and position, because that is all a draft cares about. A week cares about the
+# rest of the row: which slot Yahoo has the player in, whether he's hurt, who
+# he plays, and what Yahoo projects. Those fields are what the functions below
+# recover.
+#
+# TWO LAYOUTS, AND WHY: the My Team page stacks each row across several lines
+# and never puts the name on the same line as the position, so it gets its own
+# parser (_parse_stacked_myteam, below) anchored on the bare "Chi - QB" line.
+# The league-rosters and draft-room pages do render "Jahmyr Gibbs Det - RB" on
+# one line, and the inline parser further down still handles those.
+#
+# This was checked against a real Yahoo My Team page (2026 week 1), captured as
+# tests/fixtures/yahoo_myteam_week1.txt. The first version of this code assumed
+# the inline shape everywhere, passed every hand-written test, and parsed zero
+# players off the live page — hence the captured page is now the test.
+#
+# A second fixture (yahoo_myteam_week5_kicker.txt) covers rows that page lacked:
+# a kicker, an IR player, a bye, an Out designation, a multi-position player,
+# and a populated Fan Pts column. It is constructed from this layout rather than
+# captured, so it tests the parser without proving the rendering.
+#
+# The `week` command still prints every field it extracted, because a projection
+# read off the wrong column is invisible in a lineup and obvious in a table.
+
+SLOT_LABELS = {"QB", "RB", "WR", "TE", "K", "DEF", "BN", "BE", "IR", "IR-R",
+               "W/R/T", "FLEX", "WRT", "Q/W/R/T", "OP", "NA"}
+
+# "@ GB", "@GB", "vs NYJ", "vs. NYJ" — and "Bye" where the week is a bye.
+#
+# No \b before the alternation: a word boundary needs a word character on one
+# side, and " @" is two non-word characters, so \b@ never matches at all. The
+# lookbehind does the real job here — keep "vs" from firing inside a word.
+OPPONENT = re.compile(r"(?<![A-Za-z0-9])(?P<side>@|vs\.?)\s*(?P<team>[A-Za-z]{2,3})\b", re.I)
+BYE_MARKER = re.compile(r"\bbye\b", re.I)
+
+# A fantasy projection: a decimal, plausibly scoring-sized. The decimal point is
+# required on purpose — it separates a projection from the jersey numbers, week
+# numbers, and rostered-percentages that share the row.
+PROJECTION = re.compile(r"(?<![\d.])(?P<value>\d{1,2}\.\d{1,2})(?![\d.])")
+
+STATUS_AFTER_POS = re.compile(
+    r"-\s*[A-Za-z]{1,3}(?:\s*,\s*[A-Za-z]{1,3})*\s+(?P<status>Q|D|O|IR(?:-R)?|SUSP|PUP|NA|GTD|P)\b"
+)
+
+
+# --- Yahoo's My Team layout -------------------------------------------------
+#
+# The real My Team page does NOT render a player as one "Name TEAM - POS" line.
+# It stacks a row across consecutive lines, and the name never shares a line
+# with the team/position:
+#
+#     QB                             <- roster slot
+#     Caleb Williams                 <- name, clean
+#     Caleb WilliamsPlayer Note      <- name with status + note chrome run on
+#     Chi - QB                       <- team and position, alone
+#     Sun 1:00 pm @ Car              <- kickoff and opponent
+#     10                             <- bye week
+#     -                              <- Fan Pts ("-" until a game is played)
+#     18.35                          <- Proj Pts
+#     81%                            <- % started
+#
+# So the anchor here is the bare "TEAM - POS" line, and everything else is
+# found by position relative to it. The inline parser below still handles the
+# league-rosters and draft-room pages, which really do put a name and position
+# on one line.
+
+_POS = r"QB|RB|WR|TE|K|PK|DEF|DST|D/ST"
+# Yahoo lists every position a player is eligible at ("NO - TE,QB"). Requiring a
+# single one made the row fail to match at all, which dropped the player from the
+# roster entirely rather than merely mislabelling him.
+TEAM_POS_LINE = re.compile(
+    rf"^(?P<team>[A-Za-z]{{2,3}})\s*-\s*(?P<pos>(?:{_POS})(?:\s*,\s*(?:{_POS}))*)$", re.I)
+
+# A status letter is glued to the end of the name with no separator
+# ("Jeremiyah LoveQVideo Forecast"), so it is recognised by being followed by
+# an uppercase letter or the end of the line. That distinguishes a real "Q"
+# from the "P" of "Player Note" and the "N" of "No new player Notes", which
+# are note chrome rather than a designation.
+STATUS_AFTER_NAME = re.compile(r"^(SUSP|PUP|GTD|IR|NA|Q|D|O|P)(?=[A-Z]|$)")
+
+BARE_INT = re.compile(r"^\d{1,2}$")
+
+# The available-players page carries a column My Team does not: whether each
+# player can be added right now or has to be claimed. "FA" is first-come;
+# "W (Sep 11)" means a waiver claim that processes on that date. The difference
+# decides what the manager actually does, so it is captured rather than dropped.
+ROSTER_STATUS = re.compile(r"^(?:FA|W\s*\([^)]*\))$", re.I)
+
+
+def _parse_stacked_myteam(lines: list[str]) -> list[dict]:
+    """Parse the My Team page, where each roster row spans several lines."""
+    rows: list[dict] = []
+    seen: set[str] = set()
+    anchors = [i for i, line in enumerate(lines) if TEAM_POS_LINE.match(line.strip())]
+
+    for order, index in enumerate(anchors):
+        match = TEAM_POS_LINE.match(lines[index].strip())
+        pos = normalize_position(match.group("pos"))
+
+        # Name sits two lines up, with the chrome-laden copy directly above the
+        # anchor. Preferring the clean line keeps "Kyle Pitts Sr." intact
+        # instead of "Kyle Pitts Sr.No new player Notes".
+        name, extras = "", ""
+        if index >= 2:
+            candidate, adorned = lines[index - 2].strip(), lines[index - 1].strip()
+            if candidate and adorned.startswith(candidate):
+                name, extras = candidate, adorned[len(candidate):]
+            elif candidate:
+                name = candidate
+        if not name or not looks_like_a_player(name) or name in seen:
+            continue
+        seen.add(name)
+
+        slot = None
+        for back in range(3, 5):
+            if index - back < 0:
+                break
+            if lines[index - back].strip().upper() in SLOT_LABELS:
+                slot = lines[index - back].strip().upper()
+                break
+
+        status_match = STATUS_AFTER_NAME.match(extras)
+        status = status_match.group(1).upper() if status_match else ""
+
+        end = anchors[order + 1] - 3 if order + 1 < len(anchors) else len(lines)
+        forward = [line.strip() for line in lines[index + 1:max(index + 1, end)]]
+
+        opponent, on_bye, roster_status = None, False, None
+        integers, decimals = [], []
+        for line in forward:
+            if "%" in line:
+                # Both pages put a percentage column after the numbers that
+                # matter, so it is the stop line. Before it:
+                #   projection = the LAST decimal. My Team runs Fan Pts then
+                #     Proj Pts, and Fan Pts is "-" in week 1 but real from week
+                #     2 on — taking the first decimal would silently return
+                #     points already scored for the rest of the season.
+                #   actual = the FIRST decimal, but only when there are two.
+                #     One decimal means the row has no Fan Pts yet (week 1) or
+                #     is the players page, which shows a single value column.
+                #     Guessing which one it was would put points already scored
+                #     into the projection field or the reverse.
+                #   bye week = the last integer BEFORE the first decimal. My
+                #     Team has only Bye there; the players page has GP* then
+                #     Bye, so "the first integer" reads games-played as the bye
+                #     on every row. Taking the last one before the decimal is
+                #     the rule that holds on both.
+                break
+            if roster_status is None and ROSTER_STATUS.fullmatch(line):
+                roster_status = line.strip()
+                continue
+            if opponent is None:
+                found = OPPONENT.search(line)
+                if found:
+                    opponent = (("@" if found.group("side").startswith("@") else "vs ")
+                                + found.group("team").upper())
+                    continue
+            if BYE_MARKER.fullmatch(line):
+                on_bye = True
+                continue
+            if BARE_INT.fullmatch(line):
+                # An NFL season is 18 weeks, so anything outside that is some
+                # other column — a whole-number Fan Pts, most likely — and
+                # letting it through would report a bye week of 0.
+                if not decimals and 1 <= int(line) <= 18:
+                    integers.append(int(line))
+                continue
+            number = PROJECTION.fullmatch(line)
+            if number:
+                decimals.append(float(number.group("value")))
+        bye_week = integers[-1] if integers else None
+        proj = decimals[-1] if decimals else None
+        actual = decimals[0] if len(decimals) >= 2 else None
+
+        rows.append({
+            "name": name, "pos": pos, "team": match.group("team").upper(),
+            "slot": slot, "status": status, "opponent": opponent,
+            "proj": proj, "actual": actual, "bye": on_bye, "bye_week": bye_week,
+            "roster_status": roster_status,
+        })
+    return rows
+
+
+def _blocks(lines: list[str]) -> list[tuple[int, re.Match, str]]:
+    """Split the page into one block per player: (line index, name match, tail).
+
+    A block runs from a player's own row up to the next player's row, and the
+    tail is everything after his "Name TEAM - POS" anchor. Segmenting first is
+    what keeps a row's opponent and projection its own — search a fixed window
+    of surrounding lines instead and every player inherits his neighbour's
+    numbers, silently and plausibly.
+    """
+    anchors = []
+    for index, raw in enumerate(lines):
+        match = PLAYER_LINE.match(raw.strip())
+        if match:
+            anchors.append((index, match))
+
+    blocks = []
+    for position, (index, match) in enumerate(anchors):
+        end = anchors[position + 1][0] if position + 1 < len(anchors) else len(lines)
+        own_line = lines[index].strip()
+        tail = "\n".join([own_line[match.end():]] + lines[index + 1:end])
+        blocks.append((index, match, tail))
+    return blocks
+
+
+def _slot_for(lines: list[str], index: int, line: str) -> str | None:
+    """Yahoo puts the slot label either at the head of the player's own row or
+    on the line above it, depending on how the page renders."""
+    head = line.strip().split(None, 1)[0].upper() if line.strip() else ""
+    if head in SLOT_LABELS:
+        return head
+    for back in range(1, 3):
+        if index - back < 0:
+            break
+        candidate = lines[index - back].strip().upper()
+        if candidate in SLOT_LABELS:
+            return candidate
+    return None
+
+
+def parse_weekly_text(text: str) -> list[dict]:
+    """Extract this week's roster rows — slot, status, opponent, projection.
+
+    Returns plain dicts rather than WeeklyPlayer so this module stays free of
+    engine imports and can be tested on a saved page with nothing else loaded.
+    """
+    lines = text.splitlines()
+
+    # Yahoo's own My Team page stacks each row, so try that shape first. The
+    # inline parser below still serves the league-rosters and draft-room pages,
+    # which really do render a name and position together on one line.
+    stacked = _parse_stacked_myteam(lines)
+    if stacked:
+        return stacked
+
+    rows: list[dict] = []
+    seen: set[str] = set()
+
+    for index, match, tail in _blocks(lines):
+        line = lines[index].strip()
+
+        name = match.group("name").strip(" ,-–—")
+        parts = name.split(None, 1)
+        if len(parts) == 2 and parts[0].upper() in SLOT_LABELS:
+            name = parts[1]
+        if not looks_like_a_player(name) or name in seen:
+            continue
+
+        pos = normalize_position(match.group("pos"))
+        if pos in STATUS_SUFFIXES and pos not in {"K", "D"}:
+            continue
+        seen.add(name)
+
+        status_match = STATUS_AFTER_POS.search(line)
+        opponent_match = OPPONENT.search(tail)
+        # The first scoring-shaped decimal after the anchor. Yahoo puts other
+        # numbers on the row too (rostered %, season totals), so this is the
+        # field most likely to need a look — which is why `week` prints it.
+        projection_match = PROJECTION.search(tail)
+
+        on_bye = bool(BYE_MARKER.search(tail)) and not opponent_match
+        rows.append({
+            "name": name,
+            "pos": pos,
+            "team": match.group("team").upper(),
+            "slot": _slot_for(lines, index, line),
+            "status": (status_match.group("status").upper() if status_match else ""),
+            "opponent": (
+                f"{'@' if opponent_match.group('side').startswith('@') else 'vs '}"
+                f"{opponent_match.group('team').upper()}"
+                if opponent_match else None
+            ),
+            "proj": float(projection_match.group("value")) if projection_match else None,
+            # The inline layout carries one value column, so there is no way to
+            # tell a projection from points already scored. Null beats a guess.
+            "actual": None,
+            "bye": on_bye,
+            "bye_week": None,
+            "roster_status": None,
+        })
+
+    return rows
+
+
+def write_weekly(rows: list[dict], week: int | None = None) -> str:
+    """Save the week's snapshot next to the profile's other state."""
+    profiles.ensure_profile()
+    path = profiles.weekly_path(week)
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["name", "pos", "team", "slot", "status", "opponent",
+                           "proj", "actual", "bye", "bye_week", "roster_status"])
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({k: ("" if row.get(k) is None else row.get(k)) for k in writer.fieldnames})
+    return path
+
+
+def report_weekly(rows: list[dict]) -> None:
+    """Print what was parsed, field by field.
+
+    This exists because the parse above is a guess about a page nobody here has
+    seen. A projection column read off the wrong number is invisible in a
+    lineup recommendation and obvious in a table.
+    """
+    print(f"\n{'PLAYER':<24}{'POS':<5}{'TM':<5}{'SLOT':<7}{'ST':<5}{'OPP':<8}PROJ")
+    for row in rows:
+        print(f"{row['name']:<24}{row['pos']:<5}{row['team']:<5}"
+              f"{(row.get('slot') or '—'):<7}{(row.get('status') or '—'):<5}"
+              f"{(row.get('opponent') or ('BYE' if row.get('bye') else '—')):<8}"
+              f"{'—' if row.get('proj') is None else row['proj']}")
+
+    missing = [r["name"] for r in rows if r.get("proj") is None and not r.get("bye")]
+    if missing:
+        print(f"\nNo projection parsed for {len(missing)} player(s): {', '.join(missing[:6])}"
+              f"{'...' if len(missing) > 6 else ''}")
+        print("If the page shows projections for them, the projection column is being read "
+              "wrong — run `dump` and check what the row actually renders as.")
+
+
 def parse_league_page(text: str) -> dict[str, list[dict]]:
     """Split a multi-team page into {team_name: [players]}.
 
@@ -366,6 +691,41 @@ def cmd_sync(args):
     report(all_rows)
 
 
+def cmd_week(args):
+    """Import the My Team page for a week — slots, injuries, opponents, projections."""
+    if args.from_file or args.from_text:
+        text = _read(args.from_file or args.from_text)
+    else:
+        if not args.url:
+            sys.exit("Give --url to read from Chrome, or --from-file/--from-text "
+                     "to parse a page you already saved or copied.")
+        text, _ = fetch_page_text(args.url, args.port)
+
+    rows = parse_weekly_text(text)
+    if not rows:
+        _no_players_found()
+        sys.exit(1)
+
+    if args.free_agents:
+        path = profiles.free_agents_path()
+        profiles.ensure_profile()
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(
+                f, fieldnames=["name", "pos", "team", "slot", "status", "opponent",
+                           "proj", "bye", "bye_week", "roster_status"])
+            writer.writeheader()
+            for row in rows:
+                writer.writerow({k: ("" if row.get(k) is None else row.get(k))
+                                 for k in writer.fieldnames})
+        print(f"Imported {len(rows)} free agent(s) -> {path}")
+    else:
+        print(f"Imported {len(rows)} player(s) -> {write_weekly(rows, args.week)}")
+
+    report_weekly(rows)
+    print("\nCheck that table against the page before trusting a lineup to it — "
+          "especially the PROJ column.")
+
+
 def cmd_watch(args):
     """Follow a live draft room and keep draft_state.json current.
 
@@ -458,6 +818,19 @@ def main():
                         help="Write my_roster.csv instead of league_rosters.csv")
     p_sync.add_argument("--port", type=int, default=DEFAULT_CDP_PORT)
     p_sync.set_defaults(func=cmd_sync)
+
+    p_week = sub.add_parser(
+        "week", help="Import the My Team page for a week (slots, injuries, opponents, projections)")
+    week_src = p_week.add_mutually_exclusive_group()
+    week_src.add_argument("--url", help="My Team page URL, read from your logged-in Chrome")
+    week_src.add_argument("--from-file", help="A page saved earlier with `dump`")
+    week_src.add_argument("--from-text", help="A text file of rows copied off the page by hand")
+    p_week.add_argument("--week", type=int, default=None,
+                        help="Label the snapshot with this NFL week (default: week_current)")
+    p_week.add_argument("--free-agents", action="store_true",
+                        help="Parse a free-agent/waiver page into free_agents.csv instead")
+    p_week.add_argument("--port", type=int, default=DEFAULT_CDP_PORT)
+    p_week.set_defaults(func=cmd_week)
 
     p_watch = sub.add_parser(
         "watch", help="Follow a live draft room and auto-record picks")

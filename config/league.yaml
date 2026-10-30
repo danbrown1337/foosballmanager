@@ -35,6 +35,22 @@ roster:
 draft:
   scheduled_at: null   # fill in once known — lets the assistant warn how much prep time is left
 
+season:
+  # Kickoff of Week 1. Everything in-season derives the current week from this,
+  # and refuses to guess a week without it rather than risk setting a Week 3
+  # lineup in Week 4.
+  week1_start: "2026-09-10"
+
+waivers:
+  # faab = blind bidding out of a season budget; priority = a numbered order
+  # that drops to last when you claim. Check League -> Settings on Yahoo; the
+  # weekly report prints which one it assumed so a wrong guess is obvious.
+  system: faab
+  faab_budget: 100
+  faab_remaining: 100   # update as you spend, or bids get priced off the wrong base
+  priority: null        # your current waiver priority, if system: priority
+  run_day: wednesday    # when claims process — see WEEKLY.md for the weekly rhythm
+
 autopilot:
   strategy: best_player_available   # best_player_available | robust_rb | zero_rb
   risk_tolerance: balanced          # safe_floor | balanced | chase_upside

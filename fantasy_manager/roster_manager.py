@@ -1,18 +1,29 @@
 #!/usr/bin/env python3
 """
-Post-draft weekly roster manager.
+Post-draft weekly roster manager: start/sit, waivers, and the week review.
 
-Right now this runs on two hand-maintained CSVs (my_roster.csv and, for
-the waiver-target view, the ADP board) because Yahoo API access is still
-pending approval. Once fantasy_manager/yahoo_client.py has real
-credentials, point load_my_roster() at yahoo_client.get_roster() instead
-and everything downstream (bye-week checks, depth summary, waiver
-targets) keeps working unchanged.
+WHERE THE NUMBERS COME FROM: the in-season commands run on a weekly snapshot
+imported from the Yahoo page you're already looking at (`browser_sync week`),
+because that is the only source here with *this week's* projections, injury
+designations and opponents in it. The pre-season commands still run on the
+hand-maintained CSVs and the ADP board.
+
+That split is the whole design. ADP is a draft-price signal; using it to pick a
+Week 9 lineup would produce confident, wrong answers. So every command below
+reports which signal it actually had — and declines to rank players when it
+had none — rather than quietly falling back to draft price.
+
+Once yahoo_client.py has approved credentials, point load_my_roster() at
+yahoo_client.get_roster() and everything downstream keeps working unchanged.
 
 Usage:
+  python3 -m fantasy_manager.roster_manager week            # the whole weekly pass
+  python3 -m fantasy_manager.roster_manager lineup          # start/sit only
+  python3 -m fantasy_manager.roster_manager waivers --pos WR --top 10
   python3 -m fantasy_manager.roster_manager summary
   python3 -m fantasy_manager.roster_manager byeweeks
-  python3 -m fantasy_manager.roster_manager waivers --pos WR --top 10
+
+See WEEKLY.md for when in the week each of these matters.
 """
 from __future__ import annotations
 
@@ -21,9 +32,10 @@ import csv
 import os
 from collections import defaultdict
 
-from fantasy_manager import profiles
-from fantasy_manager.board import POS_ALIASES, apply_draft_state, build_board
+from fantasy_manager import matchup, profiles, weekly
+from fantasy_manager.board import POS_ALIASES, apply_draft_state, build_board, load_config
 from fantasy_manager.bye_weeks import BYE_WEEKS
+from fantasy_manager.weekly import WeeklyPlayer
 
 
 
@@ -56,48 +68,430 @@ def cmd_summary(args):
         print(f"  {pos:<4} [{len(players)}] {names}")
 
 
+# The NFL runs byes from about week 5 to week 14, so scanning 2-18 covers the
+# season with room to spare. bye_outlook counts forward from a given week, and
+# starting at 1 is how you ask it for "the whole season" rather than "soon".
+SEASON_START_WEEK = 1
+SEASON_WEEKS_AHEAD = 17
+
+
 def cmd_byeweeks(args):
-    roster = load_my_roster()
+    """Every week this season where a bye would leave a starting slot short.
+
+    This used to flag any week with two players at the same position out, which
+    is a different question and got both answers wrong on a real roster: it
+    flagged a week when two BENCH tight ends were off (no shortage, you still
+    start your starter) and stayed silent on the week the roster's only
+    quarterback was out (a guaranteed zero). What matters is whether you can
+    still field a legal lineup, so it now asks that — the same rule `week` and
+    the extension's Week tab use, against the same tested function.
+    """
+    config = load_config()
+    roster, has_weekly = roster_for_week(None)
     if not roster:
         print(f"No roster on file yet — fill in {profiles.my_roster_path()} first.")
         return
 
-    by_week = defaultdict(list)
-    for r in roster:
-        week = BYE_WEEKS.get(r["team"])
-        if week:
-            by_week[week].append(r)
+    starters = (config.get("roster") or {}).get("starters") or {}
+    if not starters:
+        print("No starting slots configured, so there's nothing to be short of.\n"
+              "Set roster.starters in your profile's league.yaml.")
+        return
 
-    print("Bye-week conflicts (2+ starters-worthy players out the same week):")
-    flagged = False
-    for week in sorted(by_week):
-        players = by_week[week]
-        pos_count = defaultdict(int)
-        for p in players:
-            pos_count[p["pos"]] += 1
-        crowded = {pos: n for pos, n in pos_count.items() if n >= 2}
-        if crowded:
-            flagged = True
-            names = ", ".join(f"{p['name']} ({p['pos']})" for p in players)
-            print(f"  Week {week}: {names}")
-    if not flagged:
-        print("  None — your bye weeks are well spread out.")
+    outlook = weekly.bye_outlook(roster, BYE_WEEKS, SEASON_START_WEEK, starters,
+                                 weeks_ahead=SEASON_WEEKS_AHEAD)
+
+    print("Bye weeks that would leave a starting slot short:")
+    if not outlook:
+        print("  None — you can field a legal lineup every week of the season.")
+    else:
+        for week, players in outlook:
+            names = ", ".join(f"{p.name} ({p.pos})" for p in players)
+            print(f"  Week {week}: {names} — you'd be short a starter.")
+
+    if not has_weekly:
+        # The shipped table is a hand-maintained snapshot; the page knows better.
+        print("\n  (From the bye table, not this week's page. Import My Team with\n"
+              "   `browser_sync week` and this uses the bye weeks Yahoo reports.)")
+
+
+def _as_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def load_weekly(path: str | None = None, week: int | None = None) -> list[WeeklyPlayer]:
+    """This week's imported roster, or [] if nothing has been imported yet.
+
+    Falls back to nothing rather than to my_roster.csv on purpose: the caller
+    needs to be able to tell "I have weekly data" from "I have names only,"
+    because the second one can't answer a start/sit question.
+    """
+    if path is None:
+        profiles.ensure_profile()
+        path = profiles.weekly_path(week)
+    if not os.path.exists(path):
+        return []
+    out = []
+    with open(path) as f:
+        for row in csv.DictReader(f):
+            out.append(WeeklyPlayer(
+                name=row["name"],
+                pos=POS_ALIASES.get(row["pos"], row["pos"]),
+                team=row.get("team", ""),
+                slot=row.get("slot") or None,
+                status=row.get("status") or "",
+                opponent=row.get("opponent") or None,
+                proj=_as_float(row.get("proj")),
+                bye=str(row.get("bye", "")).strip().lower() in {"true", "1", "yes"},
+                bye_week=_as_int(row.get("bye_week")),
+                roster_status=row.get("roster_status") or None,
+            ))
+    return out
+
+
+def roster_for_week(week: int | None = None) -> tuple[list[WeeklyPlayer], bool]:
+    """(roster, has_weekly_data). Degrades to the plain post-draft roster with
+    bye weeks filled in, which is enough to catch an illegal lineup but not
+    enough to rank two healthy players."""
+    imported = load_weekly(week=week)
+    if imported:
+        return imported, True
+
+    config = load_config()
+    current = weekly.current_week(config)
+    return [
+        WeeklyPlayer(
+            name=r["name"], pos=r["pos"], team=r.get("team", ""),
+            bye=(BYE_WEEKS.get(r.get("team", "").upper()) == current) if current else False,
+        )
+        for r in load_my_roster()
+    ], False
+
+
+def load_free_agents() -> tuple[list[WeeklyPlayer], str]:
+    """(free agents, how we know). Prefers an imported waiver page; falls back
+    to the ADP board minus everyone known to be rostered."""
+    path = profiles.free_agents_path()
+    if os.path.exists(path):
+        imported = load_weekly(path=path)
+        if imported:
+            return imported, "imported waiver page"
+
+    players, _ = build_board()
+    rostered = rostered_names()
+    # Both sources of "mine": the post-draft CSV and this week's import. Using
+    # only the CSV recommends players already on your own roster whenever the
+    # weekly import is the thing keeping it current.
+    mine = {r["name"] for r in load_my_roster()} | {p.name for p in load_weekly()}
+    avail = [p for p in players if p.name not in rostered and p.name not in mine]
+    source = ("ADP board minus all known rosters" if rostered
+              else "ADP board minus your roster only")
+    return [
+        WeeklyPlayer(name=p.name, pos=p.pos, team=p.team, proj=None)
+        for p in sorted(avail, key=lambda p: p.adjusted_adp)
+    ], source
+
+
+def rostered_names() -> set[str]:
+    """Everyone on any team in the league, from league_rosters.csv.
+
+    This is what turns `waivers` from a best-available list into an actual
+    waiver wire. Empty when the file hasn't been imported, and the caller says
+    so rather than quietly recommending a player who is on someone's bench.
+    """
+    path = profiles.league_rosters_path()
+    if not os.path.exists(path):
+        return set()
+    with open(path) as f:
+        return {row["name"] for row in csv.DictReader(f) if row.get("name")}
+
+
+def _print_lineup(lineup, show_bench: bool = True, ratings: dict | None = None) -> None:
+    """The lineup table. `ratings` adds a matchup column and nothing else.
+
+    Deliberately nothing else: the column sits beside Yahoo's projection and
+    never alters it or the ordering. Yahoo already prices some matchup in, so
+    an adjustment on top would double-count by an unknown amount and quietly
+    change which nine players start — invisibly, because the result still looks
+    like a lineup. Showing the reader the signal and letting them override is
+    the only version of this that can't be wrong in a way nobody notices.
+    """
+    matchup_col = f"{'MATCH':<8}" if ratings else ""
+    print(f"{'SLOT':<8}{'PLAYER':<24}{'POS':<5}{'OPP':<8}{'ST':<5}{matchup_col}PROJ")
+    for assignment in lineup.starters:
+        player = assignment.player
+        if player is None:
+            print(f"{assignment.slot:<8}{'— EMPTY —':<24}{'':<5}{'':<8}{'':<5}"
+                  f"{'':<8}  ({assignment.empty_reason})" if ratings else
+                  f"{assignment.slot:<8}{'— EMPTY —':<24}{'':<5}{'':<8}{'':<5}"
+                  f"  ({assignment.empty_reason})")
+            continue
+        cell = ""
+        if ratings:
+            rating = matchup.rate(player, ratings)
+            cell = f"{(rating.verdict if rating else '—'):<8}"
+        print(f"{assignment.slot:<8}{player.name:<24}{player.pos:<5}"
+              f"{(player.opponent or '—'):<8}{(player.status_label or '—'):<5}"
+              f"{cell}{'—' if player.proj is None else f'{player.proj:.2f}'}")
+    if lineup.has_projections:
+        pad = f"{'':<8}" if ratings else ""
+        print(f"{'':<8}{'':<24}{'':<5}{'':<8}{pad}{'TOTAL':<5} {lineup.projected:.2f}")
+
+    if show_bench and lineup.bench:
+        bench = ", ".join(
+            f"{p.name}{f' ({p.status_label})' if p.status_label else ''}"
+            for p in lineup.bench)
+        print(f"\nBench: {bench}")
+
+
+def cmd_lineup(args):
+    """Start/sit: the best legal lineup, and what to change to get there."""
+    config = load_config()
+    roster, has_weekly = roster_for_week(args.week)
+    if not roster:
+        print(f"No roster on file yet — fill in {profiles.my_roster_path()} after your draft,\n"
+              f"or import this week's page:\n"
+              f"  python3 -m fantasy_manager.browser_sync week --url <My Team URL>")
+        return
+
+    week = args.week or weekly.current_week(config)
+    starters = (config.get("roster") or {}).get("starters") or {}
+    superflex = bool((config.get("league") or {}).get("superflex"))
+
+    header = f"Week {week}" if week else "Lineup"
+    print(f"{header} — recommended starters\n")
+
+    if not has_weekly:
+        print("!! No weekly data imported, so nothing below is ranked by this week's\n"
+              "   projections — only by position eligibility and who's on bye. Import\n"
+              "   the My Team page to get a real start/sit:\n"
+              "     python3 -m fantasy_manager.browser_sync week --url <My Team URL>\n")
+
+    best = weekly.optimal_lineup(roster, starters, superflex=superflex,
+                                 allow_doubtful=args.allow_doubtful)
+
+    # Matchup is shown, never applied. See _print_lineup and matchup.py.
+    history = matchup.load_history()
+    ratings = matchup.build_ratings(history)
+    _print_lineup(best, ratings=ratings or None)
+
+    # What Yahoo currently has set, next to what it should be. Two jobs: the
+    # gap is what the changes below are worth, and the "as set" number is the
+    # one end-to-end check on the parser — it should equal the projected total
+    # Yahoo displays on the same page. That number isn't in the page text, so
+    # the comparison is yours; printing the sum makes it a glance rather than
+    # mental arithmetic over nine rows.
+    as_set = weekly.set_lineup(roster)
+    if has_weekly and as_set.players:
+        gain = best.projected - as_set.projected
+        pad = f"{'':<8}" if ratings else ""
+        print(f"{'':<8}{'':<24}{'':<5}{'':<8}{pad}{'AS SET':<5} {as_set.projected:.2f}"
+              + (f"   (+{gain:.2f} from the changes below)" if gain > 0.005 else ""))
+        print("        ^ this should match the projected total on your Yahoo page.")
+        if as_set.unprojected:
+            print("          Not counted in it: "
+                  + ", ".join(as_set.unprojected) + " (no projection on the page).")
+
+    changes = weekly.lineup_changes(roster, best)
+    print()
+    if not changes:
+        print("No changes needed — Yahoo already has your best lineup set."
+              if any(p.slot for p in roster) else
+              "Nothing to compare against: the import didn't record your current slots.")
+    else:
+        print("Changes to make in Yahoo:")
+        for change in changes:
+            if change.move_only:
+                print(f"  - Move  {change.start_player.name:<22} ({change.reason})")
+            elif change.start_player is None:
+                print(f"  - Bench {change.bench_player.name:<22} ({change.reason})")
+            elif change.bench_player is None:
+                print(f"  - Start {change.start_player.name:<22} into {change.slot} ({change.reason})")
+            else:
+                print(f"  - {change.slot}: start {change.start_player.name}, "
+                      f"bench {change.bench_player.name}  ({change.reason})")
+
+    if ratings:
+        # The caveat travels with the conclusion rather than living in a doc.
+        print(f"\nMATCH is what that defence has allowed the position, from your own\n"
+              f"imports — it is NOT folded into PROJ. {matchup.coverage(history, ratings)}")
+
+    for warning in best.warnings:
+        print(f"\n  ! {warning}")
+
+    print("\nSet it yourself in Yahoo — nothing here submits a lineup.")
 
 
 def cmd_waivers(args):
-    """Best remaining players by ADP not on your roster — a reasonable proxy
-    for waiver-wire priority until live Yahoo transactions data is wired in."""
-    players, config = build_board()
-    mine = {r["name"] for r in load_my_roster()}
+    """Waiver targets ranked by what they'd add to *your* lineup.
 
-    avail = [p for p in players if p.name not in mine]
+    The old version of this sorted the whole ADP board by draft price and
+    filtered out your own players, which listed plenty of people who were on
+    someone else's bench. Now it excludes every known roster, and measures a
+    pickup against the player he would actually replace in your starting
+    lineup rather than against the rest of the wire.
+    """
+    config = load_config()
+    roster, has_weekly = roster_for_week(args.week)
+    available, source = load_free_agents()
+    system, faab = weekly.waiver_system(config)
+    starters = (config.get("roster") or {}).get("starters") or {}
+    superflex = bool((config.get("league") or {}).get("superflex"))
+
     if args.pos:
-        avail = [p for p in avail if p.pos == args.pos.upper()]
-    avail.sort(key=lambda p: p.adp)
+        available = [p for p in available if p.pos == args.pos.upper()]
 
-    print(f"{'PLAYER':<26}{'POS':<5}{'TEAM':<6}{'ADP':<8}TIER")
-    for p in avail[: args.top]:
-        print(f"{p.name:<26}{p.pos:<5}{p.team:<6}{p.adp:<8}{p.tier}")
+    if not roster:
+        # Without a roster there is nothing to measure a pickup against, but
+        # "who's the best free agent" is still a fair question — so fall back
+        # to the plain list rather than refusing to answer it.
+        print(f"Best available  (pool: {source})")
+        print("No roster on file yet, so these aren't ranked by what they'd add to "
+              "your lineup — just by draft price.\n")
+        print(f"  {'PLAYER':<26}{'POS':<5}TEAM")
+        for candidate in available[: args.top]:
+            print(f"  {candidate.name:<26}{candidate.pos:<5}{candidate.team}")
+        return
+
+    print(f"Waiver targets  (pool: {source})\n")
+    if "your roster only" in source:
+        print("!! league_rosters.csv is empty, so this can't tell a free agent from\n"
+              "   someone on another team's bench. Import the league rosters page:\n"
+              "     python3 -m fantasy_manager.browser_sync sync --url <League Rosters URL>\n")
+    if not has_weekly or not any(p.proj is not None for p in available):
+        missing = "your roster" if not has_weekly else "the free-agent pool"
+        print(f"!! No weekly projections for {missing}, so gains over your current\n"
+              "   starters can't be computed — this is ordered by draft price only.\n"
+              "   Import the waiver page for real numbers:\n"
+              "     python3 -m fantasy_manager.browser_sync week --free-agents --url <Players URL>\n")
+
+    targets = weekly.evaluate_waiver_targets(
+        available, roster, starters, superflex=superflex,
+        faab_remaining=faab if system == "faab" else None, top=args.top)
+
+    if not targets:
+        # Deliberately not "nothing clears your starters": a pickup who would be
+        # a downgrade is still listed, ranked and labelled as depth. An empty
+        # list means nobody in the pool can play this week at all.
+        print("No pickup candidates in that pool — everyone in it is already "
+              "yours, out, on IR, or on a bye.")
+        return
+
+    for target in targets:
+        player = target.player
+        line = f"  {player.name:<24}{player.pos:<5}{player.team:<5}".rstrip()
+        line += "  " if line.endswith(player.team) else ""
+        if system == "faab" and target.bid_low is not None:
+            line += f"bid {target.bid_low}-{target.bid_high}"
+            if faab:
+                line += f" of {faab}"
+        elif system == "priority":
+            line += "worth your priority" if target.worth_priority else "not worth priority"
+        print(line)
+        print(f"      {target.rationale}" + (f" — {target.note}" if target.note else ""))
+        if player.roster_status:
+            clears = player.waiver_clears
+            print(f"      {'free agent — add now, first come' if player.is_free_agent else f'on waivers — claim by {clears}' if clears else 'on waivers — claim required'}")
+        if target.drop:
+            print(f"      drop candidate: {target.drop.name} "
+                  f"({target.drop.pos}, lowest-value bench spot)")
+
+    print(f"\nWaiver system assumed: {system}."
+          + (f" FAAB remaining: {faab}." if system == "faab" and faab else "")
+          + "\nSet it in your profile's league.yaml under `waivers:` if that's wrong.")
+    print("Claims get placed by you in Yahoo — nothing here submits one.")
+
+
+def cmd_week(args):
+    """The whole weekly pass in one report: lineup, byes ahead, waiver targets."""
+    config = load_config()
+    week = args.week or weekly.current_week(config)
+    roster, has_weekly = roster_for_week(args.week)
+    starters = (config.get("roster") or {}).get("starters") or {}
+
+    print("=" * 68)
+    print(f"  WEEKLY REVIEW — {weekly.week_label(config)}"
+          + ("" if has_weekly else "   (no weekly data imported)"))
+    print("=" * 68)
+
+    if not roster:
+        print(f"\nNo roster on file yet — fill in {profiles.my_roster_path()} after your draft.")
+        return
+
+    print("\n--- 1. START / SIT " + "-" * 49)
+    cmd_lineup(argparse.Namespace(week=args.week, allow_doubtful=args.allow_doubtful))
+
+    print("\n--- 2. BYES COMING UP " + "-" * 46)
+    outlook = weekly.bye_outlook(roster, BYE_WEEKS, week, starters, weeks_ahead=args.weeks_ahead)
+    if week is None:
+        # Saying "nothing coming up" here would be a claim it hasn't checked.
+        if ((config.get("season") or {}).get("week1_start")):
+            print("  Season hasn't kicked off yet — bye checks start in Week 1.")
+        else:
+            print("  Can't look ahead without knowing the current week — set\n"
+                  "  season.week1_start in your profile's league.yaml.")
+    elif not outlook:
+        print(f"  Nothing through week {week + args.weeks_ahead} leaves a starting slot short.")
+    else:
+        for target_week, players in outlook:
+            names = ", ".join(f"{p.name} ({p.pos})" for p in players)
+            print(f"  Week {target_week}: {names} — you'd be short a starter.")
+
+    print("\n--- 3. WAIVER WIRE " + "-" * 49)
+    cmd_waivers(argparse.Namespace(week=args.week, pos=None, top=args.top))
+
+    print("\n--- 4. YOUR CALL " + "-" * 51)
+    print("  Everything above is a recommendation. Set the lineup and place any\n"
+          "  claims yourself in Yahoo — see WEEKLY.md for the run-through and\n"
+          "  when in the week each piece matters.")
+
+
+def cmd_matchup(args):
+    """What each defence has allowed, built from your own weekly imports.
+
+    Separate from `lineup` on purpose. There it is one column beside the
+    projection; here it is the whole table, including how thin the sample is,
+    because a matchup read this small should be inspectable before it is
+    trusted rather than only glanceable.
+    """
+    history = matchup.load_history()
+    ratings = matchup.build_ratings(history)
+
+    print("Defensive matchups, from your imported weeks\n")
+    print(matchup.coverage(history, ratings))
+    if not ratings:
+        # No table, and no pretending. The reason is the useful output here.
+        print("\nNothing to rank yet. Every `browser_sync week` import adds to this;\n"
+              "there is no backfill, so a week not imported is a week not counted.")
+        return
+
+    wanted = [args.pos.upper()] if args.pos else list(matchup.RATED_POSITIONS)
+    for pos in wanted:
+        in_pos = sorted((r for (t, p), r in ratings.items() if p == pos),
+                        key=lambda r: r.rank)
+        if not in_pos:
+            print(f"\n{pos}: no defence has enough data yet.")
+            continue
+        print(f"\n{pos} — most points allowed first (rank 1 is the matchup you want)")
+        print(f"  {'DEF':<6}{'RANK':<8}{'PTS/PLAYER':<12}{'SAMPLE':<16}VERDICT")
+        for rating in in_pos:
+            sample = f"{rating.observations} in {rating.games} gm"
+            print(f"  {rating.team:<6}{f'{rating.rank}/{rating.of}':<8}"
+                  f"{rating.points_per_player:<12.2f}{sample:<16}{rating.verdict}")
+
+    print("\nThis is never folded into a projection or a lineup. Yahoo's number\n"
+          "already prices some matchup in, and adding more on top would double-\n"
+          "count by an unknown amount. Read it beside PROJ, not instead of it.")
 
 
 def cmd_overachievers(args):
@@ -144,10 +538,31 @@ def main():
     p_bye = sub.add_parser("byeweeks", help="Flag bye-week pileups")
     p_bye.set_defaults(func=cmd_byeweeks)
 
-    p_wai = sub.add_parser("waivers", help="Best available players not on your roster")
+    p_lineup = sub.add_parser("lineup", help="Start/sit: best legal lineup and what to change")
+    p_lineup.add_argument("--week", type=int, default=None,
+                          help="Which week's import to use (default: the current one)")
+    p_lineup.add_argument("--allow-doubtful", action="store_true",
+                          help="Consider players listed Doubtful, which are excluded by default")
+    p_lineup.set_defaults(func=cmd_lineup)
+
+    p_week = sub.add_parser("week", help="The full weekly pass: lineup, byes ahead, waivers")
+    p_week.add_argument("--week", type=int, default=None)
+    p_week.add_argument("--top", type=int, default=8, help="Waiver targets to show")
+    p_week.add_argument("--weeks-ahead", type=int, default=3,
+                        help="How far ahead to look for bye-week trouble")
+    p_week.add_argument("--allow-doubtful", action="store_true")
+    p_week.set_defaults(func=cmd_week)
+
+    p_wai = sub.add_parser("waivers", help="Waiver targets ranked by what they add to your lineup")
     p_wai.add_argument("--pos", default=None)
     p_wai.add_argument("--top", type=int, default=15)
+    p_wai.add_argument("--week", type=int, default=None)
     p_wai.set_defaults(func=cmd_waivers)
+
+    p_match = sub.add_parser("matchup",
+                             help="What each defence has allowed, from your imports")
+    p_match.add_argument("--pos", default=None, help="Just one position (QB/RB/WR/TE)")
+    p_match.set_defaults(func=cmd_matchup)
 
     p_over = sub.add_parser("overachievers", help="Players expected to beat their draft price")
     p_over.add_argument("--pos", default=None)

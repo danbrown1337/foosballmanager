@@ -27,6 +27,8 @@ import {
   gradeDraft,
 } from "./lib/snapshot.js";
 import { Storage } from "./lib/storage.js";
+import { classifyWeeklyPage, parseWeeklyText } from "./lib/weeklyParse.js";
+import { buildWaiverReport, buildWeekReport } from "./lib/weeklyReport.js";
 
 async function setBadge(text) {
   await chrome.action.setBadgeText({ text });
@@ -56,6 +58,12 @@ async function handle(message, sender) {
       if (result.changed) await setBadge("\u2022");
       return result;
     }
+
+    case "WEEK_REPORT":
+      return weekReport();
+
+    case "WAIVER_REPORT":
+      return waiverReport(message.top || 8);
 
     case "SYNC_MY_TEAM":
       return syncMyTeam(message.names || [], message.keep || []);
@@ -177,3 +185,69 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     chrome.tabs.sendMessage(tab.id, { type: "HEARTBEAT" }).catch(() => {});
   }
 });
+
+
+/**
+ * Every open Yahoo fantasy tab, parsed and classified.
+ *
+ * Read once and sorted afterwards: the waiver report needs two different pages
+ * and the start/sit report one, and asking the tabs twice would let the two
+ * halves of one report come from different reads of a page the user was
+ * editing. Tabs that fail are skipped, not fatal — a tab that loaded before the
+ * extension did has no content script and rejects the message.
+ */
+async function readYahooPages() {
+  const tabs = await chrome.tabs.query({
+    url: "https://*.fantasysports.yahoo.com/f1/*",
+  });
+  const pages = [];
+  for (const tab of tabs) {
+    try {
+      const reply = await chrome.tabs.sendMessage(tab.id, { type: "READ_PAGE_TEXT" });
+      if (!reply?.text) continue;
+      const rows = parseWeeklyText(reply.text);
+      if (!rows.length) continue;
+      pages.push({ rows, url: reply.url, kind: classifyWeeklyPage(rows) });
+    } catch {
+      // No content script in that tab. Try the next rather than failing the read.
+    }
+  }
+  return { pages, tabCount: tabs.length };
+}
+
+/**
+ * Read the open My Team tab and turn it into a start/sit report.
+ *
+ * Recommend-only, exactly as on the Python side and everywhere else in this
+ * project: this returns what to change, and the manager makes the change in
+ * Yahoo's own UI. Nothing here clicks anything.
+ */
+async function weekReport() {
+  const [pages, config, byeWeeks] = await Promise.all([
+    readYahooPages(), Storage.getConfig(), loadByeWeeks(),
+  ]);
+  return buildWeekReport(pages, config, { byeWeeks });
+}
+
+/** The shipped bye table, for the weeks-ahead check. A page that reports its
+ * own bye week wins over this one — it is a hand-maintained snapshot and
+ * cannot know about a moved game — so a failed load costs the outlook, not
+ * the report. */
+async function loadByeWeeks() {
+  try {
+    const response = await fetch(chrome.runtime.getURL("data/bye_weeks.json"));
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read the open My Team and Players -> Available tabs into a waiver report.
+ *
+ * Recommend-only as well: this ranks what to claim, and the manager places the
+ * claim in Yahoo. Nothing submits one.
+ */
+async function waiverReport(top) {
+  return buildWaiverReport(await readYahooPages(), await Storage.getConfig(), { top });
+}

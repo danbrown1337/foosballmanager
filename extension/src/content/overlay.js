@@ -2588,7 +2588,20 @@ async function main() {
   /* The service worker's clock, for a room that has gone quiet. The observer
    * above only fires when the page changes, and a room waiting on somebody
    * else's pick can sit still for a minute at a time. */
-  chrome.runtime.onMessage.addListener((message) => {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    /* The weekly report reads this page as TEXT, not as a DOM tree.
+     *
+     * This content script already runs on every fantasysports.yahoo.com page,
+     * so it is live on My Team with no extra permission and no injection. All
+     * the weekly side needs is what the user can see, and innerText is exactly
+     * the input weeklyParse.js is tested against — the captured page in
+     * tests/fixtures is literally this string. Reaching for selectors here
+     * would mean guessing at generated class names that change without notice.
+     */
+    if (message?.type === "READ_PAGE_TEXT") {
+      sendResponse({ url: location.href, text: document.body?.innerText || "" });
+      return true;
+    }
     if (message?.type !== "HEARTBEAT" || !polling) return;
     /* The whole cycle, not just the turn.
      *
