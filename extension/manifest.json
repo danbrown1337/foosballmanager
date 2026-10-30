@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Fantasy Manager",
-  "version": "0.93.0",
-  "description": "Draft board, roster tracking, and trade suggestions for Yahoo Fantasy Football. Can optionally auto-fill your draft pick when it's your turn (off by default). Never touches trades or roster moves.",
+  "version": "0.94.0",
+  "description": "Weekly lineup and waiver planning, draft assistance, and roster tracking for Yahoo Fantasy Football. Roster moves and trades stay manual.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -35,7 +35,8 @@
         "https://*.fantasysports.yahoo.com/*"
       ],
       "js": [
-        "src/content/overlay.js"
+        "src/content/overlay.js",
+        "src/content/weeklyCapture.js"
       ],
       "run_at": "document_idle"
     }

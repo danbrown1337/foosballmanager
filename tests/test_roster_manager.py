@@ -55,6 +55,25 @@ class TestSummary:
         assert "QB   [0]" in out
 
 
+class TestLegacyWaivers:
+    def test_excludes_rivals_and_labels_preseason_uncertainty(self, monkeypatch, capsys):
+        from fantasy_manager import trade_targeter
+        monkeypatch.setattr(roster_manager, "build_board", lambda: ([
+            make_player("A.J. Brown", "WR", 2),
+            make_player("My Player", "RB", 3),
+            make_player("Watchlist Player", "WR", 30),
+        ], {}))
+        monkeypatch.setattr(roster_manager, "load_my_roster", lambda: [{"name": "My Player"}])
+        monkeypatch.setattr(trade_targeter, "load_league_rosters", lambda: {"Rival": [{"name": "AJ Brown"}]})
+        roster_manager.cmd_waivers(args(pos=None, top=10))
+        out = capsys.readouterr().out
+        assert "A.J. Brown" not in out
+        assert "My Player" not in out
+        assert "Watchlist Player" in out
+        assert "availability unverified" in out
+        assert "Weekly tab" in out
+
+
 class TestByeWeeks:
     def test_flags_two_players_at_one_position_on_the_same_bye(self, monkeypatch, capsys):
         # KC and CAR both bye in week 5.

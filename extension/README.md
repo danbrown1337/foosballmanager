@@ -1,5 +1,14 @@
 # Fantasy Manager — Chrome extension
 
+## Weekly management (v0.94.0)
+
+For your current team, open **Weekly**. Import your Yahoo team page and that
+week's projected available-player pages to get injury/bye flags, a complete
+lineup plan and waiver upgrades. **Refresh saved pages** updates those imports
+on demand. **Picks** is draft history, not your current roster.
+
+Setup, coverage limits and troubleshooting: [Weekly management](../WEEKLY_MANAGEMENT.md).
+
 A point-and-click draft assistant, roster viewer, and trade-offer generator
 for Yahoo Fantasy Football, running entirely inside your browser. No server,
 no Python, no pending Yahoo API approval — it reads the page you're already

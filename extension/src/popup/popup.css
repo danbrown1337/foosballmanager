@@ -12,7 +12,7 @@
 }
 * { box-sizing: border-box; }
 body {
-  margin: 0; width: 380px; max-height: 560px; overflow-y: auto;
+  margin: 0; width: 460px; max-height: 580px; overflow-y: auto;
   background: var(--bg); color: var(--ink);
   font: 13px/1.4 system-ui, -apple-system, sans-serif;
 }
@@ -73,3 +73,8 @@ ul.plain li { padding: 3px 0; border-bottom: 1px solid var(--line); font-size: 1
                   padding: 6px; margin-bottom: 6px; }
 
 #err { background: #7f1d1d; color: #fff; padding: 6px 10px; font-size: 11px; }
+
+.weekly-period { display: flex; gap: 12px; }
+.weekly-period input { width: 85px; font: inherit; padding: 4px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+.weekly-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+#weeklyReport { font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }

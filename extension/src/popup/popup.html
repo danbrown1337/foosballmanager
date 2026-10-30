@@ -9,8 +9,9 @@
   <header>
     <b>Fantasy Manager</b>
     <nav>
+      <button data-tab="weekly" class="tab">Weekly</button>
       <button data-tab="draft" class="tab active">Draft</button>
-      <button data-tab="team" class="tab">Team</button>
+      <button data-tab="team" class="tab">Picks</button>
       <button data-tab="trades" class="tab">Trades</button>
     </nav>
     <span id="version" class="muted"></span>
@@ -18,6 +19,27 @@
   </header>
 
   <div id="practiceBanner" hidden>PRACTICE SETTINGS — not your league</div>
+
+  <section id="tab-weekly" class="tab-panel" hidden>
+    <div class="card">
+      <b>This week's plan</b>
+      <p class="small">Open your team in Yahoo and select the week. Import your roster, then import the league's Available Players with that week's projected stats. You can import additional pages and positions.</p>
+      <div class="weekly-period">
+        <label>Season <input id="weeklySeason" type="number" min="2020" max="2100"></label>
+        <label>Week <input id="weeklyWeek" type="number" min="1" max="18" placeholder="1–18"></label>
+      </div>
+      <p id="weeklyLeague" class="small muted"></p>
+      <div class="weekly-actions">
+        <button id="weeklyRoster">Import this team</button>
+        <button id="weeklyWaivers">Import available players</button>
+        <button id="weeklyRefresh">Refresh saved pages</button>
+        <button id="weeklyCopy">Copy weekly report</button>
+      </div>
+      <p id="weeklyStatus" role="status" class="small muted">No current roster imported.</p>
+    </div>
+    <p class="small muted">Check League settings match Yahoo, including scoring and flex slots. Recommendations only; make changes in Yahoo.</p>
+    <pre id="weeklyReport" aria-live="polite"></pre>
+  </section>
 
   <section id="tab-draft" class="tab-panel">
     <div class="card" id="rec">
@@ -49,7 +71,7 @@
   </section>
 
   <section id="tab-team" class="tab-panel" hidden>
-    <div class="label">My team (<span id="myCount">0</span>)</div>
+    <div class="label">Draft picks (<span id="myCount">0</span>)</div>
     <ul class="plain" id="mine"></ul>
     <div class="label" style="margin-top:10px">Scarcity</div>
     <ul class="plain" id="scarcity"></ul>
@@ -81,5 +103,6 @@
   <div id="err" hidden></div>
 
   <script type="module" src="popup.js"></script>
+  <script type="module" src="weekly.js"></script>
 </body>
 </html>

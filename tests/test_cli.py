@@ -111,11 +111,13 @@ class TestRosterManager:
         assert result.returncode == 0
         assert "No roster on file yet" in result.stdout
 
-    def test_waivers_lists_the_board(self, project):
+    def test_waivers_labels_legacy_data_and_limits_watchlist_rows(self, project):
         result = run(project, "fantasy_manager.roster_manager", "waivers",
                      "--pos", "RB", "--top", "5")
         assert result.returncode == 0
-        assert len(result.stdout.strip().splitlines()) == 6
+        assert "availability unverified" in result.stdout
+        table = result.stdout[result.stdout.index("PLAYER"):]
+        assert len(table.strip().splitlines()) == 6
 
     def test_overachievers_reports_breakout_calls(self, project):
         result = run(project, "fantasy_manager.roster_manager", "overachievers", "--top", "5")
